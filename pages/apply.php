@@ -5,10 +5,11 @@ use rexfactor\RexFactor;
 
 $addon = rex_get('addon', 'string');
 $setList = rex_get('set-list', 'string');
+$targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
 $backToStartUrl = rex_url::backendPage('rexfactor');
 
-$result = RexFactor::runRector($addon, $setList, false);
+$result = RexFactor::runRector($addon, $setList, $targetVersion, false);
 
 $html = '';
 $total = $result->getTotals();

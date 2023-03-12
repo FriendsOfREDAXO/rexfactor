@@ -32,10 +32,12 @@ final class RexFactor {
         ];
     }
 
-    public static function runRector(string $addonName, string $setName, bool $preview):RectorResult {
-        $configPath = self::writeRectorConfig($setName);
+    /**
+     * @param TargetVersion::* $targetVersion
+     */
+    public static function runRector(string $addonName, string $setName, string $targetVersion, bool $preview):RectorResult {
+        $configPath = self::writeRectorConfig($setName, $targetVersion);
         $rectorBin = self::rectorBinpath();
-
 
         $processPath = \rex_path::addon($addonName);
         if (!is_dir($processPath)) {
@@ -61,7 +63,10 @@ final class RexFactor {
         return $path;
     }
 
-    private static function writeRectorConfig(string $setName):string {
+    /**
+     * @param TargetVersion::* $targetVersion
+     */
+    private static function writeRectorConfig(string $setName, string $targetVersion):string {
         if (!self::constantExists(SetList::class, $setName)) {
             throw new \InvalidArgumentException('Unknown set name: ' . $setName);
         }
@@ -75,6 +80,14 @@ final class RexFactor {
         }
 
         $tpl = str_replace('%%RECTOR_SETS%%', 'SetList::'.$setName, $tpl);
+        if ($targetVersion === TargetVersion::PHP8_1) {
+            $tpl = str_replace('%%TARGET_PHP_VERSION%%', '80100', $tpl);
+        } elseif ($targetVersion === TargetVersion::PHP7_2_COMPAT) {
+            $tpl = str_replace('%%TARGET_PHP_VERSION%%', '70200', $tpl);
+        } else {
+            throw new \InvalidArgumentException('Unknown target version: ' . $targetVersion);
+        }
+
         if (file_put_contents($configPath, $tpl) === false) {
             throw new \Exception('Unable to write rector config file');
         }
