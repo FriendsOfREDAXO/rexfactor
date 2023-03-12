@@ -11,7 +11,7 @@ final class RexFactor {
      */
     public static function getUseCases():array {
         return [
-            'PHP Migration' =>
+            'PHP Version Migrations' =>
             [
                 'PHP_72' => 'PHP 7.2',
                 'PHP_73' => 'PHP 7.3',
@@ -22,7 +22,12 @@ final class RexFactor {
             ],
             'Misc' =>
             [
-                'EARLY_RETURN' => 'Early Return',
+                'CODE_QUALITY' => 'Unify code quality',
+                'CODING_STYLE' => 'More explicit coding style',
+                'DEAD_CODE' => 'Remove dead code',
+                'TYPE_DECLARATION' => 'Infer type declarations',
+                'PRIVATIZATION' => 'Reduce symbol visibility (privatization',
+                'EARLY_RETURN' => 'Use early returns',
             ]
         ];
     }
