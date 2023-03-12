@@ -3,6 +3,7 @@
 namespace rexfactor;
 
 use Rector\Set\ValueObject\SetList;
+use rex_path;
 use rexstan\RexCmd;
 
 final class RexFactor {
@@ -39,13 +40,29 @@ final class RexFactor {
         $configPath = self::writeRectorConfig($setName, $targetVersion);
         $rectorBin = self::rectorBinpath();
 
-        $processPath = \rex_path::addon($addonName);
-        if (!is_dir($processPath)) {
+        $processPath = [];
+
+        if (!is_dir(rex_path::addon($addonName))) {
             throw new \InvalidArgumentException('Unknown addon name: ' . $addonName);
         }
+        $processPath[] = rex_path::addon($addonName);
 
-        $cmd = $rectorBin.' process '. escapeshellarg($processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ' --no-diffs') . ' --clear-cache --output-format=json';
+        if ($addonName === 'developer') {
+            $modulesDir = DeveloperAddonIntegration::getModulesDir();
+            if ($modulesDir !== null) {
+                $processPath[] = $modulesDir;
+            }
+
+            $templatesDir = DeveloperAddonIntegration::getTemplatesDir();
+            if ($templatesDir !== null) {
+                $processPath[] = $templatesDir;
+            }
+        }
+
+        $processPath = array_map('escapeshellarg', $processPath);
+        $cmd = $rectorBin.' process '. implode(' ', $processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ' --no-diffs') . ' --clear-cache --output-format=json';
         $json = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
+
         return new RectorResult($json);
     }
 

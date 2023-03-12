@@ -27,9 +27,16 @@ final class DiffHtml {
 
     public function renderHtml(): string
     {
+        $diffString = $this->getDiffString();
+        // escape for use in a literal script string
+        $diffString = str_replace('\\', '\\\\', $diffString);
+        $diffString = str_replace('`', '\`', $diffString);
+        $diffString = str_replace('$', '\$', $diffString);
+        $diffString = str_replace('</script>', '<\/script>', $diffString);
+
         return "
         <script>
-        const diffString = `{$this->getDiffString()}`;
+        const diffString = `{$diffString}`;
 
         document.addEventListener('DOMContentLoaded', function () {
           var targetElement = document.getElementById('my-diff-view');
@@ -67,11 +74,17 @@ final class DiffHtml {
     private function getDiffString():string {
         $diffString = '';
         foreach ($this->result->getFileDiffs() as $fileDiff) {
+            $diff = $fileDiff['diff'];
+
+            // strip file indicators rendered by rector
+            $diff = str_replace('--- Original', '', $diff);
+            $diff = str_replace('+++ New', '', $diff);
+
             $diffString .= "
 diff --git a/{$fileDiff['file']} b/{$fileDiff['file']}
 --- a/{$fileDiff['file']}
 +++ b/{$fileDiff['file']}
-{$fileDiff['diff']}
+{$diff}
             ";
         }
         return $diffString;
