@@ -2,6 +2,7 @@
 
 use rexfactor\DiffHtml;
 use rexfactor\RexFactor;
+use rexfactor\TargetVersion;
 
 $addon = rex_get('addon', 'string');
 $setList = rex_get('set-list', 'string');
