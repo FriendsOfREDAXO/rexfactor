@@ -42,7 +42,7 @@ final class RexFactor {
             throw new \InvalidArgumentException('Unknown addon name: ' . $addonName);
         }
 
-        $cmd = $rectorBin.' process '. escapeshellarg($processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ' --no-diffs') . ' --output-format=json';
+        $cmd = $rectorBin.' process '. escapeshellarg($processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ' --no-diffs') . ' --clear-cache --output-format=json';
         $json = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
         return new RectorResult($json);
     }
