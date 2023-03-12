@@ -15,7 +15,10 @@ page:
             title: 'Use case'
             hidden: true
         preview:
-            title: 'Vorschau'
+            title: 'Preview'
+            hidden: true
+        apply:
+            title: 'Summary'
             hidden: true
 
 requires:

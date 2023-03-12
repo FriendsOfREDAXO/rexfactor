@@ -19,11 +19,15 @@ final class RexFactor {
                 'PHP_80' => 'PHP 8.0',
                 'PHP_81' => 'PHP 8.1',
                 'PHP_82' => 'PHP 8.2',
+            ],
+            'Misc' =>
+            [
+                'EARLY_RETURN' => 'Early Return',
             ]
         ];
     }
 
-    public static function runRector(string $addonName, string $setName, bool $preview):string {
+    public static function runRector(string $addonName, string $setName, bool $preview):RectorResult {
         $configPath = self::writeRectorConfig($setName);
         $rectorBin = self::rectorBinpath();
 
@@ -33,8 +37,9 @@ final class RexFactor {
             throw new \InvalidArgumentException('Unknown addon name: ' . $addonName);
         }
 
-        $output = RexCmd::execCmd($rectorBin.' process '. escapeshellarg($processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ''), $stderrOutput, $exitCode);
-        return $output;
+        $cmd = $rectorBin.' process '. escapeshellarg($processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ' --no-diffs') . ' --output-format=json';
+        $json = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
+        return new RectorResult($json);
     }
 
     private static function rectorBinpath(): string {

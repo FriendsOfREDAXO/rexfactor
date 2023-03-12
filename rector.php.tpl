@@ -8,4 +8,8 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->sets([
         %%RECTOR_SETS%%
     ]);
+
+    $rectorConfig->skip([
+        '*/vendor/*'
+    ]);
 };
