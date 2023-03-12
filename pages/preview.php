@@ -37,7 +37,7 @@ if ($total['changed_files'] > 0) {
 
 
 } else {
-    echo '<h2>Code is shiny. Nothing todo here - move along.</h2>';
+    echo '<h2>Code is shiny. Nothing todo for this migration - move along.</h2>';
 
     echo '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
 }
