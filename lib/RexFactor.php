@@ -26,7 +26,7 @@ final class RexFactor {
                 'CODING_STYLE' => 'More explicit coding style',
                 'DEAD_CODE' => 'Remove dead code',
                 'TYPE_DECLARATION' => 'Infer type declarations',
-                'PRIVATIZATION' => 'Reduce symbol visibility (privatization',
+                'PRIVATIZATION' => 'Reduce symbol visibility (privatization)',
                 'EARLY_RETURN' => 'Use early returns',
             ]
         ];
