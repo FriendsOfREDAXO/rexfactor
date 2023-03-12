@@ -1,0 +1,28 @@
+package: rexfactor
+version: '0.1'
+author: Friends Of REDAXO
+supportpage: https://github.com/FriendsOfREDAXO/rexfactor
+
+page:
+    title: rexfactor
+    perm: admin
+
+    subpages:
+        target-chooser:
+            title: 'AddOn'
+            hidden: true
+        use-case:
+            title: 'Use case'
+            hidden: true
+        preview:
+            title: 'Vorschau'
+            hidden: true
+
+requires:
+    php:
+        version: '>=7.4, <8.3'
+    redaxo: '^5.14'
+
+installer_ignore:
+    - phpstan.dev.neon
+    - tests/
