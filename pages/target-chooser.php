@@ -20,8 +20,14 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
         }
     }
 
+    $buttonType = 'btn-save';
+    if ($availableAddon->isSystemPackage()) {
+        $buttonType = 'btn-default';
+        $label .= '<span class="label label-info">system package</span>';
+    }
+
     echo '<li>
-        <a class="btn btn-save" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$availableAddon->getName().'</a>
+        <a class="btn '. $buttonType .'" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$availableAddon->getName().'</a>
         '.$label.'
     </li>';
 }
