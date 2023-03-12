@@ -1,5 +1,13 @@
 {
     "require": {
+        "php": ">=7.4",
         "rector/rector": "0.15.21"
+    },
+    "config": {
+        "platform": {
+            "php": "7.4.30"
+        },
+        "platform-check": false,
+        "bin-compat": "full"
     }
 }
