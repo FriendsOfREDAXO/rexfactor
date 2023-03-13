@@ -3,6 +3,7 @@
 
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\SetList;
+use Rector\PHPUnit\Set\PHPUnitSetList;
 
 return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->sets([
