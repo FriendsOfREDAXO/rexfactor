@@ -8,7 +8,8 @@ $previewUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($ad
 $rexAddOn = rex_addon::get($addon);
 $hasTests = is_dir($rexAddOn->getPath().'/tests');
 
-echo 'AddOn <code>'.rex_escape($addon). '</code> selected. Select the migration use-case:';
+echo '<h2>Select the migration use-case</h2>';
+echo '<p>AddOn: '. rex_escape($addon) .'</p>';
 
 echo '<ul>';
 foreach(\rexfactor\RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
