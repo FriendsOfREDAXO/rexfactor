@@ -2,6 +2,8 @@
 
 namespace rexfactor;
 
+use rex_path;
+
 final class RectorResult {
     /**
      * @var array<string, mixed>
@@ -23,16 +25,23 @@ final class RectorResult {
     }
 
     /**
-     * @return list<string>
-     */
-    public function getChangedFiles(): array {
-        return $this->json['changed_files'];
-    }
-
-    /**
-     * @return list<array{file: string, diff: string, applied_rectors: list<string>}>
+     * @return list<array{file: string, diff: string}>
      */
     public function getFileDiffs(): array {
+        foreach ($this->json['file_diffs'] as &$fileDiff) {
+            // strip file indicators rendered by rector
+            $fileDiff['diff'] = str_replace('--- Original', '', $fileDiff['diff']);
+            $fileDiff['diff'] = str_replace('+++ New', '', $fileDiff['diff']);
+
+            $fileDiff['diff'] = "
+diff --git a/{$fileDiff['file']} b/{$fileDiff['file']}
+--- a/{$fileDiff['file']}
++++ b/{$fileDiff['file']}
+{$fileDiff['diff']}
+            ";
+
+        }
+
         return $this->json['file_diffs'];
     }
 }

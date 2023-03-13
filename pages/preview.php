@@ -36,7 +36,7 @@ if ($targetVersion === TargetVersion::PHP8_1) {
 $formatToggleUrl .= '&target-version='.rex_escape($targetVersion, 'url');
 $versionToggleUrl .= '&format='.$outputFormat;
 
-$result = RexFactor::runRector($addon, $setList, $targetVersion, true);
+$result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true);
 
 $html = '';
 $total = $result->getTotals();
@@ -48,6 +48,7 @@ if ($total['changed_files'] > 0) {
 
     echo '<h2>Migration preview</h2>';
 
+    echo '<p>AddOn: '. rex_escape($addon) .'</p>';
     echo '<p>Target Version: '. rex_escape($targetVersion) .'</p>';
     echo '<p>Diff Format: '. $outputFormat .'</p>';
 

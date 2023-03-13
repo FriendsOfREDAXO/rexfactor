@@ -10,7 +10,7 @@ $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPA
 
 $backToStartUrl = rex_url::backendPage('rexfactor');
 
-$result = RexFactor::runRector($addon, $setList, $targetVersion, false);
+$result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false);
 
 $html = '';
 $total = $result->getTotals();

@@ -1,0 +1,27 @@
+{
+    "name": "redaxo/php-cs-fixer-config",
+    "description": "php-cs-fixer config for REDAXO",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "REDAXO Team",
+            "email": "info@redaxo.org"
+        }
+    ],
+    "require": {
+        "php": "^7.3 || ^8.0",
+        "friendsofphp/php-cs-fixer": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Redaxo\\PhpCsFixerConfig\\": "src"
+        }
+    },
+    "config": {
+        "preferred-install": {
+            "*": "dist"
+        },
+        "sort-packages": true
+    }
+}

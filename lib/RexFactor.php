@@ -11,6 +11,7 @@ final class RexFactor {
     public const PHP_MIGRATIONS = 'PHP Version Migrations';
     public const PHPUNIT_MIGRATIONS = 'PHPUnit Version Migrations';
     public const MISC_MIGRATIONS = 'Misc';
+    public const REX_CODE_STYLE_SETNAME = 'REX_CODE_STYLE';
     private const USE_CASES = [
         self::PHP_MIGRATIONS =>
         [
@@ -38,6 +39,7 @@ final class RexFactor {
         ],
         self::MISC_MIGRATIONS =>
         [
+             self::REX_CODE_STYLE_SETNAME => 'Redaxo specific code style',
             'CODE_QUALITY' => 'Unify code quality',
             'CODING_STYLE' => 'More explicit coding style',
             'DEAD_CODE' => 'Remove dead code',
@@ -56,6 +58,11 @@ final class RexFactor {
         // verfiy the config is valid
         foreach($useCases as $groupLabel => $groupSetLists) {
             foreach ($groupSetLists as $setList => $label) {
+                // rex code style is not a rector set. skip it from validation.
+                if ($setList === self::REX_CODE_STYLE_SETNAME) {
+                    continue;
+                }
+
                 // will throw on invalid config class
                 self::getSetListFqcn($setList);
             }
@@ -66,18 +73,17 @@ final class RexFactor {
 
     /**
      * @param TargetVersion::* $targetVersion
+     *
+     * @return RectorResult|CsFixerResult
      */
-    public static function runRector(string $addonName, string $setName, string $targetVersion, bool $preview):RectorResult {
-        $configPath = self::writeRectorConfig($setName, $targetVersion);
-        $rectorBin = self::rectorBinpath();
-
-        $processPath = [];
-
-        if (!is_dir(rex_path::addon($addonName))) {
+    public static function runRexFactor(string $addonName, string $setName, string $targetVersion, bool $preview) {
+        $addonPath = rex_path::addon($addonName);
+        if (!is_dir($addonPath)) {
             throw new \InvalidArgumentException('Unknown addon name: ' . $addonName);
         }
-        $processPath[] = rex_path::addon($addonName);
 
+        $processPath = [];
+        $processPath[] = $addonPath;
         if ($addonName === 'developer') {
             $modulesDir = DeveloperAddonIntegration::getModulesDir();
             if ($modulesDir !== null) {
@@ -89,8 +95,20 @@ final class RexFactor {
                 $processPath[] = $templatesDir;
             }
         }
-
         $processPath = array_map('escapeshellarg', $processPath);
+
+        if ($setName === self::REX_CODE_STYLE_SETNAME) {
+            $csfixerBinPath = self::csfixerBinpath();
+            $configPath = realpath(__DIR__.'/../.php-cs-fixer.php');
+
+            $cmd = $csfixerBinPath .' fix '. escapeshellarg($addonPath) . ' --config='. escapeshellarg($configPath). ($preview ? ' --dry-run --diff' : '') .' --format=json';
+            $output = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
+            return new CsFixerResult($addonName, $output);
+        }
+
+        $configPath = self::writeRectorConfig($setName, $targetVersion);
+        $rectorBin = self::rectorBinpath();
+
         $cmd = $rectorBin.' process '. implode(' ', $processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ' --no-diffs') . ' --clear-cache --output-format=json';
         $json = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
 
@@ -106,6 +124,20 @@ final class RexFactor {
 
         if (false === $path) {
             throw new RuntimeException('rector binary not found');
+        }
+
+        return $path;
+    }
+
+    private static function csfixerBinpath(): string {
+        if ('WIN' === strtoupper(substr(PHP_OS, 0, 3))) {
+            $path = realpath(__DIR__.'/../vendor/bin/php-cs-fixer.bat');
+        } else {
+            $path = RexCmd::phpExecutable().' '.realpath(__DIR__.'/../vendor/bin/php-cs-fixer');
+        }
+
+        if (false === $path) {
+            throw new RuntimeException('php-cs-fixer binary not found');
         }
 
         return $path;

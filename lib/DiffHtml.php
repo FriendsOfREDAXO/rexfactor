@@ -7,7 +7,7 @@ final class DiffHtml {
     const FORMAT_LINE_BY_LINE = 'line-by-line';
 
     /**
-     * @var RectorResult
+     * @var RectorResult|CsFixerResult
      */
     private $result;
 
@@ -17,9 +17,10 @@ final class DiffHtml {
     private $outputFormat;
 
     /**
+     * @param RectorResult|CsFixerResult $result
      * @param self::FORMAT_* $outputFormat
      */
-    public function __construct(RectorResult $result, $outputFormat = self::FORMAT_SIDE_BY_SIDE)
+    public function __construct($result, $outputFormat = self::FORMAT_SIDE_BY_SIDE)
     {
         $this->result = $result;
         $this->outputFormat = $outputFormat;
@@ -74,18 +75,7 @@ final class DiffHtml {
     private function getDiffString():string {
         $diffString = '';
         foreach ($this->result->getFileDiffs() as $fileDiff) {
-            $diff = $fileDiff['diff'];
-
-            // strip file indicators rendered by rector
-            $diff = str_replace('--- Original', '', $diff);
-            $diff = str_replace('+++ New', '', $diff);
-
-            $diffString .= "
-diff --git a/{$fileDiff['file']} b/{$fileDiff['file']}
---- a/{$fileDiff['file']}
-+++ b/{$fileDiff['file']}
-{$diff}
-            ";
+            $diffString .= $fileDiff['diff'];
         }
         return $diffString;
     }
