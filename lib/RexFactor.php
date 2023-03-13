@@ -5,7 +5,6 @@ namespace rexfactor;
 use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\Set\ValueObject\SetList;
 use rex_path;
-use rexstan\RexCmd;
 use RuntimeException;
 
 final class RexFactor {
@@ -73,7 +72,7 @@ final class RexFactor {
     }
 
     /**
-     * @param TargetVersion::* $targetVersion
+     * @param string $targetVersion
      *
      * @return RectorResult|CsFixerResult
      */
@@ -148,7 +147,7 @@ final class RexFactor {
     }
 
     /**
-     * @param TargetVersion::* $targetVersion
+     * @param string $targetVersion
      */
     private static function writeRectorConfig(string $setName, string $targetVersion):string {
         $setListClass = self::getSetListFqcn($setName);
