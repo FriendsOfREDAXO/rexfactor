@@ -48,11 +48,15 @@ if ($total['changed_files'] > 0) {
 
     echo '<h2>Migration preview</h2>';
 
+    echo '<p>Target Version: '. rex_escape($targetVersion) .'</p>';
+    echo '<p>Diff Format: '. $outputFormat .'</p>';
+
     echo '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
     echo '<a class="btn btn-default" href="'. $formatToggleUrl .'">Change Format: '. $formatToggleLabel .'</a>';
     echo '<a class="btn btn-default" href="'. $versionToggleUrl .'">Change Target-Version: '. $versionToggleLabel .'</a>';
     echo '<a class="btn btn-save" href="'. $applyUrl .'" data-confirm="Source files will be overwritten. continue?">Apply changes</a>';
 
+    echo '<div style="margin-top: 10px"></div>';
     echo '<div style="background: unset; color: unset;">'.$diff.'</div>';
 
 

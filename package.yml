@@ -27,5 +27,4 @@ requires:
     redaxo: '^5.14'
 
 installer_ignore:
-    - phpstan.dev.neon
-    - tests/
+    - rector.pnp
