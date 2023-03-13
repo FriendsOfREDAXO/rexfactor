@@ -6,7 +6,7 @@ $useCaseUrl = rex_url::backendPage('rexfactor/use-case');
 
 echo '<h2>Select an AddOn</h2>';
 
-echo rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and doesn't contain uncommitted changes.");
+echo rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
 
 echo '<ul>';
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
