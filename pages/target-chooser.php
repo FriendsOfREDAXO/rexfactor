@@ -12,25 +12,30 @@ echo '<ul>';
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
-    $label = '';
+    $batches = [];
     if (!is_dir($addonPath.'/.git')) {
-        $label .= ' <span class="label label-danger">unversioned sources</span>';
+        $batches[] = '<span class="label label-danger">unversioned sources</span>';
     } else {
         RexCmd::execCmd('cd '. escapeshellarg($addonPath) .' && git diff --quiet', $stdErr, $exitCode);
         if ($exitCode !== 0) {
-            $label .= ' <span class="label label-warning">uncommitted changes</span>';
+            $batches[] = '<span class="label label-warning">uncommitted changes</span>';
         }
     }
 
     $buttonType = 'btn-save';
     if ($availableAddon->isSystemPackage()) {
         $buttonType = 'btn-default';
-        $label .= ' <span class="label label-info">system package</span>';
+        $batches[] = '<span class="label label-info">system package</span>';
+    }
+
+    $buttonLabel = $availableAddon->getName();
+    if ($buttonLabel === 'developer') {
+        $buttonLabel .= ' (incl. modules/templates)';
     }
 
     echo '<li>
-        <a class="btn '. $buttonType .'" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$availableAddon->getName().'</a>
-        '.$label.'
+        <a class="btn '. $buttonType .'" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$buttonLabel.'</a>
+        '.implode(' ', $batches).'
     </li>';
 }
 echo '</ul>';
