@@ -8,8 +8,11 @@ use rex_path;
 use rexstan\RexCmd;
 
 final class RexFactor {
+    public const PHP_MIGRATIONS = 'PHP Version Migrations';
+    public const PHPUNIT_MIGRATIONS = 'PHPUnit Version Migrations';
+    public const MISC_MIGRATIONS = 'Misc';
     private const USE_CASES = [
-        'PHP Version Migrations' =>
+        self::PHP_MIGRATIONS =>
         [
             'PHP_72' => 'PHP 7.2',
             'PHP_73' => 'PHP 7.3',
@@ -18,7 +21,7 @@ final class RexFactor {
             'PHP_81' => 'PHP 8.1',
             'PHP_82' => 'PHP 8.2',
         ],
-        'PHPUnit Version Migrations' =>
+        self::PHPUNIT_MIGRATIONS =>
         [
             'PHPUNIT_60' => 'PHPUnit 6.0',
             'PHPUNIT_70' => 'PHPUnit 7.0',
@@ -33,7 +36,7 @@ final class RexFactor {
             'PHPUNIT_YIELD_DATA_PROVIDER' => 'Use yield over array return in data providers',
             'ANNOTATIONS_TO_ATTRIBUTES' => 'Annotations to Attributes',
         ],
-        'Misc' =>
+        self::MISC_MIGRATIONS =>
         [
             'CODE_QUALITY' => 'Unify code quality',
             'CODING_STYLE' => 'More explicit coding style',

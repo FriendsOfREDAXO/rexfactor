@@ -5,14 +5,24 @@ $addon = rex_get('addon', 'string');
 $backUrl = rex_url::backendPage('rexfactor/target-chooser');
 $previewUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url');
 
+$rexAddOn = rex_addon::get($addon);
+$hasTests = is_dir($rexAddOn->getPath().'/tests');
+
 echo 'AddOn <code>'.rex_escape($addon). '</code> selected. Select the migration use-case:';
 
 echo '<ul>';
 foreach(\rexfactor\RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
+
     echo '<li>'.rex_escape($groupLabel).'</li>';
+
+    $buttonType = 'btn-save';
+    if ($groupLabel === \rexfactor\RexFactor::PHPUNIT_MIGRATIONS && !$hasTests) {
+        $buttonType = 'btn-default';
+    }
+
     echo '<ul>';
     foreach($groupSetLists as $setList => $label) {
-        echo '<li><a class="btn btn-save" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'">'.rex_escape($label).'</a></li>';
+        echo '<li><a class="btn '. $buttonType .'" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'">'.rex_escape($label).'</a></li>';
     }
     echo '</ul>';
 }
