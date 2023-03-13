@@ -6,12 +6,13 @@ use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\Set\ValueObject\SetList;
 use rex_path;
 use rexstan\RexCmd;
+use RuntimeException;
 
 final class RexFactor {
-    public const PHP_MIGRATIONS = 'PHP Version Migrations';
+    private const PHP_MIGRATIONS = 'PHP Version Migrations';
     public const PHPUNIT_MIGRATIONS = 'PHPUnit Version Migrations';
-    public const MISC_MIGRATIONS = 'Misc';
-    public const REX_CODE_STYLE_SETNAME = 'REX_CODE_STYLE';
+    private const MISC_MIGRATIONS = 'Misc';
+    private const REX_CODE_STYLE_SETNAME = 'REX_CODE_STYLE';
     private const USE_CASES = [
         self::PHP_MIGRATIONS =>
         [
@@ -100,10 +101,13 @@ final class RexFactor {
         if ($setName === self::REX_CODE_STYLE_SETNAME) {
             $csfixerBinPath = self::csfixerBinpath();
             $configPath = realpath(__DIR__.'/../.php-cs-fixer.php');
+            if (false === $configPath) {
+                throw new RuntimeException('php-cs-fixer config not found');
+            }
 
             $cmd = $csfixerBinPath .' fix '. escapeshellarg($addonPath) . ' --config='. escapeshellarg($configPath). ($preview ? ' --dry-run --diff' : '') .' --format=json';
             $output = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
-            return new CsFixerResult($addonName, $output);
+            return new CsFixerResult($output);
         }
 
         $configPath = self::writeRectorConfig($setName, $targetVersion);
@@ -178,7 +182,7 @@ final class RexFactor {
     }
 
     /**
-     * @return class-string
+     * @return string
      */
     static private function getSetListFqcn(string $setName): string {
         if (self::constantExists(SetList::class, $setName)) {

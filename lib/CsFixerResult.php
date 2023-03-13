@@ -10,14 +10,7 @@ final class CsFixerResult {
      */
     private $json;
 
-    /**
-     * @var string
-     */
-    private $addonName;
-
-    public function __construct(string $addonName, string $json) {
-        $this->addonName = $addonName;
-
+    public function __construct(string $json) {
         $this->json = json_decode($json, true);
         if (!is_array($this->json)) {
             throw new \InvalidArgumentException('Invalid json: '.json_last_error_msg());

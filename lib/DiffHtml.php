@@ -60,7 +60,7 @@ final class DiffHtml {
         <div id='my-diff-view'></div>";
     }
 
-    static public function getHead() {
+    static public function getHead(): string {
         return '
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css" />
             <link
