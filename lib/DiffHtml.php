@@ -62,7 +62,7 @@ final class DiffHtml {
 
     static public function getHead() {
         return '
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/github.min.css" />
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css" />
             <link
                 rel="stylesheet"
                 type="text/css"
