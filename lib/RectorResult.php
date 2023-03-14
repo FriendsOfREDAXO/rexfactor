@@ -29,6 +29,10 @@ final class RectorResult {
      */
     public function getFileDiffs(): array {
         foreach ($this->json['file_diffs'] as &$fileDiff) {
+            if (!is_string($fileDiff['diff'])) {
+                throw new \InvalidArgumentException('Invalid file diff');
+            }
+
             // strip file indicators rendered by rector
             $fileDiff['diff'] = str_replace('--- Original', '', $fileDiff['diff']);
             $fileDiff['diff'] = str_replace('+++ New', '', $fileDiff['diff']);
