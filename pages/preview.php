@@ -9,6 +9,10 @@ $setList = rex_get('set-list', 'string');
 $outputFormat = rex_get('format', 'string', DiffHtml::FORMAT_LINE_BY_LINE);
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
+if ($addon === '') {
+    throw new rex_exception('Missing addon parameter');
+}
+
 $backUrl = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');;
 $formatToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
 $versionToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');

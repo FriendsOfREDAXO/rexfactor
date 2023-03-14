@@ -8,6 +8,10 @@ $addon = rex_get('addon', 'string');
 $setList = rex_get('set-list', 'string');
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
+if ($addon === '') {
+    throw new rex_exception('Missing addon parameter');
+}
+
 $backToStartUrl = rex_url::backendPage('rexfactor');
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false);

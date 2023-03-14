@@ -72,6 +72,7 @@ final class RexFactor {
     }
 
     /**
+     * @param non-empty-string $addonName
      * @param string $targetVersion
      *
      * @return RectorResult|CsFixerResult
