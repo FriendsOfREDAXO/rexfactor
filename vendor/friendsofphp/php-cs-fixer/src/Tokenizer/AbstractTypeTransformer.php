@@ -21,7 +21,7 @@ namespace PhpCsFixer\Tokenizer;
  */
 abstract class AbstractTypeTransformer extends AbstractTransformer
 {
-    private const TYPE_END_TOKENS = [')', [T_CALLABLE], [T_NS_SEPARATOR], [T_STRING], [CT::T_ARRAY_TYPEHINT]];
+    private const TYPE_END_TOKENS = [')', [T_CALLABLE], [T_NS_SEPARATOR], [T_STATIC], [T_STRING], [CT::T_ARRAY_TYPEHINT]];
 
     private const TYPE_TOKENS = [
         '|', '&', '(',
@@ -50,18 +50,30 @@ abstract class AbstractTypeTransformer extends AbstractTransformer
 
     private function isPartOfType(Tokens $tokens, int $index): bool
     {
-        // for parameter there will be variable after type
-        $variableIndex = $tokens->getTokenNotOfKindSibling($index, 1, self::TYPE_TOKENS);
-        if ($tokens[$variableIndex]->isGivenKind(T_VARIABLE)) {
-            return $tokens[$tokens->getPrevMeaningfulToken($variableIndex)]->equalsAny(self::TYPE_END_TOKENS);
-        }
-
         // return types and non-capturing catches
         $typeColonIndex = $tokens->getTokenNotOfKindSibling($index, -1, self::TYPE_TOKENS);
         if ($tokens[$typeColonIndex]->isGivenKind([T_CATCH, CT::T_TYPE_COLON])) {
             return true;
         }
 
-        return false;
+        // for parameter there will be splat operator or variable after the type ("&" is ambiguous and can be reference or bitwise and)
+        $afterTypeIndex = $tokens->getTokenNotOfKindSibling($index, 1, self::TYPE_TOKENS);
+
+        if ($tokens[$afterTypeIndex]->isGivenKind(T_ELLIPSIS)) {
+            return true;
+        }
+
+        if (!$tokens[$afterTypeIndex]->isGivenKind(T_VARIABLE)) {
+            return false;
+        }
+
+        $beforeVariableIndex = $tokens->getPrevMeaningfulToken($afterTypeIndex);
+        if ($tokens[$beforeVariableIndex]->equals('&')) {
+            $prevIndex = $tokens->getPrevTokenOfKind($index, ['{', '}', ';', [T_FN], [T_FUNCTION]]);
+
+            return null !== $prevIndex && $tokens[$prevIndex]->isGivenKind([T_FN, T_FUNCTION]);
+        }
+
+        return $tokens[$beforeVariableIndex]->equalsAny(self::TYPE_END_TOKENS);
     }
 }

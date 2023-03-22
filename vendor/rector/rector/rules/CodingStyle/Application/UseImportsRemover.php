@@ -5,38 +5,45 @@ namespace Rector\CodingStyle\Application;
 
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Use_;
+use Rector\NodeRemoval\NodeRemover;
 final class UseImportsRemover
 {
     /**
-     * @param Stmt[] $stmts
-     * @param string[] $removedShortUses
-     * @return Stmt[]
+     * @readonly
+     * @var \Rector\NodeRemoval\NodeRemover
      */
-    public function removeImportsFromStmts(array $stmts, array $removedShortUses) : array
+    private $nodeRemover;
+    public function __construct(NodeRemover $nodeRemover)
     {
-        foreach ($stmts as $stmtKey => $stmt) {
+        $this->nodeRemover = $nodeRemover;
+    }
+    /**
+     * @param Stmt[] $stmts
+     * @param string[] $removedUses
+     */
+    public function removeImportsFromStmts(array $stmts, array $removedUses) : void
+    {
+        foreach ($stmts as $stmt) {
             if (!$stmt instanceof Use_) {
                 continue;
             }
-            $this->removeUseFromUse($removedShortUses, $stmt);
-            // nothing left → remove
-            if ($stmt->uses === []) {
-                unset($stmts[$stmtKey]);
-            }
+            $this->removeUseFromUse($removedUses, $stmt);
         }
-        return $stmts;
     }
     /**
-     * @param string[] $removedShortUses
+     * @param string[] $removedUses
      */
-    private function removeUseFromUse(array $removedShortUses, Use_ $use) : void
+    private function removeUseFromUse(array $removedUses, Use_ $use) : void
     {
         foreach ($use->uses as $usesKey => $useUse) {
-            foreach ($removedShortUses as $removedShortUse) {
-                if ($useUse->name->toString() === $removedShortUse) {
+            foreach ($removedUses as $removedUse) {
+                if ($useUse->name->toString() === $removedUse) {
                     unset($use->uses[$usesKey]);
                 }
             }
+        }
+        if ($use->uses === []) {
+            $this->nodeRemover->removeNode($use);
         }
     }
 }

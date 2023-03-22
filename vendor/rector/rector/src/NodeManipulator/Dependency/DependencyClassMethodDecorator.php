@@ -95,12 +95,16 @@ final class DependencyClassMethodDecorator
             if ($param->default !== null) {
                 break;
             }
-            $paramsWithoutDefaultValue[] = $param;
+            $paramsWithoutDefaultValue[] = clone $param;
         }
         $cleanParams = $this->cleanParamsFromVisibilityAndAttributes($paramsWithoutDefaultValue);
         $cleanParamsToAdd = $this->removeAlreadyPresentParams($cleanParams, $classMethod->params);
         // replicate parent parameters
         if ($cleanParamsToAdd !== []) {
+            foreach ($cleanParamsToAdd as $cleanParamToAdd) {
+                $paramName = $this->nodeNameResolver->getName($cleanParamToAdd);
+                $this->incrementParamIfExists($cleanParamToAdd, $paramName, $cleanParamsToAdd, $classMethod->params);
+            }
             $classMethod->params = \array_merge($cleanParamsToAdd, $classMethod->params);
         }
         $staticCall = $this->nodeFactory->createParentConstructWithParams($cleanParams);
@@ -145,6 +149,38 @@ final class DependencyClassMethodDecorator
             }
             return \true;
         });
+    }
+    /**
+     * @param Param[] $newParams
+     * @param Param[] $originalParams
+     */
+    private function incrementParamIfExists(Param $param, string $newName, array $newParams, array $originalParams, int $count = 0) : void
+    {
+        $name = $newName;
+        if ($count > 0) {
+            $name .= $count;
+        }
+        foreach ($newParams as $newParam) {
+            if ($param === $newParam) {
+                continue;
+            }
+            if ($this->nodeNameResolver->isName($newParam, $name)) {
+                ++$count;
+                $this->incrementParamIfExists($param, $newName, $newParams, $originalParams, $count);
+                return;
+            }
+        }
+        foreach ($originalParams as $originalParam) {
+            if ($this->nodeNameResolver->isName($originalParam, $name)) {
+                ++$count;
+                $this->incrementParamIfExists($param, $newName, $newParams, $originalParams, $count);
+                return;
+            }
+        }
+        if ($name !== $newName) {
+            $param->var = clone $param->var;
+            $param->var->name = $name;
+        }
     }
     private function areMaybeTypesEqual(?Type $type1, ?Type $type2) : bool
     {

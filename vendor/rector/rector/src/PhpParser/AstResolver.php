@@ -19,6 +19,7 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Interface_;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Trait_;
+use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\FunctionReflection;
@@ -26,13 +27,13 @@ use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\Php\PhpPropertyReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\TypeWithClassName;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Core\ValueObject\Application\File;
 use Rector\Core\ValueObject\MethodName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeScopeAndMetadataDecorator;
 use Rector\NodeTypeResolver\NodeTypeResolver;
+use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\PhpDocParser\PhpParser\SmartPhpParser;
 /**
  * The nodes provided by this resolver is for read-only analysis only!
@@ -42,18 +43,11 @@ final class AstResolver
 {
     /**
      * Parsing files is very heavy performance, so this will help to leverage it
-     * The value can be also null, as the method might not exist in the class.
+     * The value can be also null, when no statements could be parsed from the file.
      *
-     * @var array<class-string, array<string, ClassMethod|null>>
+     * @var array<string, Stmt[]|null>
      */
-    private $classMethodsByClassAndMethod = [];
-    /**
-     * Parsing files is very heavy performance, so this will help to leverage it
-     * The value can be also null, as the method might not exist in the class.
-     *
-     * @var array<string, Function_|null>>
-     */
-    private $functionsByName = [];
+    private $parsedFileNodes = [];
     /**
      * @readonly
      * @var \Rector\PhpDocParser\PhpParser\SmartPhpParser
@@ -66,9 +60,9 @@ final class AstResolver
     private $nodeScopeAndMetadataDecorator;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
      */
-    private $betterNodeFinder;
+    private $simpleCallableNodeTraverser;
     /**
      * @readonly
      * @var \Rector\NodeNameResolver\NodeNameResolver
@@ -94,11 +88,11 @@ final class AstResolver
      * @var \Rector\Core\PhpParser\ClassLikeAstResolver
      */
     private $classLikeAstResolver;
-    public function __construct(SmartPhpParser $smartPhpParser, NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator, BetterNodeFinder $betterNodeFinder, NodeNameResolver $nodeNameResolver, ReflectionProvider $reflectionProvider, ReflectionResolver $reflectionResolver, NodeTypeResolver $nodeTypeResolver, \Rector\Core\PhpParser\ClassLikeAstResolver $classLikeAstResolver)
+    public function __construct(SmartPhpParser $smartPhpParser, NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeNameResolver $nodeNameResolver, ReflectionProvider $reflectionProvider, ReflectionResolver $reflectionResolver, NodeTypeResolver $nodeTypeResolver, \Rector\Core\PhpParser\ClassLikeAstResolver $classLikeAstResolver)
     {
         $this->smartPhpParser = $smartPhpParser;
         $this->nodeScopeAndMetadataDecorator = $nodeScopeAndMetadataDecorator;
-        $this->betterNodeFinder = $betterNodeFinder;
+        $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
         $this->nodeNameResolver = $nodeNameResolver;
         $this->reflectionProvider = $reflectionProvider;
         $this->reflectionResolver = $reflectionResolver;
@@ -121,38 +115,32 @@ final class AstResolver
         $classReflection = $methodReflection->getDeclaringClass();
         $classLikeName = $classReflection->getName();
         $methodName = $methodReflection->getName();
-        if (isset($this->classMethodsByClassAndMethod[$classLikeName][$methodName])) {
-            return $this->classMethodsByClassAndMethod[$classLikeName][$methodName];
-        }
-        // saved as null data
-        if (\array_key_exists($classLikeName, $this->classMethodsByClassAndMethod) && \array_key_exists($methodName, $this->classMethodsByClassAndMethod[$classLikeName])) {
-            return null;
-        }
         $fileName = $classReflection->getFileName();
         // probably native PHP method → un-parseable
         if ($fileName === null) {
             return null;
         }
         $nodes = $this->parseFileNameToDecoratedNodes($fileName);
-        if ($nodes === null) {
+        if ($nodes === []) {
             return null;
         }
-        /** @var ClassLike[] $classLikes */
-        $classLikes = $this->betterNodeFinder->findInstanceOf($nodes, ClassLike::class);
-        foreach ($classLikes as $classLike) {
-            if (!$this->nodeNameResolver->isName($classLike, $classLikeName)) {
-                continue;
+        $classMethod = null;
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($nodes, function (Node $node) use($classLikeName, $methodName, &$classMethod) : ?int {
+            if (!$node instanceof ClassLike) {
+                return null;
             }
-            $classMethod = $classLike->getMethod($methodName);
-            if (!$classMethod instanceof ClassMethod) {
-                continue;
+            if (!$this->nodeNameResolver->isName($node, $classLikeName)) {
+                return null;
             }
-            $this->classMethodsByClassAndMethod[$classLikeName][$methodName] = $classMethod;
-            return $classMethod;
-        }
-        // avoids looking for a class in a file where is not present
-        $this->classMethodsByClassAndMethod[$classLikeName][$methodName] = null;
-        return null;
+            $method = $node->getMethod($methodName);
+            if ($method instanceof ClassMethod) {
+                $classMethod = $method;
+                return NodeTraverser::STOP_TRAVERSAL;
+            }
+            return null;
+        });
+        /** @var ClassMethod|null $classMethod */
+        return $classMethod;
     }
     /**
      * @param \PhpParser\Node\Expr\FuncCall|\PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
@@ -168,34 +156,27 @@ final class AstResolver
     public function resolveFunctionFromFunctionReflection(FunctionReflection $functionReflection) : ?Function_
     {
         $functionName = $functionReflection->getName();
-        if (isset($this->functionsByName[$functionName])) {
-            return $this->functionsByName[$functionName];
-        }
-        // saved as null data
-        if (\array_key_exists($functionName, $this->functionsByName)) {
-            return null;
-        }
         $fileName = $functionReflection->getFileName();
         if ($fileName === null) {
             return null;
         }
         $nodes = $this->parseFileNameToDecoratedNodes($fileName);
-        if ($nodes === null) {
+        if ($nodes === []) {
             return null;
         }
-        /** @var Function_[] $functions */
-        $functions = $this->betterNodeFinder->findInstanceOf($nodes, Function_::class);
-        foreach ($functions as $function) {
-            if (!$this->nodeNameResolver->isName($function, $functionName)) {
-                continue;
+        $functionNode = null;
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($nodes, function (Node $node) use($functionName, &$functionNode) : ?int {
+            if (!$node instanceof Function_) {
+                return null;
             }
-            // to avoid parsing missing function again
-            $this->functionsByName[$functionName] = $function;
-            return $function;
-        }
-        // to avoid parsing missing function again
-        $this->functionsByName[$functionName] = null;
-        return null;
+            if (!$this->nodeNameResolver->isName($node, $functionName)) {
+                return null;
+            }
+            $functionNode = $node;
+            return NodeTraverser::STOP_TRAVERSAL;
+        });
+        /** @var Function_|null $functionNode */
+        return $functionNode;
     }
     /**
      * @param class-string $className
@@ -217,11 +198,7 @@ final class AstResolver
      */
     public function resolveClassMethodFromCall($call) : ?ClassMethod
     {
-        if ($call instanceof MethodCall) {
-            $callerStaticType = $this->nodeTypeResolver->getType($call->var);
-        } else {
-            $callerStaticType = $this->nodeTypeResolver->getType($call->class);
-        }
+        $callerStaticType = $call instanceof MethodCall ? $this->nodeTypeResolver->getType($call->var) : $this->nodeTypeResolver->getType($call->class);
         if (!$callerStaticType instanceof TypeWithClassName) {
             return null;
         }
@@ -252,17 +229,25 @@ final class AstResolver
                 continue;
             }
             $nodes = $this->parseFileNameToDecoratedNodes($fileName);
-            if ($nodes === null) {
+            if ($nodes === []) {
                 continue;
             }
-            /** @var Trait_|null $trait */
-            $trait = $this->betterNodeFinder->findFirst($nodes, function (Node $node) use($classLike) : bool {
-                return $node instanceof Trait_ && $this->nodeNameResolver->isName($node, $classLike->getName());
+            $traitName = $classLike->getName();
+            $traitNode = null;
+            $this->simpleCallableNodeTraverser->traverseNodesWithCallable($nodes, function (Node $node) use($traitName, &$traitNode) : ?int {
+                if (!$node instanceof Trait_) {
+                    return null;
+                }
+                if (!$this->nodeNameResolver->isName($node, $traitName)) {
+                    return null;
+                }
+                $traitNode = $node;
+                return NodeTraverser::STOP_TRAVERSAL;
             });
-            if (!$trait instanceof Trait_) {
+            if (!$traitNode instanceof Trait_) {
                 continue;
             }
-            $traits[] = $trait;
+            $traits[] = $traitNode;
         }
         return $traits;
     }
@@ -277,69 +262,96 @@ final class AstResolver
             return null;
         }
         $nodes = $this->parseFileNameToDecoratedNodes($fileName);
-        if ($nodes === null) {
+        if ($nodes === []) {
             return null;
         }
         $nativeReflectionProperty = $phpPropertyReflection->getNativeReflection();
+        $desiredClassName = $classReflection->getName();
         $desiredPropertyName = $nativeReflectionProperty->getName();
-        /** @var Property[] $properties */
-        $properties = $this->betterNodeFinder->findInstanceOf($nodes, Property::class);
-        foreach ($properties as $property) {
-            if ($this->nodeNameResolver->isName($property, $desiredPropertyName)) {
-                return $property;
+        /** @var Property|null $propertyNode */
+        $propertyNode = null;
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($nodes, function (Node $node) use($desiredClassName, $desiredPropertyName, &$propertyNode) : ?int {
+            if (!$node instanceof ClassLike) {
+                return null;
             }
+            if (!$this->nodeNameResolver->isName($node, $desiredClassName)) {
+                return null;
+            }
+            $property = $node->getProperty($desiredPropertyName);
+            if ($property instanceof Property) {
+                $propertyNode = $property;
+                return NodeTraverser::STOP_TRAVERSAL;
+            }
+            return null;
+        });
+        if ($propertyNode instanceof Property) {
+            return $propertyNode;
         }
         // promoted property
-        return $this->findPromotedPropertyByName($nodes, $desiredPropertyName);
+        return $this->findPromotedPropertyByName($nodes, $desiredClassName, $desiredPropertyName);
     }
     private function locateClassMethodInTrait(string $methodName, MethodReflection $methodReflection) : ?ClassMethod
     {
         $classReflection = $methodReflection->getDeclaringClass();
         $traits = $this->parseClassReflectionTraits($classReflection);
         /** @var ClassMethod|null $classMethod */
-        $classMethod = $this->betterNodeFinder->findFirst($traits, function (Node $node) use($methodName) : bool {
-            return $node instanceof ClassMethod && $this->nodeNameResolver->isName($node, $methodName);
+        $classMethod = null;
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($traits, function (Node $node) use($methodName, &$classMethod) : ?int {
+            if (!$node instanceof ClassMethod) {
+                return null;
+            }
+            if (!$this->nodeNameResolver->isName($node, $methodName)) {
+                return null;
+            }
+            $classMethod = $node;
+            return NodeTraverser::STOP_TRAVERSAL;
         });
-        $this->classMethodsByClassAndMethod[$classReflection->getName()][$methodName] = $classMethod;
-        if ($classMethod instanceof ClassMethod) {
-            return $classMethod;
-        }
-        return null;
+        return $classMethod;
     }
     /**
-     * @return Stmt[]|null
+     * @return Stmt[]
      */
-    private function parseFileNameToDecoratedNodes(string $fileName) : ?array
+    public function parseFileNameToDecoratedNodes(string $fileName) : array
     {
+        if (isset($this->parsedFileNodes[$fileName])) {
+            return $this->parsedFileNodes[$fileName];
+        }
         $stmts = $this->smartPhpParser->parseFile($fileName);
         if ($stmts === []) {
-            return null;
+            return $this->parsedFileNodes[$fileName] = [];
         }
         $file = new File($fileName, FileSystem::read($fileName));
-        return $this->nodeScopeAndMetadataDecorator->decorateNodesFromFile($file, $stmts);
+        return $this->parsedFileNodes[$fileName] = $this->nodeScopeAndMetadataDecorator->decorateNodesFromFile($file, $stmts);
     }
     /**
      * @param Stmt[] $stmts
      */
-    private function findPromotedPropertyByName(array $stmts, string $desiredPropertyName) : ?Param
+    private function findPromotedPropertyByName(array $stmts, string $desiredClassName, string $desiredPropertyName) : ?Param
     {
-        $class = $this->betterNodeFinder->findFirstInstanceOf($stmts, Class_::class);
-        if (!$class instanceof Class_) {
-            return null;
-        }
-        $constructClassMethod = $class->getMethod(MethodName::CONSTRUCT);
-        if (!$constructClassMethod instanceof ClassMethod) {
-            return null;
-        }
-        foreach ($constructClassMethod->getParams() as $param) {
-            if ($param->flags === 0) {
-                continue;
+        /** @var Param|null $paramNode */
+        $paramNode = null;
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($stmts, function (Node $node) use($desiredClassName, $desiredPropertyName, &$paramNode) {
+            if (!$node instanceof Class_) {
+                return null;
             }
-            if ($this->nodeNameResolver->isName($param, $desiredPropertyName)) {
-                return $param;
+            if (!$this->nodeNameResolver->isName($node, $desiredClassName)) {
+                return null;
             }
-        }
-        return null;
+            $constructClassMethod = $node->getMethod(MethodName::CONSTRUCT);
+            if (!$constructClassMethod instanceof ClassMethod) {
+                return null;
+            }
+            foreach ($constructClassMethod->getParams() as $param) {
+                if ($param->flags === 0) {
+                    continue;
+                }
+                if ($this->nodeNameResolver->isName($param, $desiredPropertyName)) {
+                    $paramNode = $param;
+                    return NodeTraverser::STOP_TRAVERSAL;
+                }
+            }
+        });
+        return $paramNode;
     }
     private function resolveFunctionFromFuncCall(FuncCall $funcCall, Scope $scope) : ?Function_
     {
