@@ -5,6 +5,7 @@ supportpage: https://github.com/FriendsOfREDAXO/rexfactor
 
 page:
     title: rexfactor
+    icon: rex-icon fa-fast-forward
     perm: admin
 
     subpages:
