@@ -34,10 +34,10 @@ final class RexFactor {
         ],
         self::PHPUNIT_MIGRATIONS =>
         [
-            'PHPUNIT_60' => 'PHPUnit 6.0',
-            'PHPUNIT_70' => 'PHPUnit 7.0',
-            'PHPUNIT_80' => 'PHPUnit 8.0',
-            'PHPUNIT_90' => 'PHPUnit 9.0',
+            'PHPUNIT_60' => 'PHPUnit 6',
+            'PHPUNIT_70' => 'PHPUnit 7',
+            'PHPUNIT_80' => 'PHPUnit 8',
+            'PHPUNIT_90' => 'PHPUnit 9',
             'PHPUNIT_91' => 'PHPUnit 9.1',
             'PHPUNIT_100' => 'PHPUnit 10',
         ],
