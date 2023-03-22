@@ -28,4 +28,4 @@ jobs:
           run: composer require --dev php-parallel-lint/php-parallel-lint
 
       -   name: Lint PHP
-          run: vendor/bin/parallel-lint *.php lib/ pages/ vendor/
+          run: vendor/bin/parallel-lint *.php lib/ pages/
