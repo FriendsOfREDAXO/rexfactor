@@ -178,6 +178,13 @@ final class RexFactor {
             throw new \InvalidArgumentException('Unknown target version: ' . $targetVersion);
         }
 
+        $skipList = [];
+        $skipList[] = "'*/vendor/*'";
+        if (!self::constantExists(PHPUnitSetList::class, $setName)) {
+            $skipList[] = "'*/tests/*'";
+        }
+        $tpl = str_replace('%%SKIP_LIST%%', implode(',', $skipList), $tpl);
+
         if (file_put_contents($configPath, $tpl) === false) {
             throw new \Exception('Unable to write rector config file');
         }

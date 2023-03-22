@@ -13,6 +13,6 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->phpVersion(%%TARGET_PHP_VERSION%%);
 
     $rectorConfig->skip([
-        '*/vendor/*'
+        %%SKIP_LIST%%
     ]);
 };
