@@ -9,7 +9,9 @@ use RuntimeException;
 
 final class RexFactor {
     private const PHP_MIGRATIONS = 'PHP Version Migrations';
+    private const CODE_QUALITY = 'Improve Code Quality';
     public const PHPUNIT_MIGRATIONS = 'PHPUnit Version Migrations';
+    private const TESTS_QUALITY = 'Improve Test-Code Quality';
     private const MISC_MIGRATIONS = 'Misc';
     private const REX_CODE_STYLE_SETNAME = 'REX_CODE_STYLE';
     private const USE_CASES = [
@@ -22,6 +24,14 @@ final class RexFactor {
             'PHP_81' => 'PHP 8.1',
             'PHP_82' => 'PHP 8.2',
         ],
+        self::CODE_QUALITY =>
+        [
+            'CODE_QUALITY' => 'Unify code quality',
+            'DEAD_CODE' => 'Remove dead code',
+            'TYPE_DECLARATION' => 'Infer type declarations',
+            'PRIVATIZATION' => 'Reduce symbol visibility (privatization)',
+            'EARLY_RETURN' => 'Use early returns',
+        ],
         self::PHPUNIT_MIGRATIONS =>
         [
             'PHPUNIT_60' => 'PHPUnit 6.0',
@@ -30,6 +40,9 @@ final class RexFactor {
             'PHPUNIT_90' => 'PHPUnit 9.0',
             'PHPUNIT_91' => 'PHPUnit 9.1',
             'PHPUNIT_100' => 'PHPUnit 10',
+        ],
+        self::TESTS_QUALITY =>
+        [
             'PHPUNIT_CODE_QUALITY' => 'Unify test-code quality',
             'PHPUNIT_EXCEPTION' => 'Refactor exception expectations',
             'REMOVE_MOCKS' => 'Reduce mock usage',
@@ -40,12 +53,7 @@ final class RexFactor {
         self::MISC_MIGRATIONS =>
         [
              self::REX_CODE_STYLE_SETNAME => 'Redaxo specific code style',
-            'CODE_QUALITY' => 'Unify code quality',
             'CODING_STYLE' => 'More explicit coding style',
-            'DEAD_CODE' => 'Remove dead code',
-            'TYPE_DECLARATION' => 'Infer type declarations',
-            'PRIVATIZATION' => 'Reduce symbol visibility (privatization)',
-            'EARLY_RETURN' => 'Use early returns',
         ]
     ];
 
