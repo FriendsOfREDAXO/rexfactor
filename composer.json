@@ -1,7 +1,7 @@
 {
     "require": {
         "php": ">=7.4",
-        "rector/rector": "0.15.22",
+        "rector/rector": "0.15.23",
         "redaxo/php-cs-fixer-config": "^1.0"
     },
     "config": {
@@ -13,6 +13,13 @@
         "optimize-autoloader": true
     },
     "scripts": {
-        "phpstan": "phpstan analyze"
+        "phpstan": "phpstan analyze",
+        "post-update-cmd": [
+            "find vendor -name doc -type d -exec rm -r {} +",
+            "find vendor -name docs -type d -exec rm -r {} +",
+            "find vendor -name tests -type d -exec rm -r {} +",
+            "find vendor -name build -type d -exec rm -r {} +",
+            "find vendor -name .github -type d -exec rm -r {} +"
+        ]
     }
 }
