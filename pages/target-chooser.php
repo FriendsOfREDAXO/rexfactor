@@ -12,6 +12,11 @@ echo '<ul>';
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
+    // system packages are maintained within the redaxo/redaxo codebase with more advanced tooling then rexfactor
+    if ($availableAddon->isSystemPackage()) {
+        continue;
+    }
+
     $batches = [];
     if (!is_dir($addonPath.'/.git')) {
         $batches[] = '<span class="label label-danger">unversioned sources</span>';
@@ -23,11 +28,6 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     }
 
     $buttonType = 'btn-save';
-    if ($availableAddon->isSystemPackage()) {
-        $buttonType = 'btn-default';
-        $batches[] = '<span class="label label-info">system package</span>';
-    }
-
     $buttonLabel = $availableAddon->getName();
     if ($buttonLabel === 'developer') {
         $buttonLabel .= ' (incl. modules/templates)';
