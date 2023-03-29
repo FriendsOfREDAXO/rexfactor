@@ -11,7 +11,7 @@ final class RexFactor {
     private const PHP_MIGRATIONS = 'PHP Version Migrations';
     private const CODE_QUALITY = 'Improve Code Quality';
     public const PHPUNIT_MIGRATIONS = 'PHPUnit Version Migrations';
-    private const TESTS_QUALITY = 'Improve Test-Code Quality';
+    public const TESTS_QUALITY = 'Improve Test-Code Quality';
     private const MISC_MIGRATIONS = 'Misc';
     private const REX_CODE_STYLE_SETNAME = 'REX_CODE_STYLE';
     private const USE_CASES = [
