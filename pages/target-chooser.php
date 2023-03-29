@@ -30,7 +30,7 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $buttonType = 'btn-save';
     $buttonLabel = $availableAddon->getName();
     if ($buttonLabel === 'developer') {
-        $buttonLabel .= ' (incl. modules/templates)';
+        $buttonLabel .= ' modules/templates';
     }
 
     echo '<li>
