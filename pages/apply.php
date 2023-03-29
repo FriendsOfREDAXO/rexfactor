@@ -17,7 +17,6 @@ $backToStartUrl = rex_url::backendPage('rexfactor');
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false);
 
-$hint = '';
 $total = $result->getTotals();
 if ($total['changed_files'] > 0) {
     echo '
