@@ -23,7 +23,8 @@ foreach(\rexfactor\RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
 
     echo '<ul>';
     foreach($groupSetLists as $setList => $label) {
-        echo '<li><a class="btn '. $buttonType .'" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'">'.rex_escape($label).'</a></li>';
+        $loader = \rexfactor\ViewHelpers::jsLoader();
+        echo '<li><a class="btn '. $buttonType .'" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'" onclick="'.$loader.'">'.rex_escape($label).'</a></li>';
     }
     echo '</ul>';
 }
