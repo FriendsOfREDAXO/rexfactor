@@ -27,14 +27,13 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
         }
     }
 
-    $buttonType = 'btn-save';
     $buttonLabel = $availableAddon->getName();
     if ($buttonLabel === 'developer') {
         $buttonLabel .= ' modules/templates';
     }
 
     echo '<li>
-        <a class="btn '. $buttonType .'" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$buttonLabel.'</a>
+        <a class="btn btn-save" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$buttonLabel.'</a>
         '.implode(' ', $batches).'
     </li>';
 }
