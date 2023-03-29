@@ -92,7 +92,6 @@ final class RexFactor {
         }
 
         $processPath = [];
-        $processPath[] = $addonPath;
         if ($addonName === 'developer') {
             $modulesDir = DeveloperAddonIntegration::getModulesDir();
             if ($modulesDir !== null) {
@@ -103,6 +102,9 @@ final class RexFactor {
             if ($templatesDir !== null) {
                 $processPath[] = $templatesDir;
             }
+        } else {
+            // don't process the developer addon itself
+            $processPath[] = $addonPath;
         }
         $processPath = array_map('escapeshellarg', $processPath);
 
