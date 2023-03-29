@@ -31,7 +31,7 @@ if ($total['changed_files'] > 0) {
         </li>
         <li style="margin-top: 10px">
             Finally you can go ahead with the next migration use-case:<br>
-            <a class="btn btn-info" href="'. $backToStartUrl .'">Start next migration</a>
+            <a class="btn btn-info" href="'. $backToStartUrl .'">Start next migration for another AddOn</a>
             <a class="btn btn-info" href="'. $backToUseCaseUrl .'">Select next use-case for "'.rex_escape($addon).'"</a>
         </li>
         </ol>
@@ -39,7 +39,7 @@ if ($total['changed_files'] > 0) {
 } else {
     echo '
     <h2>No changes</h2>
-    <a class="btn btn-info" href="'. $backToStartUrl .'">Start next migration</a>
+    <a class="btn btn-info" href="'. $backToStartUrl .'">Start next migration for another AddOn</a>
     <a class="btn btn-info" href="'. $backToUseCaseUrl .'">Select next use-case for "'.rex_escape($addon).'"</a>
     ';
 }
