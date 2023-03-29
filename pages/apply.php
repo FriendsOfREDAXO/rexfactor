@@ -12,7 +12,7 @@ if ($addon === '') {
     throw new rex_exception('Missing addon parameter');
 }
 
-$backToUseCaseUrl = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');;
+$backToUseCaseUrl = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');
 $backToStartUrl = rex_url::backendPage('rexfactor');
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false);
