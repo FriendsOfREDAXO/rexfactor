@@ -3,12 +3,11 @@
 use rexfactor\RexCmd;
 
 $useCaseUrl = rex_url::backendPage('rexfactor/use-case');
+$content = '';
 
-echo '<h2>Select an AddOn</h2>';
+$content .= rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
 
-echo rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
-
-echo '<ul class="list-group">';
+$content .= '<ul class="list-group">';
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
@@ -32,10 +31,16 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
         $buttonLabel .= ' modules/templates';
     }
 
-    echo '<li class="list-group-item">
+    $content .= '<li class="list-group-item">
         <a class="button" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'"><h4 class="col-xs-6 col-md-3 list-group-item-heading">'.$buttonLabel.'</h4>
         <p class="list-group-item-text">
         '.implode(' ', $batches).'</p></a>
     </li>';
 }
-echo '</ul>';
+$content .= '</ul>';
+
+$fragment = new rex_fragment();
+$fragment->setVar('class', 'edit');
+$fragment->setVar('title', 'Select an AddOn');
+$fragment->setVar('body', $content, false);
+echo $fragment->parse('core/page/section.php');
