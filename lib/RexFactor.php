@@ -80,14 +80,14 @@ final class RexFactor {
     }
 
     public static function getUseCase(string $key): ?array
-{
-    foreach (self::USE_CASES as $useCase => $options) {
-        if (isset($options[$key])) {
-            return [$useCase, $options[$key]];
+    {
+        foreach (self::USE_CASES as $useCase => $options) {
+            if (isset($options[$key])) {
+                return array($useCase, $options[$key]);
+            }
         }
+        return null;
     }
-    return null;
-}
 
     /**
      * @param non-empty-string $addonName
