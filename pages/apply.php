@@ -7,6 +7,10 @@ use rexfactor\TargetVersion;
 $addon = rex_get('addon', 'string');
 echo '<h2>AddOn: '. rex_escape($addon) .'</h2><hr>';
 $setList = rex_get('set-list', 'string');
+if ($usecase = RexFactor::getUseCase($setList))
+{
+    echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
+}
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
 if ($addon === '') {
