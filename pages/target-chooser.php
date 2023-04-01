@@ -40,7 +40,6 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
 $content .= '</ul>';
 
 $fragment = new rex_fragment();
-$fragment->setVar('class', 'edit');
 $fragment->setVar('title', 'Select an AddOn');
 $fragment->setVar('body', $content, false);
 echo $fragment->parse('core/page/section.php');

@@ -32,7 +32,6 @@ $content .=  '</ul>';
 $content .=  '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
 
 $fragment = new rex_fragment();
-$fragment->setVar('class', 'edit');
 $fragment->setVar('title', 'Select the migration use-case');
 $fragment->setVar('body', $content, false);
 echo $fragment->parse('core/page/section.php');
