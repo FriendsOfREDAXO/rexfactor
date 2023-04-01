@@ -79,6 +79,13 @@ final class RexFactor {
         return $useCases;
     }
 
+    /**
+    * Get the use case and value for a given key.
+    *
+    * @param string $key The key to search for.
+    *
+    * @return array{0: string, 1: string}|null The use case and value for the given key, or null if not found.
+    */
     public static function getUseCase(string $key): ?array
     {
         foreach (self::USE_CASES as $useCase => $options) {
