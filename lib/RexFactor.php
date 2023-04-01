@@ -115,7 +115,7 @@ final class RexFactor {
                 throw new RuntimeException('php-cs-fixer config not found');
             }
 
-            $cmd = $csfixerBinPath .' fix '. escapeshellarg($addonPath) . ' --config='. escapeshellarg($configPath). ($preview ? ' --dry-run --diff' : '') .' --format=json';
+            $cmd = $csfixerBinPath .' fix '. implode(' ', $processPath) . ' --config='. escapeshellarg($configPath). ($preview ? ' --dry-run --diff' : '') .' --format=json';
             $output = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
             return new CsFixerResult($output);
         }
