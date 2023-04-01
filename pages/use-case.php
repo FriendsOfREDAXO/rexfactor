@@ -11,20 +11,20 @@ $rexAddOn = rex_addon::get($addon);
 $hasTests = is_dir($rexAddOn->getPath().'/tests');
 
 echo '<h2>Select the migration use-case</h2>';
-echo '<p>AddOn: '. rex_escape($addon) .'</p>';
+echo '<h3>AddOn: '. rex_escape($addon) .'</h3><hr>';
 
-echo '<ul>';
+echo '<ul class="list-group">';
 foreach(RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
     if (in_array($groupLabel, [RexFactor::PHPUNIT_MIGRATIONS, RexFactor::TESTS_QUALITY], true) && !$hasTests) {
         continue;
     }
 
-    echo '<li>'.rex_escape($groupLabel).'</li>';
+    echo '<li class="list-group-item panel-title"><h2>'.rex_escape($groupLabel).'</h2></li>';
 
-    echo '<ul>';
+    echo '<ul class="list-group">';
     foreach($groupSetLists as $setList => $label) {
         $loader = \rexfactor\ViewHelpers::jsLoader();
-        echo '<li><a class="btn btn-save" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'" onclick="'.$loader.'">'.rex_escape($label).'</a></li>';
+        echo '<li class="list-group-item"><a class="list-group-item-heading" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'" onclick="'.$loader.'">'.rex_escape($label).'</a></li>';
     }
     echo '</ul>';
 }

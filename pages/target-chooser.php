@@ -8,7 +8,7 @@ echo '<h2>Select an AddOn</h2>';
 
 echo rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
 
-echo '<ul>';
+echo '<ul class="list-group">';
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
@@ -32,9 +32,10 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
         $buttonLabel .= ' modules/templates';
     }
 
-    echo '<li>
-        <a class="btn btn-save" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$buttonLabel.'</a>
-        '.implode(' ', $batches).'
+    echo '<li class="list-group-item">
+        <a class="button" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'"><h4 class="col-xs-6 col-md-3 list-group-item-heading">'.$buttonLabel.'</h4>
+        <p class="list-group-item-text">
+        '.implode(' ', $batches).'</p></a>
     </li>';
 }
 echo '</ul>';
