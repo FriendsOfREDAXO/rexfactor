@@ -5,7 +5,12 @@ use rexfactor\RexFactor;
 use rexfactor\TargetVersion;
 
 $addon = rex_get('addon', 'string');
+echo '<h2>AddOn: '. rex_escape($addon) .'</h2>';
 $setList = rex_get('set-list', 'string');
+if ($usecase = RexFactor::getUseCase($setList))
+{
+    echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
+}
 $outputFormat = rex_get('format', 'string', DiffHtml::FORMAT_LINE_BY_LINE);
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
@@ -42,7 +47,7 @@ $versionToggleUrl .= '&format='.$outputFormat;
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true);
 
-echo '<h2>AddOn: '. rex_escape($addon) .'</h2>';
+
 
 $html = $content = '';
 $total = $result->getTotals();
