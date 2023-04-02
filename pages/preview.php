@@ -61,10 +61,10 @@ if ($total['changed_files'] > 0) {
     $content .= '<p>Target Version: '. rex_escape($targetVersion) .'</p>';
     $content .= '<p>Diff Format: '. $outputFormat .'</p>';
 
-    $content .= '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
-    $content .= '<a class="btn btn-default" href="'. $formatToggleUrl .'">Change Format: '. $formatToggleLabel .'</a>';
-    $content .= '<a class="btn btn-default" href="'. $versionToggleUrl .'">Change Target-Version: '. $versionToggleLabel .'</a>';
-    $content .= '<a class="btn btn-save" href="'. $applyUrl .'" data-confirm="Source files will be overwritten. continue?">Apply changes</a>';
+    $content .= ' <a class="btn btn-info" href="'. $backUrl .'">back</a>';
+    $content .= ' <a class="btn btn-default" href="'. $formatToggleUrl .'">Change Format: '. $formatToggleLabel .'</a>';
+    $content .= ' <a class="btn btn-default" href="'. $versionToggleUrl .'">Change Target-Version: '. $versionToggleLabel .'</a>';
+    $content .= ' <a class="btn btn-save" href="'. $applyUrl .'" data-confirm="Source files will be overwritten. continue?">Apply changes</a>';
 
     $diffout = '<div style="margin-top: 10px"></div>';
     $diffout .= '<div style="background: unset; color: unset;">'.$diff.'</div>';
