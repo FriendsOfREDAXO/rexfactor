@@ -8,7 +8,8 @@ use function function_exists;
 use function is_resource;
 use function proc_open;
 
-final class RexCmd {
+final class RexCmd
+{
     /**
      * @param string $stderrOutput
      * @param int $exitCode

@@ -7,23 +7,22 @@ use rexfactor\TargetVersion;
 $addon = rex_get('addon', 'string');
 echo '<h2>AddOn: '. rex_escape($addon) .'</h2>';
 $setList = rex_get('set-list', 'string');
-if ($usecase = RexFactor::getUseCase($setList))
-{
+if ($usecase = RexFactor::getUseCase($setList)) {
     echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
 }
 $outputFormat = rex_get('format', 'string', DiffHtml::FORMAT_LINE_BY_LINE);
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
-if ($addon === '') {
+if ('' === $addon) {
     throw new rex_exception('Missing addon parameter');
 }
 
-$backUrl = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');;
+$backUrl = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');
 $formatToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
 $versionToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
 $applyUrl = rex_url::backendPage('rexfactor/apply').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
 
-if ($outputFormat === DiffHtml::FORMAT_LINE_BY_LINE) {
+if (DiffHtml::FORMAT_LINE_BY_LINE === $outputFormat) {
     $formatToggleUrl .= '&format='.DiffHtml::FORMAT_SIDE_BY_SIDE;
     $formatToggleLabel = 'side-by-side';
 } else {
@@ -32,7 +31,7 @@ if ($outputFormat === DiffHtml::FORMAT_LINE_BY_LINE) {
     $formatToggleLabel = 'line-by-line';
 }
 
-if ($targetVersion === TargetVersion::PHP8_1) {
+if (TargetVersion::PHP8_1 === $targetVersion) {
     $versionToggleUrl .= '&target-version='.rex_escape(TargetVersion::PHP7_2_COMPAT, 'url');
     $versionToggleLabel = TargetVersion::PHP7_2_COMPAT;
 } else {
@@ -47,16 +46,12 @@ $versionToggleUrl .= '&format='.$outputFormat;
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true);
 
-
-
-$html = $content =  $diffout = '';
+$html = $content = $diffout = '';
 $total = $result->getTotals();
 if ($total['changed_files'] > 0) {
-
     $diffHtml = new DiffHtml($result, $outputFormat);
     $diff = DiffHtml::getHead();
     $diff .= $diffHtml->renderHtml();
-
 
     $content .= '<p>Target Version: '. rex_escape($targetVersion) .'</p>';
     $content .= '<p>Diff Format: '. $outputFormat .'</p>';
@@ -68,8 +63,6 @@ if ($total['changed_files'] > 0) {
 
     $diffout = '<div style="margin-top: 10px"></div>';
     $diffout .= '<div style="background: unset; color: unset;">'.$diff.'</div>';
-
-
 } else {
     $content .= '<h2>Code is shiny. Nothing todo for this migration - move along.</h2>';
 
