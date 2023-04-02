@@ -20,8 +20,8 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     if (!is_dir($addonPath.'/.git')) {
         $batches[] = '<span class="label label-danger">unversioned sources</span>';
     } else {
-        RexCmd::execCmd('cd '. escapeshellarg($addonPath) .' && git diff --quiet', $stdErr, $exitCode);
-        if ($exitCode !== 0) {
+        $output = RexCmd::execCmd('cd '. escapeshellarg($addonPath) .' && git diff --name-only', $stdErr, $exitCode);
+        if ($output !== '') {
             $batches[] = '<span class="label label-warning">uncommitted changes</span>';
         }
     }
