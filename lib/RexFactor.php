@@ -111,21 +111,7 @@ final class RexFactor
             throw new InvalidArgumentException('Unknown addon name: ' . $addonName);
         }
 
-        $processPath = [];
-        if ($addonName === 'developer') {
-            $modulesDir = DeveloperAddonIntegration::getModulesDir();
-            if ($modulesDir !== null) {
-                $processPath[] = $modulesDir;
-            }
-
-            $templatesDir = DeveloperAddonIntegration::getTemplatesDir();
-            if ($templatesDir !== null) {
-                $processPath[] = $templatesDir;
-            }
-        } else {
-            // don't process the developer addon itself
-            $processPath[] = $addonPath;
-        }
+        $processPath = self::getPathToProcess($addonName, $addonPath);
         $processPath = array_map('escapeshellarg', $processPath);
 
         if ($setName === self::REX_CODE_STYLE_SETNAME) {
@@ -222,6 +208,28 @@ final class RexFactor
             throw new Exception('Unable to get realpath of rector config file');
         }
         return $realpath;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function getPathToProcess(string $addonName, string $addonPath): array {
+        $processPath = [];
+        if ($addonName === 'developer') {
+            $modulesDir = DeveloperAddonIntegration::getModulesDir();
+            if ($modulesDir !== null) {
+                $processPath[] = $modulesDir;
+            }
+
+            $templatesDir = DeveloperAddonIntegration::getTemplatesDir();
+            if ($templatesDir !== null) {
+                $processPath[] = $templatesDir;
+            }
+        } else {
+            // don't process the developer addon itself
+            $processPath[] = $addonPath;
+        }
+        return $processPath;
     }
 
     private static function getSetListFqcn(string $setName): string
