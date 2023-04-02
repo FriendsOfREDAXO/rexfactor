@@ -66,8 +66,8 @@ if ($total['changed_files'] > 0) {
     $content .= '<a class="btn btn-default" href="'. $versionToggleUrl .'">Change Target-Version: '. $versionToggleLabel .'</a>';
     $content .= '<a class="btn btn-save" href="'. $applyUrl .'" data-confirm="Source files will be overwritten. continue?">Apply changes</a>';
 
-    $content .= '<div style="margin-top: 10px"></div>';
-    $content .= '<div style="background: unset; color: unset;">'.$diff.'</div>';
+    $diffout = '<div style="margin-top: 10px"></div>';
+    $diffout .= '<div style="background: unset; color: unset;">'.$diff.'</div>';
 
 
 } else {
@@ -79,3 +79,4 @@ $fragment = new rex_fragment();
 $fragment->setVar('title', 'Migration preview');
 $fragment->setVar('body', $content, false);
 echo $fragment->parse('core/page/section.php');
+echo $diffout;
