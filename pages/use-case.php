@@ -10,24 +10,28 @@ $previewUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($ad
 $rexAddOn = rex_addon::get($addon);
 $hasTests = is_dir($rexAddOn->getPath().'/tests');
 
-echo '<h2>Select the migration use-case</h2>';
-echo '<p>AddOn: '. rex_escape($addon) .'</p>';
-
-echo '<ul>';
+echo '<h2>AddOn: '. rex_escape($addon) .'</h2><hr>';
+$content = '';
+$content .=  '<ul class="list-group">';
 foreach(RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
     if (in_array($groupLabel, [RexFactor::PHPUNIT_MIGRATIONS, RexFactor::TESTS_QUALITY], true) && !$hasTests) {
         continue;
     }
 
-    echo '<li>'.rex_escape($groupLabel).'</li>';
+    $content .= '<li class="list-group-item panel-title"><h3 class="list-group-item-heading">'.rex_escape($groupLabel).'</h3></li>';
 
-    echo '<ul>';
+    $content .= '<ul class="list-group">';
     foreach($groupSetLists as $setList => $label) {
         $loader = \rexfactor\ViewHelpers::jsLoader();
-        echo '<li><a class="btn btn-save" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'" onclick="'.$loader.'">'.rex_escape($label).'</a></li>';
+        $content .=  '<li class="list-group-item"><a class="list-group-item-heading" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'" onclick="'.$loader.'">'.rex_escape($label).'</a></li>';
     }
-    echo '</ul>';
+    $content .=  '</ul>';
 }
-echo '</ul>';
+$content .=  '</ul>';
 
-echo '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
+$content .=  '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
+
+$fragment = new rex_fragment();
+$fragment->setVar('title', 'Select the migration use-case');
+$fragment->setVar('body', $content, false);
+echo $fragment->parse('core/page/section.php');

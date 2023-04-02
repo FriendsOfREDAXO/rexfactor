@@ -5,7 +5,12 @@ use rexfactor\RexFactor;
 use rexfactor\TargetVersion;
 
 $addon = rex_get('addon', 'string');
+echo '<h2>AddOn: '. rex_escape($addon) .'</h2>';
 $setList = rex_get('set-list', 'string');
+if ($usecase = RexFactor::getUseCase($setList))
+{
+    echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
+}
 $outputFormat = rex_get('format', 'string', DiffHtml::FORMAT_LINE_BY_LINE);
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
@@ -42,7 +47,9 @@ $versionToggleUrl .= '&format='.$outputFormat;
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true);
 
-$html = '';
+
+
+$html = $content =  $diffout = '';
 $total = $result->getTotals();
 if ($total['changed_files'] > 0) {
 
@@ -50,23 +57,26 @@ if ($total['changed_files'] > 0) {
     $diff = DiffHtml::getHead();
     $diff .= $diffHtml->renderHtml();
 
-    echo '<h2>Migration preview</h2>';
 
-    echo '<p>AddOn: '. rex_escape($addon) .'</p>';
-    echo '<p>Target Version: '. rex_escape($targetVersion) .'</p>';
-    echo '<p>Diff Format: '. $outputFormat .'</p>';
+    $content .= '<p>Target Version: '. rex_escape($targetVersion) .'</p>';
+    $content .= '<p>Diff Format: '. $outputFormat .'</p>';
 
-    echo '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
-    echo '<a class="btn btn-default" href="'. $formatToggleUrl .'">Change Format: '. $formatToggleLabel .'</a>';
-    echo '<a class="btn btn-default" href="'. $versionToggleUrl .'">Change Target-Version: '. $versionToggleLabel .'</a>';
-    echo '<a class="btn btn-save" href="'. $applyUrl .'" data-confirm="Source files will be overwritten. continue?">Apply changes</a>';
+    $content .= ' <a class="btn btn-info" href="'. $backUrl .'">back</a>';
+    $content .= ' <a class="btn btn-default" href="'. $formatToggleUrl .'">Change Format: '. $formatToggleLabel .'</a>';
+    $content .= ' <a class="btn btn-default" href="'. $versionToggleUrl .'">Change Target-Version: '. $versionToggleLabel .'</a>';
+    $content .= ' <a class="btn btn-save" href="'. $applyUrl .'" data-confirm="Source files will be overwritten. continue?">Apply changes</a>';
 
-    echo '<div style="margin-top: 10px"></div>';
-    echo '<div style="background: unset; color: unset;">'.$diff.'</div>';
+    $diffout = '<div style="margin-top: 10px"></div>';
+    $diffout .= '<div style="background: unset; color: unset;">'.$diff.'</div>';
 
 
 } else {
-    echo '<h2>Code is shiny. Nothing todo for this migration - move along.</h2>';
+    $content .= '<h2>Code is shiny. Nothing todo for this migration - move along.</h2>';
 
-    echo '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
+    $content .= '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
 }
+$fragment = new rex_fragment();
+$fragment->setVar('title', 'Migration preview');
+$fragment->setVar('body', $content, false);
+echo $fragment->parse('core/page/section.php');
+echo $diffout;

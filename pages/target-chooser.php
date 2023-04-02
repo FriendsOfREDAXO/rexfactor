@@ -3,12 +3,11 @@
 use rexfactor\RexCmd;
 
 $useCaseUrl = rex_url::backendPage('rexfactor/use-case');
+$content = '';
 
-echo '<h2>Select an AddOn</h2>';
+$content .= rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
 
-echo rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
-
-echo '<ul>';
+$content .= '<ul class="list-group">';
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
@@ -29,12 +28,19 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
 
     $buttonLabel = $availableAddon->getName();
     if ($buttonLabel === 'developer') {
-        $buttonLabel .= ' modules/templates';
+        $buttonLabel .= ': modules/templates';
     }
 
-    echo '<li>
-        <a class="btn btn-save" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'">'.$buttonLabel.'</a>
-        '.implode(' ', $batches).'
+    $content .= '<li class="list-group-item">
+    <div class="pull-right">
+        '.implode(' ', $batches).'</div>
+        <a class="button" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'"><h4 class="list-group-item-heading">'.$buttonLabel.'</h4>
+        </a>
     </li>';
 }
-echo '</ul>';
+$content .= '</ul>';
+
+$fragment = new rex_fragment();
+$fragment->setVar('title', 'Select an AddOn');
+$fragment->setVar('body', $content, false);
+echo $fragment->parse('core/page/section.php');

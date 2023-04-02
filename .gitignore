@@ -1,2 +1,3 @@
 /rector.php
 .php-cs-fixer.cache
+.DS_Store
