@@ -18,15 +18,15 @@ Select the desired php version to start migrating.
 
 ### Improve Code Quality
 
-- Unify Code Quality: In this use case, the goal is to ensure that all code in a project adheres to the same coding standards and best practices.
+- `Unify Code Quality:` In this use case, the goal is to ensure that all code in a project adheres to the same coding standards and best practices.
 
-- Remove Dead Code: This use case involves identifying and removing code that is no longer used or needed in the codebase.
+- `Remove Dead Code:` This use case involves identifying and removing code that is no longer used or needed in the codebase.
 
-- Infer Type Declarations: In this use case, the goal is to automatically infer the types of variables and functions in the codebase.
+- `Infer Type Declarations:` In this use case, the goal is to automatically infer the types of variables and functions in the codebase.
 
-- Reduce Symbol Visibility (Privatization): This use case involves reducing the visibility of symbols in the codebase to make it more modular and easier to understand. 
+- `Reduce Symbol Visibility (Privatization):` This use case involves reducing the visibility of symbols in the codebase to make it more modular and easier to understand. 
 
--  Use Early Returns: In this use case, the goal is to reduce the complexity of code by using early returns to exit a function as soon as possible if a certain condition is met. 
+-  `Use Early Returns:` In this use case, the goal is to reduce the complexity of code by using early returns to exit a function as soon as possible if a certain condition is met. 
 
 ### PHPUnit Version Migrations: 
 
@@ -38,9 +38,9 @@ This use cases involve improving the quality of test code by making it more main
 
 ### Misc 
 
-- Redaxo Specific Code Style: This use case involves ensuring that code written for Redaxo follows the established code style guidelines for the platform. This can include adhering to naming conventions, using appropriate formatting, and following the coding standards recommended by the Redaxo community.
+- `Redaxo Specific Code Style:` This use case involves ensuring that code written for Redaxo follows the established code style guidelines for the platform. This can include adhering to naming conventions, using appropriate formatting, and following the coding standards recommended by the Redaxo community.
 
-- More Explicit Coding Style: This use case involves ensuring that code is written in a more explicit and clear manner, so that it is easier to read and maintain. This can include using more descriptive variable names, avoiding ambiguous function names, and using appropriate comments.
+- `More Explicit Coding Style: This use case involves ensuring that code is written in a more explicit and clear manner, so that it is easier to read and maintain. This can include using more descriptive variable names, avoiding ambiguous function names, and using appropriate comments.
 
 
 
