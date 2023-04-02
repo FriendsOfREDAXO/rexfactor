@@ -1,7 +1,8 @@
 <?php
 
 $finder = (new PhpCsFixer\Finder())
-    ->in(__DIR__)
+    ->in(__DIR__.'/../')
+    ->exclude('tests')
 ;
 
 return (new Redaxo\PhpCsFixerConfig\Config())
@@ -9,4 +10,4 @@ return (new Redaxo\PhpCsFixerConfig\Config())
         'yoda_style' => ['equal' => false, 'identical' => false, 'less_and_greater' => false]
     ])
     ->setFinder($finder)
-    ;
+;

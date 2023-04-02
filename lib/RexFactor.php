@@ -2,6 +2,7 @@
 
 namespace rexfactor;
 
+use PhpCsFixer\Console\Command\FixCommandExitStatusCalculator;
 use Exception;
 use InvalidArgumentException;
 use Rector\PHPUnit\Set\PHPUnitSetList;
@@ -133,8 +134,14 @@ final class RexFactor
                 throw new RuntimeException('php-cs-fixer config not found');
             }
 
-            $cmd = $csfixerBinPath .' fix '. implode(' ', $processPath) . ' --config='. escapeshellarg($configPath). ($preview ? ' --dry-run --diff' : '') .' --format=json';
+            $cmd = $csfixerBinPath .' fix '. implode(' ', $processPath) . ' --config='. escapeshellarg($configPath). ($preview ? ' --dry-run --diff' : '') .' --path-mode=intersection --format=json';
             $output = RexCmd::execCmd($cmd, $stderrOutput, $exitCode);
+            if (!in_array(
+                $exitCode,
+                [0, FixCommandExitStatusCalculator::EXIT_STATUS_FLAG_HAS_INVALID_FILES, FixCommandExitStatusCalculator::EXIT_STATUS_FLAG_HAS_CHANGED_FILES])
+            ) {
+                throw new RuntimeException($stderrOutput);
+            }
             return new CsFixerResult($output);
         }
 
