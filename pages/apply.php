@@ -1,19 +1,17 @@
 <?php
 
-use rexfactor\DiffHtml;
 use rexfactor\RexFactor;
 use rexfactor\TargetVersion;
 
 $addon = rex_get('addon', 'string');
 echo '<h2>AddOn: '. rex_escape($addon) .'</h2><hr>';
 $setList = rex_get('set-list', 'string');
-if ($usecase = RexFactor::getUseCase($setList))
-{
+if ($usecase = RexFactor::getUseCase($setList)) {
     echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
 }
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
-if ($addon === '') {
+if ('' === $addon) {
     throw new rex_exception('Missing addon parameter');
 }
 
@@ -25,7 +23,7 @@ $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false);
 $total = $result->getTotals();
 $content = '';
 if ($total['changed_files'] > 0) {
-    $content .=  '
+    $content .= '
     <h4>Successfully migrated '. $total['changed_files'] .' files</h4>
     <ol>
         <li>
@@ -47,7 +45,7 @@ if ($total['changed_files'] > 0) {
         </ol>
     ';
 } else {
-    $content .=  '
+    $content .= '
     <h2>No changes</h2>
     <a class="btn btn-info" href="'. $backToStartUrl .'">Start next migration for another AddOn</a>
     <a class="btn btn-info" href="'. $backToUseCaseUrl .'">Select next use-case for "'.rex_escape($addon).'"</a>
@@ -56,4 +54,4 @@ if ($total['changed_files'] > 0) {
 $fragment = new rex_fragment();
 $fragment->setVar('title', 'Changes applied');
 $fragment->setVar('body', $content, false);
-echo  $fragment->parse('core/page/section.php');
+echo $fragment->parse('core/page/section.php');
