@@ -11,7 +11,7 @@ if ($usecase = RexFactor::getUseCase($setList)) {
 }
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
-if ('' === $addon) {
+if ($addon === '') {
     throw new rex_exception('Missing addon parameter');
 }
 

@@ -2,15 +2,16 @@
 
 namespace rexfactor;
 
-use PhpCsFixer\Console\Command\FixCommandExitStatusCalculator;
 use Exception;
 use InvalidArgumentException;
+use PhpCsFixer\Console\Command\FixCommandExitStatusCalculator;
 use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\Set\ValueObject\SetList;
 use rex_path;
 use RuntimeException;
 
 use function defined;
+use function in_array;
 
 final class RexFactor
 {
@@ -69,7 +70,7 @@ final class RexFactor
         foreach ($useCases as $groupLabel => $groupSetLists) {
             foreach ($groupSetLists as $setList => $label) {
                 // rex code style is not a rector set. skip it from validation.
-                if (self::REX_CODE_STYLE_SETNAME === $setList) {
+                if ($setList === self::REX_CODE_STYLE_SETNAME) {
                     continue;
                 }
 
@@ -111,14 +112,14 @@ final class RexFactor
         }
 
         $processPath = [];
-        if ('developer' === $addonName) {
+        if ($addonName === 'developer') {
             $modulesDir = DeveloperAddonIntegration::getModulesDir();
-            if (null !== $modulesDir) {
+            if ($modulesDir !== null) {
                 $processPath[] = $modulesDir;
             }
 
             $templatesDir = DeveloperAddonIntegration::getTemplatesDir();
-            if (null !== $templatesDir) {
+            if ($templatesDir !== null) {
                 $processPath[] = $templatesDir;
             }
         } else {
@@ -127,10 +128,10 @@ final class RexFactor
         }
         $processPath = array_map('escapeshellarg', $processPath);
 
-        if (self::REX_CODE_STYLE_SETNAME === $setName) {
+        if ($setName === self::REX_CODE_STYLE_SETNAME) {
             $csfixerBinPath = self::csfixerBinpath();
             $configPath = realpath(__DIR__.'/../.php-cs-fixer.php');
-            if (false === $configPath) {
+            if ($configPath === false) {
                 throw new RuntimeException('php-cs-fixer config not found');
             }
 
@@ -156,13 +157,13 @@ final class RexFactor
 
     private static function rectorBinpath(): string
     {
-        if ('WIN' === strtoupper(substr(PHP_OS, 0, 3))) {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $path = realpath(__DIR__.'/../vendor/bin/rector.bat');
         } else {
             $path = RexCmd::phpExecutable().' '.realpath(__DIR__.'/../vendor/bin/rector');
         }
 
-        if (false === $path) {
+        if ($path === false) {
             throw new RuntimeException('rector binary not found');
         }
 
@@ -171,13 +172,13 @@ final class RexFactor
 
     private static function csfixerBinpath(): string
     {
-        if ('WIN' === strtoupper(substr(PHP_OS, 0, 3))) {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $path = realpath(__DIR__.'/../vendor/bin/php-cs-fixer.bat');
         } else {
             $path = RexCmd::phpExecutable().' '.realpath(__DIR__.'/../vendor/bin/php-cs-fixer');
         }
 
-        if (false === $path) {
+        if ($path === false) {
             throw new RuntimeException('php-cs-fixer binary not found');
         }
 
@@ -192,14 +193,14 @@ final class RexFactor
         $configPath = __DIR__.'/../rector.php';
 
         $tpl = file_get_contents($tplPath);
-        if (false === $tpl) {
+        if ($tpl === false) {
             throw new Exception('Unable to read rector config template');
         }
 
         $tpl = str_replace('%%RECTOR_SETS%%', $setListClass, $tpl);
-        if (TargetVersion::PHP8_1 === $targetVersion) {
+        if ($targetVersion === TargetVersion::PHP8_1) {
             $tpl = str_replace('%%TARGET_PHP_VERSION%%', '80100', $tpl);
-        } elseif (TargetVersion::PHP7_2_COMPAT === $targetVersion) {
+        } elseif ($targetVersion === TargetVersion::PHP7_2_COMPAT) {
             $tpl = str_replace('%%TARGET_PHP_VERSION%%', '70200', $tpl);
         } else {
             throw new InvalidArgumentException('Unknown target version: ' . $targetVersion);
@@ -212,12 +213,12 @@ final class RexFactor
         }
         $tpl = str_replace('%%SKIP_LIST%%', implode(',', $skipList), $tpl);
 
-        if (false === file_put_contents($configPath, $tpl)) {
+        if (file_put_contents($configPath, $tpl) === false) {
             throw new Exception('Unable to write rector config file');
         }
 
         $realpath = realpath($configPath);
-        if (false === $realpath) {
+        if ($realpath === false) {
             throw new Exception('Unable to get realpath of rector config file');
         }
         return $realpath;
