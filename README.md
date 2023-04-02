@@ -34,3 +34,13 @@ This use cases involve updating the version of PHPUnit used in a project to a ne
 
 This use cases involve improving the quality of test code by making it more maintainable, readable, and efficient. This can include refactoring existing test code to follow best practices, removing duplication, and improving the structure of test suites.iently. 
 
+### Misc 
+
+- Redaxo Specific Code Style: This use case involves ensuring that code written for Redaxo follows the established code style guidelines for the platform. This can include adhering to naming conventions, using appropriate formatting, and following the coding standards recommended by the Redaxo community.
+
+- More Explicit Coding Style: This use case involves ensuring that code is written in a more explicit and clear manner, so that it is easier to read and maintain. This can include using more descriptive variable names, avoiding ambiguous function names, and using appropriate comments.
+
+
+
+### 
+
