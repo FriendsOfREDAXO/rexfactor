@@ -28,13 +28,14 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
 
     $buttonLabel = $availableAddon->getName();
     if ($buttonLabel === 'developer') {
-        $buttonLabel .= ' modules/templates';
+        $buttonLabel .= ': modules/templates';
     }
 
     $content .= '<li class="list-group-item">
-        <a class="button" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'"><h4 class="col-xs-6 col-md-3 list-group-item-heading">'.$buttonLabel.'</h4>
-        <p class="list-group-item-text">
-        '.implode(' ', $batches).'</p></a>
+    <div class="pull-right">
+        '.implode(' ', $batches).'</div>
+        <a class="button" href="'.$useCaseUrl.'&addon='.$availableAddon->getName().'"><h4 class="list-group-item-heading">'.$buttonLabel.'</h4>
+        </a>
     </li>';
 }
 $content .= '</ul>';
