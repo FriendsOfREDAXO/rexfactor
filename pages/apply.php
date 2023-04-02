@@ -26,7 +26,7 @@ $total = $result->getTotals();
 $content = '';
 if ($total['changed_files'] > 0) {
     $content .=  '
-    <h2>Successfully migrated '. $total['changed_files'] .' files</h2>
+    <h4>Successfully migrated '. $total['changed_files'] .' files</h4>
     <ol>
         <li>
             At this point you should review and test the changed source-code.<br>
@@ -36,9 +36,13 @@ if ($total['changed_files'] > 0) {
             After making sure everything still works as expected commit the changes.
         </li>
         <li style="margin-top: 10px">
-            Finally you can go ahead with the next migration use-case:<br>
+            <p>
+            Finally you can go ahead with the next migration use-case:
+            </p>
+            <p>
             <a class="btn btn-info" href="'. $backToStartUrl .'">Start next migration for another AddOn</a>
             <a class="btn btn-info" href="'. $backToUseCaseUrl .'">Select next use-case for "'.rex_escape($addon).'"</a>
+            </p>
         </li>
         </ol>
     ';
