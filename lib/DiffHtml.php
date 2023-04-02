@@ -2,9 +2,10 @@
 
 namespace rexfactor;
 
-final class DiffHtml {
-    const FORMAT_SIDE_BY_SIDE = 'side-by-side';
-    const FORMAT_LINE_BY_LINE = 'line-by-line';
+final class DiffHtml
+{
+    public const FORMAT_SIDE_BY_SIDE = 'side-by-side';
+    public const FORMAT_LINE_BY_LINE = 'line-by-line';
 
     /**
      * @var RectorResult|CsFixerResult
@@ -60,7 +61,8 @@ final class DiffHtml {
         <div id='my-diff-view'></div>";
     }
 
-    static public function getHead(): string {
+    public static function getHead(): string
+    {
         return '
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css" />
             <link
@@ -72,7 +74,8 @@ final class DiffHtml {
         ';
     }
 
-    private function getDiffString():string {
+    private function getDiffString(): string
+    {
         $diffString = '';
         foreach ($this->result->getFileDiffs() as $fileDiff) {
             $diffString .= $fileDiff['diff'];

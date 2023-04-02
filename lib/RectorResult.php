@@ -2,35 +2,42 @@
 
 namespace rexfactor;
 
-use rex_path;
+use InvalidArgumentException;
 
-final class RectorResult {
+use function is_array;
+use function is_string;
+
+final class RectorResult
+{
     /**
      * @var array<string, mixed>
      */
     private $json;
 
-    public function __construct(string $json) {
+    public function __construct(string $json)
+    {
         $this->json = json_decode($json, true);
         if (!is_array($this->json)) {
-            throw new \InvalidArgumentException('Invalid json: '.json_last_error_msg());
+            throw new InvalidArgumentException('Invalid json: '.json_last_error_msg());
         }
     }
 
     /**
      * @return array{changed_files: int, errors: int}
      */
-    public function getTotals(): array {
+    public function getTotals(): array
+    {
         return $this->json['totals'];
     }
 
     /**
      * @return list<array{file: string, diff: string}>
      */
-    public function getFileDiffs(): array {
+    public function getFileDiffs(): array
+    {
         foreach ($this->json['file_diffs'] as &$fileDiff) {
             if (!is_string($fileDiff['diff'])) {
-                throw new \InvalidArgumentException('Invalid file diff');
+                throw new InvalidArgumentException('Invalid file diff');
             }
 
             // strip file indicators rendered by rector
@@ -43,7 +50,6 @@ diff --git a/{$fileDiff['file']} b/{$fileDiff['file']}
 +++ b/{$fileDiff['file']}
 {$fileDiff['diff']}
             ";
-
         }
 
         return $this->json['file_diffs'];
