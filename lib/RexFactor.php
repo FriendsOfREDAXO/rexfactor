@@ -140,7 +140,7 @@ final class RexFactor
                 $exitCode,
                 [0, FixCommandExitStatusCalculator::EXIT_STATUS_FLAG_HAS_INVALID_FILES, FixCommandExitStatusCalculator::EXIT_STATUS_FLAG_HAS_CHANGED_FILES])
             ) {
-                throw new RuntimeException($exitCode);
+                throw new RuntimeException($stderrOutput);
             }
             return new CsFixerResult($output);
         }
