@@ -13,7 +13,7 @@ if ($usecase = RexFactor::getUseCase($setList)) {
 $outputFormat = rex_get('format', 'string', DiffHtml::FORMAT_LINE_BY_LINE);
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
-if ('' === $addon) {
+if ($addon === '') {
     throw new rex_exception('Missing addon parameter');
 }
 
@@ -22,7 +22,7 @@ $formatToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escap
 $versionToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
 $applyUrl = rex_url::backendPage('rexfactor/apply').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
 
-if (DiffHtml::FORMAT_LINE_BY_LINE === $outputFormat) {
+if ($outputFormat === DiffHtml::FORMAT_LINE_BY_LINE) {
     $formatToggleUrl .= '&format='.DiffHtml::FORMAT_SIDE_BY_SIDE;
     $formatToggleLabel = 'side-by-side';
 } else {
@@ -31,7 +31,7 @@ if (DiffHtml::FORMAT_LINE_BY_LINE === $outputFormat) {
     $formatToggleLabel = 'line-by-line';
 }
 
-if (TargetVersion::PHP8_1 === $targetVersion) {
+if ($targetVersion === TargetVersion::PHP8_1) {
     $versionToggleUrl .= '&target-version='.rex_escape(TargetVersion::PHP7_2_COMPAT, 'url');
     $versionToggleLabel = TargetVersion::PHP7_2_COMPAT;
 } else {

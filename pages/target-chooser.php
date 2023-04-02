@@ -21,13 +21,13 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
         $batches[] = '<span class="label label-danger">unversioned sources</span>';
     } else {
         RexCmd::execCmd('cd '. escapeshellarg($addonPath) .' && git diff --quiet', $stdErr, $exitCode);
-        if (0 !== $exitCode) {
+        if ($exitCode !== 0) {
             $batches[] = '<span class="label label-warning">uncommitted changes</span>';
         }
     }
 
     $buttonLabel = $availableAddon->getName();
-    if ('developer' === $buttonLabel) {
+    if ($buttonLabel === 'developer') {
         $buttonLabel .= ': modules/templates';
     }
 

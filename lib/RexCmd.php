@@ -54,7 +54,7 @@ final class RexCmd
             proc_close($process);
         }
 
-        return false === $output ? '' : $output;
+        return $output === false ? '' : $output;
     }
 
     public static function phpExecutable(): string
