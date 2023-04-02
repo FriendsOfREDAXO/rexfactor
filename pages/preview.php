@@ -49,7 +49,7 @@ $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true);
 
 
 
-$html = $content = '';
+$html = $content =  $diffout = '';
 $total = $result->getTotals();
 if ($total['changed_files'] > 0) {
 
