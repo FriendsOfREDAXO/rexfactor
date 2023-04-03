@@ -41,7 +41,7 @@ These migrations are only available to AddOns which contain a `tests/` folder.
 
 ### Misc 
 
-- `REDAXO Specific Code Style:` This use case involves ensuring that code written for REDAXO follows the established code style guidelines for the platform. This can include adhering to naming conventions, using appropriate formatting, and following the coding standards recommended by the REDAXO community.
+- `REDAXO Specific Code Style:` This use case ensures that code written follows the [REDAXO code style guidelines](https://github.com/redaxo/php-cs-fixer-config). This can include adhering to naming conventions, using appropriate formatting, and following the coding standards recommended by the REDAXO community.
 
 - `More Explicit Coding Style:` This use case involves ensuring that code is written in a more explicit and clear manner, so that it is easier to read and maintain. This can include using more descriptive variable names, avoiding ambiguous function names, and using appropriate comments.
 
