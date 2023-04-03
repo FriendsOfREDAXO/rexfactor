@@ -12,7 +12,7 @@ Users apply the changes after a preview in a diff view.
 
 ### PHP Version Migrations
 
-This use case helps updating the PHP version used in a project to a newer one. This can involve migrating code to be compatible with the new version and updating any deprecated features to the recommended replacements.
+This use case helps updating the PHP version used in a project to a newer one according to the office php.net migration guide. This can involve migrating code to be compatible with the new version and updating any deprecated features to the recommended replacements.
 
 Select the desired php version to start migrating.
 
