@@ -24,7 +24,7 @@ Select the desired php version to start migrating.
 
 - `Infer Type Declarations:` In this use case, the goal is to automatically infer native return-types or parameter-types of methods&functions in the codebase.
 
-- `Reduce Symbol Visibility (Privatization):` This use case involves reducing the visibility of symbols in the codebase to make it more modular and easier to understand. 
+- `Reduce Symbol Visibility (Privatization):` This use case involves reducing the visibility of symbols in the codebase to ease future refactoring and reduce the chance of unintended use. 
 
 -  `Use Early Returns:` In this use case, the goal is to reduce the complexity of code by using early returns to exit a function as soon as possible if a certain condition is met. 
 
