@@ -25,7 +25,7 @@ This use case helps updating the PHP version used in a project to a newer one ac
 
 - `Reduce Symbol Visibility (Privatization):` This use case involves reducing the visibility of symbols in the codebase to ease future refactoring and reduce the chance of unintended use. 
 
--  `Use Early Returns:` In this use case, the goal is to reduce the complexity of code by using early returns to exit a function as soon as possible if a certain condition is met. 
+-  `Use Early Returns:` In this use case, the goal is to reduce the complexity of code by using early returns.
 
 ### PHPUnit Version Migrations: 
 
