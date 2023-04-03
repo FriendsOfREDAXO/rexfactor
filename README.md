@@ -31,6 +31,8 @@ This use case helps updating the PHP version used in a project to a newer one ac
 
 This use cases involve updating the version of PHPUnit used in a project to a newer one. This can involve migrating test code to be compatible with the new version and updating any deprecated features to the recommended replacements.
 
+These migrations are only available to AddOns which contain a `tests/` folder.
+
 ### Improve Test-Code Quality: 
 
 This use cases involve improving the quality of test code by making it more maintainable, readable, and efficient. This can include refactoring existing test code to follow best practices, removing duplication, and improving the structure of test suites.iently. 
