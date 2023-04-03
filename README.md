@@ -22,7 +22,7 @@ Select the desired php version to start migrating.
 
 - `Remove Dead Code:` This use case involves identifying and removing code that is no longer used or needed in the codebase.
 
-- `Infer Type Declarations:` In this use case, the goal is to automatically infer the types of variables and functions in the codebase.
+- `Infer Type Declarations:` In this use case, the goal is to automatically infer native return-types or parameter-types of methods&functions in the codebase.
 
 - `Reduce Symbol Visibility (Privatization):` This use case involves reducing the visibility of symbols in the codebase to make it more modular and easier to understand. 
 
