@@ -6,7 +6,7 @@ The AddOn integrates [rector](https://github.com/rectorphp/rector) with the deve
 
 Primary purpose is to allow people less experienced with developer tooling to automate migration tasks.
 
-Users apply the changes after controlling the changes in a diff view.
+Users apply the changes after a preview in a diff view.
 
 ## use cases
 
