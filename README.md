@@ -35,7 +35,9 @@ These migrations are only available to AddOns which contain a `tests/` folder.
 
 ### Improve Test-Code Quality: 
 
-This use cases involve improving the quality of test code by making it more maintainable, readable, and efficient. This can include refactoring existing test code to follow best practices, removing duplication, and improving the structure of test suites.iently. 
+This use cases involve improving the quality of test code by making it more maintainable, readable, and efficient. This can include refactoring existing test code to follow best practices, removing duplication, and improving the structure of test suites.
+
+These migrations are only available to AddOns which contain a `tests/` folder.
 
 ### Misc 
 
