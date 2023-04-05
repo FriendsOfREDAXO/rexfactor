@@ -11,9 +11,9 @@ use Rector\Core\DependencyInjection\CompilerPass\MakeRectorsPublicCompilerPass;
 use Rector\Core\DependencyInjection\CompilerPass\MergeImportedRectorConfigureCallValuesCompilerPass;
 use Rector\Core\DependencyInjection\CompilerPass\RemoveSkippedRectorsCompilerPass;
 use Rector\Core\Exception\ShouldNotHappenException;
-use RectorPrefix202303\Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use RectorPrefix202303\Symfony\Component\DependencyInjection\ContainerBuilder;
-use RectorPrefix202303\Symfony\Component\DependencyInjection\ContainerInterface;
+use RectorPrefix202304\Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use RectorPrefix202304\Symfony\Component\DependencyInjection\ContainerBuilder;
+use RectorPrefix202304\Symfony\Component\DependencyInjection\ContainerInterface;
 final class RectorKernel
 {
     /**
@@ -60,7 +60,7 @@ final class RectorKernel
      */
     public function getContainer() : ContainerInterface
     {
-        if ($this->container === null) {
+        if (!$this->container instanceof ContainerInterface) {
             throw new ShouldNotHappenException();
         }
         return $this->container;

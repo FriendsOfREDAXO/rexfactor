@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Rector\Class_;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\FullyQualified;
@@ -127,7 +127,7 @@ CODE_SAMPLE
     public function refactor(Node $node) : ?Node
     {
         // anonymous class
-        if ($node->name === null) {
+        if (!$node->name instanceof Identifier) {
             return null;
         }
         // is already a subscriber

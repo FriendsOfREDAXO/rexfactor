@@ -15,6 +15,7 @@ use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
@@ -48,7 +49,7 @@ use Rector\Core\Util\Reflection\PrivatesAccessor;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\PHPStan\Scope\NodeVisitor\RemoveDeepChainMethodCallNodeVisitor;
-use RectorPrefix202303\Webmozart\Assert\Assert;
+use RectorPrefix202304\Webmozart\Assert\Assert;
 /**
  * @inspired by https://github.com/silverstripe/silverstripe-upgrader/blob/532182b23e854d02e0b27e68ebc394f436de0682/src/UpgradeRule/PHP/Visitor/PHPStanScopeVisitor.php
  * - https://github.com/silverstripe/silverstripe-upgrader/pull/57/commits/e5c7cfa166ad940d9d4ff69537d9f7608e992359#diff-5e0807bb3dc03d6a8d8b6ad049abd774
@@ -59,6 +60,11 @@ final class PHPStanNodeScopeResolver
      * @var string
      */
     private const CONTEXT = 'context';
+    /**
+     * @readonly
+     * @var \PhpParser\NodeTraverser
+     */
+    private $nodeTraverser;
     /**
      * @readonly
      * @var \Rector\Caching\Detector\ChangedFilesDetector
@@ -79,11 +85,6 @@ final class PHPStanNodeScopeResolver
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
-    /**
-     * @readonly
-     * @var \Rector\NodeTypeResolver\PHPStan\Scope\NodeVisitor\RemoveDeepChainMethodCallNodeVisitor
-     */
-    private $removeDeepChainMethodCallNodeVisitor;
     /**
      * @readonly
      * @var \Rector\NodeTypeResolver\PHPStan\Scope\ScopeFactory
@@ -115,12 +116,13 @@ final class PHPStanNodeScopeResolver
         $this->dependencyResolver = $dependencyResolver;
         $this->nodeScopeResolver = $nodeScopeResolver;
         $this->reflectionProvider = $reflectionProvider;
-        $this->removeDeepChainMethodCallNodeVisitor = $removeDeepChainMethodCallNodeVisitor;
         $this->scopeFactory = $scopeFactory;
         $this->privatesAccessor = $privatesAccessor;
         $this->nodeNameResolver = $nodeNameResolver;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->classAnalyzer = $classAnalyzer;
+        $this->nodeTraverser = new NodeTraverser();
+        $this->nodeTraverser->addVisitor($removeDeepChainMethodCallNodeVisitor);
     }
     /**
      * @param Stmt[] $stmts
@@ -134,7 +136,7 @@ final class PHPStanNodeScopeResolver
          * @see vendor/phpstan/phpstan/phpstan.phar/src/Analyser/NodeScopeResolver.php:282
          */
         Assert::allIsInstanceOf($stmts, Stmt::class);
-        $this->removeDeepChainMethodCallNodes($stmts);
+        $this->nodeTraverser->traverse($stmts);
         $scope = $formerMutatingScope ?? $this->scopeFactory->createFromFile($filePath);
         // skip chain method calls, performance issue: https://github.com/phpstan/phpstan/issues/254
         $nodeCallback = function (Node $node, MutatingScope $mutatingScope) use(&$nodeCallback, $isScopeRefreshing, $filePath) : void {
@@ -327,15 +329,6 @@ final class PHPStanNodeScopeResolver
         return $stmts;
     }
     /**
-     * @param Node[] $nodes
-     */
-    private function removeDeepChainMethodCallNodes(array $nodes) : void
-    {
-        $nodeTraverser = new NodeTraverser();
-        $nodeTraverser->addVisitor($this->removeDeepChainMethodCallNodeVisitor);
-        $nodeTraverser->traverse($nodes);
-    }
-    /**
      * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Interface_|\PhpParser\Node\Stmt\Enum_ $classLike
      */
     private function resolveClassOrInterfaceScope($classLike, MutatingScope $mutatingScope, bool $isScopeRefreshing) : MutatingScope
@@ -364,7 +357,7 @@ final class PHPStanNodeScopeResolver
         if ($classLike->namespacedName instanceof Name) {
             return (string) $classLike->namespacedName;
         }
-        if ($classLike->name === null) {
+        if (!$classLike->name instanceof Identifier) {
             throw new ShouldNotHappenException();
         }
         return $classLike->name->toString();

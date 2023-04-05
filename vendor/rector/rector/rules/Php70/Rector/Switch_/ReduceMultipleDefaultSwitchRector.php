@@ -4,11 +4,11 @@ declare (strict_types=1);
 namespace Rector\Php70\Rector\Switch_;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\Case_;
 use PhpParser\Node\Stmt\Switch_;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -59,38 +59,42 @@ CODE_SAMPLE
     public function refactor(Node $node) : ?Node
     {
         $defaultCases = [];
-        foreach ($node->cases as $case) {
-            if ($case->cond !== null) {
+        foreach ($node->cases as $key => $case) {
+            if ($case->cond instanceof Expr) {
                 continue;
             }
-            $defaultCases[] = $case;
+            $defaultCases[$key] = $case;
         }
         if (\count($defaultCases) < 2) {
             return null;
         }
-        $this->removeExtraDefaultCases($defaultCases);
+        $this->removeExtraDefaultCases($node->cases, $defaultCases);
         return $node;
     }
     /**
+     * @param Case_[] $cases
      * @param Case_[] $defaultCases
      */
-    private function removeExtraDefaultCases(array $defaultCases) : void
+    private function removeExtraDefaultCases(array $cases, array $defaultCases) : void
     {
         // keep only last
         \array_pop($defaultCases);
-        foreach ($defaultCases as $defaultCase) {
-            $this->keepStatementsToParentCase($defaultCase);
+        foreach ($defaultCases as $key => $defaultCase) {
+            $this->keepStatementsToParentCase($cases, $defaultCase, $key);
             $this->removeNode($defaultCase);
         }
     }
-    private function keepStatementsToParentCase(Case_ $case) : void
+    /**
+     * @param Case_[] $cases
+     */
+    private function keepStatementsToParentCase(array $cases, Case_ $case, int $key) : void
     {
-        $previousNode = $case->getAttribute(AttributeKey::PREVIOUS_NODE);
-        if (!$previousNode instanceof Case_) {
+        if (!isset($cases[$key - 1])) {
             return;
         }
-        if ($previousNode->stmts === []) {
-            $previousNode->stmts = $case->stmts;
+        $previousCase = $cases[$key - 1];
+        if ($previousCase->stmts === []) {
+            $previousCase->stmts = $case->stmts;
             $case->stmts = [];
         }
     }

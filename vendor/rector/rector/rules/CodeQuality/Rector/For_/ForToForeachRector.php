@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\For_;
 
-use RectorPrefix202303\Doctrine\Inflector\Inflector;
+use RectorPrefix202304\Doctrine\Inflector\Inflector;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
@@ -128,7 +128,7 @@ CODE_SAMPLE
         if (!$this->forAnalyzer->isLoopMatch($node->loop, $this->keyValueName)) {
             return null;
         }
-        if ($this->iteratedExpr === null) {
+        if (!$this->iteratedExpr instanceof Expr) {
             return null;
         }
         if ($this->keyValueName === null) {

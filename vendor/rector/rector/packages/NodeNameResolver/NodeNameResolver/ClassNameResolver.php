@@ -4,11 +4,12 @@ declare (strict_types=1);
 namespace Rector\NodeNameResolver\NodeNameResolver;
 
 use PhpParser\Node;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassLike;
 use Rector\NodeNameResolver\Contract\NodeNameResolverInterface;
 use Rector\NodeNameResolver\NodeNameResolver;
-use RectorPrefix202303\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @implements NodeNameResolverInterface<ClassLike>
  */
@@ -37,7 +38,7 @@ final class ClassNameResolver implements NodeNameResolverInterface
         if ($node->namespacedName instanceof Name) {
             return $node->namespacedName->toString();
         }
-        if ($node->name === null) {
+        if (!$node->name instanceof Identifier) {
             return null;
         }
         return $this->nodeNameResolver->getName($node->name);

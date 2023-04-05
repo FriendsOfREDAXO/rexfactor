@@ -311,6 +311,7 @@ return array(
     'PhpCsFixer\\Fixer\\LanguageConstruct\\IsNullFixer' => $vendorDir . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/IsNullFixer.php',
     'PhpCsFixer\\Fixer\\LanguageConstruct\\NoUnsetOnPropertyFixer' => $vendorDir . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/NoUnsetOnPropertyFixer.php',
     'PhpCsFixer\\Fixer\\LanguageConstruct\\SingleSpaceAfterConstructFixer' => $vendorDir . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/SingleSpaceAfterConstructFixer.php',
+    'PhpCsFixer\\Fixer\\LanguageConstruct\\SingleSpaceAroundConstructFixer' => $vendorDir . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/SingleSpaceAroundConstructFixer.php',
     'PhpCsFixer\\Fixer\\ListNotation\\ListSyntaxFixer' => $vendorDir . '/friendsofphp/php-cs-fixer/src/Fixer/ListNotation/ListSyntaxFixer.php',
     'PhpCsFixer\\Fixer\\NamespaceNotation\\BlankLineAfterNamespaceFixer' => $vendorDir . '/friendsofphp/php-cs-fixer/src/Fixer/NamespaceNotation/BlankLineAfterNamespaceFixer.php',
     'PhpCsFixer\\Fixer\\NamespaceNotation\\CleanNamespaceFixer' => $vendorDir . '/friendsofphp/php-cs-fixer/src/Fixer/NamespaceNotation/CleanNamespaceFixer.php',

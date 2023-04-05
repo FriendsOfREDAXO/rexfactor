@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Rector\Catch_;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\Variable;
@@ -87,7 +87,7 @@ CODE_SAMPLE
         if (\count($node->types) !== 1) {
             return null;
         }
-        if ($node->var === null) {
+        if (!$node->var instanceof Variable) {
             return null;
         }
         $oldVariableName = $this->getName($node->var);

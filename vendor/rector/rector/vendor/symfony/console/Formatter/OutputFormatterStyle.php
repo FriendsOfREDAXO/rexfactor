@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202303\Symfony\Component\Console\Formatter;
+namespace RectorPrefix202304\Symfony\Component\Console\Formatter;
 
-use RectorPrefix202303\Symfony\Component\Console\Color;
+use RectorPrefix202304\Symfony\Component\Console\Color;
 /**
  * Formatter style class for defining styles.
  *
@@ -55,14 +55,14 @@ class OutputFormatterStyle implements OutputFormatterStyleInterface
     public function setForeground(string $color = null)
     {
         if (1 > \func_num_args()) {
-            \RectorPrefix202303\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+            \RectorPrefix202304\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
         }
         $this->color = new Color($this->foreground = $color ?: '', $this->background, $this->options);
     }
     public function setBackground(string $color = null)
     {
         if (1 > \func_num_args()) {
-            \RectorPrefix202303\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+            \RectorPrefix202304\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
         }
         $this->color = new Color($this->foreground, $this->background = $color ?: '', $this->options);
     }
@@ -89,7 +89,7 @@ class OutputFormatterStyle implements OutputFormatterStyleInterface
     }
     public function apply(string $text) : string
     {
-        $this->handlesHrefGracefully = $this->handlesHrefGracefully ?? 'JetBrains-JediTerm' !== \getenv('TERMINAL_EMULATOR') && (!\getenv('KONSOLE_VERSION') || (int) \getenv('KONSOLE_VERSION') > 201100);
+        $this->handlesHrefGracefully = $this->handlesHrefGracefully ?? 'JetBrains-JediTerm' !== \getenv('TERMINAL_EMULATOR') && (!\getenv('KONSOLE_VERSION') || (int) \getenv('KONSOLE_VERSION') > 201100) && !isset($_SERVER['IDEA_INITIAL_DIRECTORY']);
         if (null !== $this->href && $this->handlesHrefGracefully) {
             $text = "\x1b]8;;{$this->href}\x1b\\{$text}\x1b]8;;\x1b\\";
         }
