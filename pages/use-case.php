@@ -35,5 +35,3 @@ $fragment = new rex_fragment();
 $fragment->setVar('title', 'Select the migration use-case');
 $fragment->setVar('body', $content, false);
 echo $fragment->parse('core/page/section.php');
-
-echo rex_view::info('This AddOn is created by Markus Staab in his free time. <a href="https://github.com/sponsors/staabm">Support rexfactor with your sponsoring 💕</a>');
