@@ -8,6 +8,7 @@ $content = '';
 $content .= rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
 
 $content .= '<ul class="list-group">';
+$hasGit = RexCmd::gitExecutable() !== null;
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
