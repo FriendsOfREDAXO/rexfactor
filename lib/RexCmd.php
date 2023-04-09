@@ -4,6 +4,7 @@ namespace rexfactor;
 
 use Exception;
 
+use rex_path;
 use function function_exists;
 use function is_resource;
 use function proc_open;
@@ -79,5 +80,9 @@ final class RexCmd
         }
 
         return 'php';
+    }
+
+    public static function gitExecutable(): ?string {
+        return rex_path::findBinaryPath('git');
     }
 }
