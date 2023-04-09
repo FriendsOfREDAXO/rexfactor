@@ -8,6 +8,7 @@ $content = '';
 $content .= rex_view::warning("It's recommended to rexfactor only AddOns which are under version control and don't contain uncommitted changes.");
 
 $content .= '<ul class="list-group">';
+$hasGit = RexCmd::gitExecutable() !== null;
 foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
@@ -19,7 +20,7 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $batches = [];
     if (!is_dir($addonPath.'/.git')) {
         $batches[] = '<span class="label label-danger">unversioned sources</span>';
-    } else {
+    } elseif ($hasGit) {
         $output = RexCmd::execCmd('cd '. escapeshellarg($addonPath) .' && git diff --name-only', $stdErr, $exitCode);
         if ($output !== '') {
             $batches[] = '<span class="label label-warning">uncommitted changes</span>';
