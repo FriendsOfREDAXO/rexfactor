@@ -54,7 +54,7 @@ final class RexFactor
             'ANNOTATIONS_TO_ATTRIBUTES' => 'Annotations to Attributes',
         ],
         self::MISC_MIGRATIONS => [
-            self::REX_CODE_STYLE_SETNAME => 'Redaxo specific code style v1',
+            self::REX_CODE_STYLE_SETNAME => 'REDAXO specific code style v1',
             'CODING_STYLE' => 'More explicit coding style',
         ],
     ];
