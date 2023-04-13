@@ -21,15 +21,11 @@ page:
         apply:
             title: 'Summary'
             hidden: true
-        readme:
-            title: 'Readme'
-            subPath: README.md
-            itemClass: pull-right
-            icon: rex-icon fa-book
         intro:
             title: 'Intro'
             href: https://staabm.github.io/2023/04/09/rexfactor-introduction.html
             itemClass: pull-right
+            icon: rex-icon fa-book
 
 requires:
     php:
