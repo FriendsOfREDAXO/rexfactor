@@ -22,6 +22,9 @@ foreach (RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
 
     $content .= '<ul class="list-group">';
     foreach ($groupSetLists as $setList => $label) {
+        if ('developer' === $addon && 'DEAD_CODE' === $setList) {
+            continue;
+        }
         $loader = \rexfactor\ViewHelpers::jsLoader();
         $content .= '<li class="list-group-item"><a class="list-group-item-heading" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'" onclick="'.$loader.'">'.rex_escape($label).'</a></li>';
     }
