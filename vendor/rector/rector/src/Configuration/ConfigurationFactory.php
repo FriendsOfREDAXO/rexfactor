@@ -7,7 +7,7 @@ use Rector\ChangesReporting\Output\ConsoleOutputFormatter;
 use Rector\Core\Configuration\Parameter\ParameterProvider;
 use Rector\Core\Contract\Console\OutputStyleInterface;
 use Rector\Core\ValueObject\Configuration;
-use RectorPrefix202303\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202304\Symfony\Component\Console\Input\InputInterface;
 final class ConfigurationFactory
 {
     /**
@@ -43,14 +43,13 @@ final class ConfigurationFactory
         $shouldClearCache = (bool) $input->getOption(\Rector\Core\Configuration\Option::CLEAR_CACHE);
         $outputFormat = (string) $input->getOption(\Rector\Core\Configuration\Option::OUTPUT_FORMAT);
         $showProgressBar = $this->shouldShowProgressBar($input, $outputFormat);
-        $showDiffs = !(bool) $input->getOption(\Rector\Core\Configuration\Option::NO_DIFFS);
+        $showDiffs = $this->shouldShowDiffs($input);
         $paths = $this->resolvePaths($input);
         $fileExtensions = $this->parameterProvider->provideArrayParameter(\Rector\Core\Configuration\Option::FILE_EXTENSIONS);
         $isParallel = $this->parameterProvider->provideBoolParameter(\Rector\Core\Configuration\Option::PARALLEL);
         $parallelPort = (string) $input->getOption(\Rector\Core\Configuration\Option::PARALLEL_PORT);
         $parallelIdentifier = (string) $input->getOption(\Rector\Core\Configuration\Option::PARALLEL_IDENTIFIER);
-        /** @var string|null $memoryLimit */
-        $memoryLimit = $input->getOption(\Rector\Core\Configuration\Option::MEMORY_LIMIT);
+        $memoryLimit = $this->resolveMemoryLimit($input);
         return new Configuration($isDryRun, $showProgressBar, $shouldClearCache, $outputFormat, $fileExtensions, $paths, $showDiffs, $parallelPort, $parallelIdentifier, $isParallel, $memoryLimit);
     }
     private function shouldShowProgressBar(InputInterface $input, string $outputFormat) : bool
@@ -63,6 +62,15 @@ final class ConfigurationFactory
             return \false;
         }
         return $outputFormat === ConsoleOutputFormatter::NAME;
+    }
+    private function shouldShowDiffs(InputInterface $input) : bool
+    {
+        $noDiffs = (bool) $input->getOption(\Rector\Core\Configuration\Option::NO_DIFFS);
+        if ($noDiffs) {
+            return \false;
+        }
+        // fallback to parameter
+        return !$this->parameterProvider->provideBoolParameter(\Rector\Core\Configuration\Option::NO_DIFFS);
     }
     /**
      * @param string[] $commandLinePaths
@@ -90,5 +98,16 @@ final class ConfigurationFactory
         }
         // fallback to parameter
         return $this->parameterProvider->provideArrayParameter(\Rector\Core\Configuration\Option::PATHS);
+    }
+    private function resolveMemoryLimit(InputInterface $input) : ?string
+    {
+        $memoryLimit = $input->getOption(\Rector\Core\Configuration\Option::MEMORY_LIMIT);
+        if ($memoryLimit !== null) {
+            return (string) $memoryLimit;
+        }
+        if (!$this->parameterProvider->hasParameter(\Rector\Core\Configuration\Option::MEMORY_LIMIT)) {
+            return null;
+        }
+        return $this->parameterProvider->provideStringParameter(\Rector\Core\Configuration\Option::MEMORY_LIMIT);
     }
 }

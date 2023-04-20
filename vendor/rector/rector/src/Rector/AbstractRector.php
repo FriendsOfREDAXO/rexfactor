@@ -10,9 +10,6 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\InlineHTML;
 use PhpParser\Node\Stmt\Nop;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NodeConnectingVisitor;
-use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PhpParser\NodeVisitorAbstract;
 use PHPStan\Analyser\MutatingScope;
 use PHPStan\Type\ObjectType;
@@ -32,6 +29,7 @@ use Rector\Core\PhpParser\Comparing\NodeComparator;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PhpParser\Node\NodeFactory;
 use Rector\Core\PhpParser\Node\Value\ValueResolver;
+use Rector\Core\PhpParser\NodeTraverser\NodeConnectingTraverser;
 use Rector\Core\ProcessAnalyzer\RectifiedAnalyzer;
 use Rector\Core\Provider\CurrentFileProvider;
 use Rector\Core\ValueObject\Application\File;
@@ -43,7 +41,7 @@ use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\PostRector\Collector\NodesToRemoveCollector;
 use Rector\Skipper\Skipper\Skipper;
 use Rector\StaticTypeMapper\StaticTypeMapper;
-use RectorPrefix202303\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
 abstract class AbstractRector extends NodeVisitorAbstract implements PhpRectorInterface
 {
     /**
@@ -52,14 +50,14 @@ abstract class AbstractRector extends NodeVisitorAbstract implements PhpRectorIn
     private const EMPTY_NODE_ARRAY_MESSAGE = <<<CODE_SAMPLE
 Array of nodes cannot be empty. Ensure "%s->refactor()" returns non-empty array for Nodes.
 
-A) Return null for no change:
+A) Direct return null for no change:
 
     return null;
 
 B) Remove the Node:
 
     \$this->removeNode(\$node);
-    return \$node;
+    return null;
 CODE_SAMPLE;
     /**
      * @var \Rector\NodeNameResolver\NodeNameResolver
@@ -155,9 +153,13 @@ CODE_SAMPLE;
      */
     private $docBlockUpdater;
     /**
+     * @var \Rector\Core\PhpParser\NodeTraverser\NodeConnectingTraverser
+     */
+    private $nodeConnectingTraverser;
+    /**
      * @required
      */
-    public function autowire(NodesToRemoveCollector $nodesToRemoveCollector, NodeRemover $nodeRemover, NodeNameResolver $nodeNameResolver, NodeTypeResolver $nodeTypeResolver, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeFactory $nodeFactory, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, CurrentRectorProvider $currentRectorProvider, CurrentNodeProvider $currentNodeProvider, Skipper $skipper, ValueResolver $valueResolver, BetterNodeFinder $betterNodeFinder, NodeComparator $nodeComparator, CurrentFileProvider $currentFileProvider, RectifiedAnalyzer $rectifiedAnalyzer, CreatedByRuleDecorator $createdByRuleDecorator, ChangedNodeScopeRefresher $changedNodeScopeRefresher, RectorOutputStyle $rectorOutputStyle, FilePathHelper $filePathHelper, DocBlockUpdater $docBlockUpdater) : void
+    public function autowire(NodesToRemoveCollector $nodesToRemoveCollector, NodeRemover $nodeRemover, NodeNameResolver $nodeNameResolver, NodeTypeResolver $nodeTypeResolver, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeFactory $nodeFactory, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, CurrentRectorProvider $currentRectorProvider, CurrentNodeProvider $currentNodeProvider, Skipper $skipper, ValueResolver $valueResolver, BetterNodeFinder $betterNodeFinder, NodeComparator $nodeComparator, CurrentFileProvider $currentFileProvider, RectifiedAnalyzer $rectifiedAnalyzer, CreatedByRuleDecorator $createdByRuleDecorator, ChangedNodeScopeRefresher $changedNodeScopeRefresher, RectorOutputStyle $rectorOutputStyle, FilePathHelper $filePathHelper, DocBlockUpdater $docBlockUpdater, NodeConnectingTraverser $nodeConnectingTraverser) : void
     {
         $this->nodesToRemoveCollector = $nodesToRemoveCollector;
         $this->nodeRemover = $nodeRemover;
@@ -180,6 +182,7 @@ CODE_SAMPLE;
         $this->rectorOutputStyle = $rectorOutputStyle;
         $this->filePathHelper = $filePathHelper;
         $this->docBlockUpdater = $docBlockUpdater;
+        $this->nodeConnectingTraverser = $nodeConnectingTraverser;
     }
     /**
      * @return Node[]|null
@@ -215,7 +218,7 @@ CODE_SAMPLE;
             $this->changedNodeScopeRefresher->reIndexNodeAttributes($node);
         }
         $refactoredNode = $this->refactor($node);
-        // nothing to change → continue
+        // nothing to change or just removed via removeNode() → continue
         if ($refactoredNode === null) {
             return null;
         }
@@ -237,7 +240,7 @@ CODE_SAMPLE;
         if (\is_array($refactoredNode)) {
             $firstNode = \current($refactoredNode);
             $this->mirrorComments($firstNode, $originalNode);
-            $this->updateAndconnectParentNodes($refactoredNode, $parentNode);
+            $this->updateParentNodes($refactoredNode, $parentNode);
             $this->connectNodes($refactoredNode, $node);
             $this->refreshScopeNodes($refactoredNode, $filePath, $currentScope);
             $this->nodesToReturn[$originalNodeHash] = $refactoredNode;
@@ -245,7 +248,7 @@ CODE_SAMPLE;
             return $originalNode;
         }
         $refactoredNode = $originalNode instanceof Stmt && $refactoredNode instanceof Expr ? new Expression($refactoredNode) : $refactoredNode;
-        $this->updateAndconnectParentNodes($refactoredNode, $parentNode);
+        $this->updateParentNodes($refactoredNode, $parentNode);
         $this->connectNodes([$refactoredNode], $node);
         $this->refreshScopeNodes($refactoredNode, $filePath, $currentScope);
         $this->nodesToReturn[$originalNodeHash] = $refactoredNode;
@@ -365,19 +368,16 @@ CODE_SAMPLE;
     /**
      * @param mixed[]|\PhpParser\Node $node
      */
-    private function updateAndconnectParentNodes($node, ?Node $parentNode) : void
+    private function updateParentNodes($node, ?Node $parentNode) : void
     {
         if (!$parentNode instanceof Node) {
             return;
         }
         $nodes = $node instanceof Node ? [$node] : $node;
         foreach ($nodes as $node) {
-            // update parents relations - must run before addVisitor(new ParentConnectingVisitor())
+            // update parents relations
             $node->setAttribute(AttributeKey::PARENT_NODE, $parentNode);
         }
-        $nodeTraverser = new NodeTraverser();
-        $nodeTraverser->addVisitor(new ParentConnectingVisitor());
-        $nodeTraverser->traverse($nodes);
     }
     /**
      * @param non-empty-array<Node> $nodes
@@ -398,9 +398,7 @@ CODE_SAMPLE;
             $nextNode = $node->getAttribute(AttributeKey::NEXT_NODE);
             $nodes = \array_merge(\is_array($nodes) ? $nodes : \iterator_to_array($nodes), [$nextNode]);
         }
-        $nodeTraverser = new NodeTraverser();
-        $nodeTraverser->addVisitor(new NodeConnectingVisitor());
-        $nodeTraverser->traverse($nodes);
+        $this->nodeConnectingTraverser->traverse($nodes);
     }
     private function printDebugCurrentFileAndRule() : void
     {

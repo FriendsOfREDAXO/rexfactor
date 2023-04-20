@@ -72,8 +72,7 @@ final class EchoTagSyntaxFixer extends AbstractFixer implements ConfigurableFixe
 <?php /* comment */ echo '2' . '3'; ?>
 <?php print '2' . '3'; someFunction(); ?>
 
-EOT
-        ;
+EOT;
 
         return new FixerDefinition(
             'Replaces short-echo `<?=` with long format `<?php echo`/`<?php print` syntax, or vice-versa.',
@@ -120,11 +119,11 @@ EOT
                 ->setAllowedValues(self::SUPPORTED_FORMAT_OPTIONS)
                 ->setDefault(self::FORMAT_LONG)
                 ->getOption(),
-            (new FixerOptionBuilder(self::OPTION_LONG_FUNCTION, 'The function to be used to expand the short echo tags'))
+            (new FixerOptionBuilder(self::OPTION_LONG_FUNCTION, 'The function to be used to expand the short echo tags.'))
                 ->setAllowedValues(self::SUPPORTED_LONGFUNCTION_OPTIONS)
                 ->setDefault(self::LONG_FUNCTION_ECHO)
                 ->getOption(),
-            (new FixerOptionBuilder(self::OPTION_SHORTEN_SIMPLE_STATEMENTS_ONLY, 'Render short-echo tags only in case of simple code'))
+            (new FixerOptionBuilder(self::OPTION_SHORTEN_SIMPLE_STATEMENTS_ONLY, 'Render short-echo tags only in case of simple code.'))
                 ->setAllowedTypes(['bool'])
                 ->setDefault(true)
                 ->getOption(),

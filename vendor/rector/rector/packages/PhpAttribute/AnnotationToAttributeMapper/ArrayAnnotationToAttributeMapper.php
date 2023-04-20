@@ -13,8 +13,8 @@ use Rector\Core\PhpParser\Node\Value\ValueResolver;
 use Rector\PhpAttribute\AnnotationToAttributeMapper;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
 use Rector\PhpAttribute\Enum\DocTagNodeState;
-use RectorPrefix202303\Symfony\Contracts\Service\Attribute\Required;
-use RectorPrefix202303\Webmozart\Assert\Assert;
+use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202304\Webmozart\Assert\Assert;
 /**
  * @implements AnnotationToAttributeMapperInterface<mixed[]>
  */
@@ -80,7 +80,7 @@ final class ArrayAnnotationToAttributeMapper implements AnnotationToAttributeMap
     }
     private function resolveValueExprWithSingleQuoteHandling(ArrayItem $arrayItem) : ArrayItem
     {
-        if ($arrayItem->key === null && $arrayItem->value instanceof ClassConstFetch && $arrayItem->value->class instanceof Name && \strpos((string) $arrayItem->value->class, "'") !== \false) {
+        if (!$arrayItem->key instanceof Expr && $arrayItem->value instanceof ClassConstFetch && $arrayItem->value->class instanceof Name && \strpos((string) $arrayItem->value->class, "'") !== \false) {
             $arrayItem->value = new String_($this->valueResolver->getValue($arrayItem->value));
             return $arrayItem;
         }

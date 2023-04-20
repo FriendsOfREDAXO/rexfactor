@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Renaming\Rector\FileWithoutNamespace;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
@@ -21,7 +21,7 @@ use Rector\NodeTypeResolver\PhpDoc\PhpDocTypeRenamer;
 use Rector\Renaming\ValueObject\PseudoNamespaceToNamespace;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202303\Webmozart\Assert\Assert;
+use RectorPrefix202304\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\FileWithoutNamespace\PseudoNamespaceToNamespaceRector\PseudoNamespaceToNamespaceRectorTest
  */
@@ -76,21 +76,20 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
-        $processNode = clone $node;
         $this->newNamespace = null;
-        if ($processNode instanceof FileWithoutNamespace) {
-            $changedStmts = $this->refactorStmts($processNode->stmts);
+        if ($node instanceof FileWithoutNamespace) {
+            $changedStmts = $this->refactorStmts($node->stmts);
             if ($changedStmts === null) {
                 return null;
             }
-            $processNode->stmts = $changedStmts;
+            $node->stmts = $changedStmts;
             // add a new namespace?
             if ($this->newNamespace !== null) {
                 return new Namespace_(new Name($this->newNamespace), $changedStmts);
             }
         }
-        if ($processNode instanceof Namespace_) {
-            return $this->refactorNamespace($processNode);
+        if ($node instanceof Namespace_) {
+            return $this->refactorNamespace($node);
         }
         return null;
     }

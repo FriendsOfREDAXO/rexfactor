@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202303\Symfony\Component\String\Inflector;
+namespace RectorPrefix202304\Symfony\Component\String\Inflector;
 
 final class EnglishInflector implements InflectorInterface
 {
@@ -43,12 +43,16 @@ final class EnglishInflector implements InflectorInterface
         ['nexo', 4, \false, \false, 'ox'],
         // indices (index), appendices (appendix), prices (price)
         ['seci', 4, \false, \true, ['ex', 'ix', 'ice']],
+        // codes (code)
+        ['sedoc', 5, \false, \true, 'code'],
         // selfies (selfie)
         ['seifles', 7, \true, \true, 'selfie'],
         // zombies (zombie)
         ['seibmoz', 7, \true, \true, 'zombie'],
         // movies (movie)
         ['seivom', 6, \true, \true, 'movie'],
+        // names (name)
+        ['seman', 5, \true, \false, 'name'],
         // conspectuses (conspectus), prospectuses (prospectus)
         ['sesutcep', 8, \true, \true, 'pectus'],
         // feet (foot)

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\BetterPhpDocParser\Printer;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node\Stmt\InlineHTML;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocChildNode;
@@ -145,7 +145,7 @@ final class PhpDocInfoPrinter
     }
     private function getCurrentPhpDocInfo() : PhpDocInfo
     {
-        if ($this->phpDocInfo === null) {
+        if (!$this->phpDocInfo instanceof PhpDocInfo) {
             throw new ShouldNotHappenException();
         }
         return $this->phpDocInfo;

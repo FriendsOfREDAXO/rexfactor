@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PostRector\Rector;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -141,6 +141,10 @@ CODE_SAMPLE
             }
             $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
             $names = \array_merge($names, $phpDocInfo->getAnnotationClassNames());
+            $constFetchNodeNames = $phpDocInfo->getConstFetchNodeClassNames();
+            $names = \array_merge($names, $constFetchNodeNames);
+            $genericTagClassNames = $phpDocInfo->getGenericTagClassNames();
+            $names = \array_merge($names, $genericTagClassNames);
         });
         return $names;
     }

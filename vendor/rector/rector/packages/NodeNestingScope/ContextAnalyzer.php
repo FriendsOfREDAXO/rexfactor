@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace Rector\NodeNestingScope;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -39,8 +40,9 @@ final class ContextAnalyzer
     }
     public function isInLoop(Node $node) : bool
     {
-        $stopNodes = \array_merge(ControlStructure::LOOP_NODES, self::BREAK_NODES);
-        $firstParent = $this->betterNodeFinder->findParentByTypes($node, $stopNodes);
+        $item0Unpacked = ControlStructure::LOOP_NODES;
+        $item1Unpacked = self::BREAK_NODES;
+        $firstParent = $this->betterNodeFinder->findParentByTypes($node, \array_merge($item0Unpacked, $item1Unpacked));
         if (!$firstParent instanceof Node) {
             return \false;
         }
@@ -63,8 +65,8 @@ final class ContextAnalyzer
      */
     public function isInIf(Node $node) : bool
     {
-        $breakNodes = \array_merge([If_::class], self::BREAK_NODES);
-        $previousNode = $this->betterNodeFinder->findParentByTypes($node, $breakNodes);
+        $item1Unpacked = self::BREAK_NODES;
+        $previousNode = $this->betterNodeFinder->findParentByTypes($node, \array_merge([If_::class], $item1Unpacked));
         if (!$previousNode instanceof Node) {
             return \false;
         }
@@ -81,7 +83,7 @@ final class ContextAnalyzer
             }
             $nextNode = $node->getAttribute(AttributeKey::NEXT_NODE);
             if ($nextNode instanceof Node) {
-                if ($nextNode instanceof Return_ && $nextNode->expr === null) {
+                if ($nextNode instanceof Return_ && !$nextNode->expr instanceof Expr) {
                     continue;
                 }
                 $hasAssign = (bool) $this->betterNodeFinder->findFirstInstanceOf($if->stmts, Assign::class);

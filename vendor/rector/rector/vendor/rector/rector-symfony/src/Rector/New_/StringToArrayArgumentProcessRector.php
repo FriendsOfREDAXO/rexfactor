@@ -18,7 +18,7 @@ use PHPStan\Type\StringType;
 use Rector\Core\PhpParser\NodeTransformer;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202303\Symfony\Component\Console\Input\StringInput;
+use RectorPrefix202304\Symfony\Component\Console\Input\StringInput;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -118,7 +118,7 @@ CODE_SAMPLE
         $args = $expr->getArgs();
         if ($firstArgumentExpr instanceof FuncCall && $this->isName($firstArgumentExpr, 'sprintf')) {
             $arrayNode = $this->nodeTransformer->transformSprintfToArray($firstArgumentExpr);
-            if ($arrayNode !== null) {
+            if ($arrayNode instanceof Array_) {
                 $args[$argumentPosition]->value = $arrayNode;
             }
         } elseif ($firstArgumentExpr instanceof String_) {
@@ -149,7 +149,7 @@ CODE_SAMPLE
             return;
         }
         $arrayNode = $this->nodeTransformer->transformSprintfToArray($funcCall);
-        if ($arrayNode !== null && \count($arrayNode->items) > 1) {
+        if ($arrayNode instanceof Array_ && \count($arrayNode->items) > 1) {
             $assign->expr = $arrayNode;
         }
     }

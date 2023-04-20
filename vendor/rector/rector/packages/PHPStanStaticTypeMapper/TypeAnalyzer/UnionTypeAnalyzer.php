@@ -4,15 +4,11 @@ declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeAnalyzer;
 
 use PHPStan\Type\ArrayType;
-use PHPStan\Type\BooleanType;
 use PHPStan\Type\Constant\ConstantStringType;
-use PHPStan\Type\FloatType;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\IterableType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\ObjectWithoutClassType;
-use PHPStan\Type\StringType;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
 use Rector\PHPStanStaticTypeMapper\ValueObject\UnionTypeAnalysis;
@@ -90,16 +86,16 @@ final class UnionTypeAnalyzer
             return \false;
         }
         foreach ($types as $type) {
-            if ($type instanceof StringType && !$type instanceof ConstantStringType) {
+            if ($type->isString()->yes() && !$type instanceof ConstantStringType) {
                 continue;
             }
-            if ($type instanceof FloatType) {
+            if ($type->isFloat()->yes()) {
                 continue;
             }
-            if ($type instanceof IntegerType) {
+            if ($type->isInteger()->yes()) {
                 continue;
             }
-            if ($type instanceof BooleanType) {
+            if ($type->isBoolean()->yes()) {
                 continue;
             }
             return \false;

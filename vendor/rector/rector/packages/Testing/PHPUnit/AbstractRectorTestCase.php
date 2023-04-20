@@ -4,11 +4,11 @@ declare (strict_types=1);
 namespace Rector\Testing\PHPUnit;
 
 use Iterator;
-use RectorPrefix202303\Nette\Utils\FileSystem;
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\FileSystem;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPUnit\Framework\ExpectationFailedException;
-use RectorPrefix202303\Psr\Container\ContainerInterface;
+use RectorPrefix202304\Psr\Container\ContainerInterface;
 use Rector\Core\Application\ApplicationFileProcessor;
 use Rector\Core\Application\FileSystem\RemovedAndAddedFilesCollector;
 use Rector\Core\Autoloading\AdditionalAutoloader;
@@ -137,12 +137,14 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
         if ($this->removedAndAddedFilesCollector->isFileRemoved($originalFilePath)) {
             return;
         }
+        $fixtureFilename = \basename($fixtureFilePath);
+        $failureMessage = \sprintf('Failed on fixture file "%s"', $fixtureFilename);
         try {
-            $this->assertSame($expectedFileContents, $changedContent);
+            $this->assertSame($expectedFileContents, $changedContent, $failureMessage);
         } catch (ExpectationFailedException $exception) {
             FixtureFileUpdater::updateFixtureContent($originalFilePath, $changedContent, $fixtureFilePath);
             // if not exact match, check the regex version (useful for generated hashes/uuids in the code)
-            $this->assertStringMatchesFormat($expectedFileContents, $changedContent);
+            $this->assertStringMatchesFormat($expectedFileContents, $changedContent, $failureMessage);
         }
     }
     private function processFilePath(string $filePath) : string

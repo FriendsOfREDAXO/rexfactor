@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PhpDocNodeVisitor;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node as PhpParserNode;
 use PHPStan\PhpDocParser\Ast\Node;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
@@ -70,7 +70,7 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
     }
     public function beforeTraverse(Node $node) : void
     {
-        if ($this->currentPhpParserNode === null) {
+        if (!$this->currentPhpParserNode instanceof PhpParserNode) {
             throw new ShouldNotHappenException('Set "$currentPhpParserNode" first');
         }
     }
@@ -98,7 +98,7 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
         if (!$file instanceof File) {
             return null;
         }
-        if ($this->currentPhpParserNode === null) {
+        if (!$this->currentPhpParserNode instanceof PhpParserNode) {
             throw new ShouldNotHappenException();
         }
         return $this->processFqnNameImport($this->currentPhpParserNode, $node, $staticType, $file);
@@ -220,7 +220,7 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
             return null;
         }
         $importedName = $this->processFqnNameImport($currentPhpParserNode, $identifierTypeNode, $staticType, $file);
-        if ($importedName !== null) {
+        if ($importedName instanceof IdentifierTypeNode) {
             $spacelessPhpDocTagNode->name = '@' . $importedName->name;
             return $spacelessPhpDocTagNode;
         }

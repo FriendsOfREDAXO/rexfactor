@@ -5,12 +5,12 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202303\Tracy;
+namespace RectorPrefix202304\Tracy;
 
-use RectorPrefix202303\Ds;
-use RectorPrefix202303\Tracy\Dumper\Describer;
-use RectorPrefix202303\Tracy\Dumper\Exposer;
-use RectorPrefix202303\Tracy\Dumper\Renderer;
+use RectorPrefix202304\Ds;
+use RectorPrefix202304\Tracy\Dumper\Describer;
+use RectorPrefix202304\Tracy\Dumper\Exposer;
+use RectorPrefix202304\Tracy\Dumper\Renderer;
 /**
  * Dumps a variable.
  */
@@ -34,7 +34,7 @@ class Dumper
     /**
      * @var mixed[]
      */
-    public static $objectExporters = [\Closure::class => [Exposer::class, 'exposeClosure'], \UnitEnum::class => [Exposer::class, 'exposeEnum'], \ArrayObject::class => [Exposer::class, 'exposeArrayObject'], \ArrayIterator::class => [Exposer::class, 'exposeArrayIterator'], \SplFileInfo::class => [Exposer::class, 'exposeSplFileInfo'], \SplObjectStorage::class => [Exposer::class, 'exposeSplObjectStorage'], \__PHP_Incomplete_Class::class => [Exposer::class, 'exposePhpIncompleteClass'], \Generator::class => [Exposer::class, 'exposeGenerator'], \Fiber::class => [Exposer::class, 'exposeFiber'], \DOMNode::class => [Exposer::class, 'exposeDOMNode'], \DOMNodeList::class => [Exposer::class, 'exposeDOMNodeList'], \DOMNamedNodeMap::class => [Exposer::class, 'exposeDOMNodeList'], Ds\Collection::class => [Exposer::class, 'exposeDsCollection'], Ds\Map::class => [Exposer::class, 'exposeDsMap']];
+    public static $objectExporters = [\Closure::class => [Exposer::class, 'exposeClosure'], \UnitEnum::class => [Exposer::class, 'exposeEnum'], \ArrayObject::class => [Exposer::class, 'exposeArrayObject'], \SplFileInfo::class => [Exposer::class, 'exposeSplFileInfo'], \SplObjectStorage::class => [Exposer::class, 'exposeSplObjectStorage'], \__PHP_Incomplete_Class::class => [Exposer::class, 'exposePhpIncompleteClass'], \Generator::class => [Exposer::class, 'exposeGenerator'], \Fiber::class => [Exposer::class, 'exposeFiber'], \DOMNode::class => [Exposer::class, 'exposeDOMNode'], \DOMNodeList::class => [Exposer::class, 'exposeDOMNodeList'], \DOMNamedNodeMap::class => [Exposer::class, 'exposeDOMNodeList'], Ds\Collection::class => [Exposer::class, 'exposeDsCollection'], Ds\Map::class => [Exposer::class, 'exposeDsMap']];
     /** @var array<string, array{bool, string[]}> */
     private static $enumProperties = [];
     /**

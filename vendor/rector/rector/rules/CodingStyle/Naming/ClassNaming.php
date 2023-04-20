@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Naming;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassLike;
@@ -15,7 +15,7 @@ final class ClassNaming
     public function getShortName($name) : string
     {
         if ($name instanceof ClassLike) {
-            if ($name->name === null) {
+            if (!$name->name instanceof Identifier) {
                 return '';
             }
             return $this->getShortName($name->name);

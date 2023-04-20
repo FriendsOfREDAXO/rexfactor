@@ -90,7 +90,7 @@ class MyTest extends \\PhpUnit\\FrameWork\\TestCase
     protected function createConfigurationDefinition(): FixerConfigurationResolverInterface
     {
         return new FixerConfigurationResolver([
-            (new FixerOptionBuilder('case', 'Apply camel or snake case to test methods'))
+            (new FixerOptionBuilder('case', 'Apply camel or snake case to test methods.'))
                 ->setAllowedValues([self::CAMEL_CASE, self::SNAKE_CASE])
                 ->setDefault(self::CAMEL_CASE)
                 ->getOption(),
@@ -162,8 +162,7 @@ class MyTest extends \\PhpUnit\\FrameWork\\TestCase
 
         return
             $this->isPHPDoc($tokens, $docBlockIndex) // If the function doesn't have test in its name, and no doc block, it's not a test
-            && str_contains($tokens[$docBlockIndex]->getContent(), '@test')
-        ;
+            && str_contains($tokens[$docBlockIndex]->getContent(), '@test');
     }
 
     private function isMethod(Tokens $tokens, int $index): bool

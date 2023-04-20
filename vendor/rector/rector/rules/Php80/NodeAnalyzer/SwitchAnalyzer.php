@@ -9,7 +9,6 @@ use PhpParser\Node\Stmt\Break_;
 use PhpParser\Node\Stmt\Case_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\Stmt\Switch_;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
@@ -46,7 +45,7 @@ final class SwitchAnalyzer
         }
         $uniqueTypes = $this->typeFactory->uniquateTypes($types);
         $countUniqueTypes = \count($uniqueTypes);
-        if ($countUniqueTypes === 1 && $uniqueTypes[0] instanceof IntegerType) {
+        if ($countUniqueTypes === 1 && $uniqueTypes[0]->isInteger()->yes()) {
             $switchCondType = $this->nodeTypeResolver->getType($expr);
             if (!$switchCondType instanceof MixedType && $switchCondType->isString()->maybe()) {
                 return \true;
@@ -74,7 +73,7 @@ final class SwitchAnalyzer
     public function hasEachCaseSingleStmt(Switch_ $switch) : bool
     {
         foreach ($switch->cases as $case) {
-            if ($case->cond === null) {
+            if (!$case->cond instanceof Expr) {
                 continue;
             }
             $stmtsWithoutBreak = \array_filter($case->stmts, static function (Node $node) : bool {
@@ -89,7 +88,7 @@ final class SwitchAnalyzer
     public function hasDefaultSingleStmt(Switch_ $switch) : bool
     {
         foreach ($switch->cases as $case) {
-            if ($case->cond === null) {
+            if (!$case->cond instanceof Expr) {
                 $stmtsWithoutBreak = \array_filter($case->stmts, static function (Node $node) : bool {
                     return !$node instanceof Break_;
                 });

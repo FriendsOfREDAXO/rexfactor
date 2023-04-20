@@ -4,11 +4,8 @@ declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PHPStan\Type;
 
 use PHPStan\Type\ArrayType;
-use PHPStan\Type\BooleanType;
 use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\ConstantScalarType;
-use PHPStan\Type\FloatType;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
@@ -57,16 +54,16 @@ final class StaticTypeAnalyzer
         if ($type instanceof NullType) {
             return \true;
         }
-        if ($type instanceof BooleanType) {
+        if ($type->isBoolean()->yes()) {
             return \true;
         }
         if ($type->isString()->yes()) {
             return \true;
         }
-        if ($type instanceof IntegerType) {
+        if ($type->isInteger()->yes()) {
             return \true;
         }
-        return $type instanceof FloatType;
+        return $type->isFloat()->yes();
     }
     private function isAlwaysTruableUnionType(Type $type) : bool
     {
