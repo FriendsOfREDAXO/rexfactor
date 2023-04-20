@@ -3,11 +3,11 @@
 declare (strict_types=1);
 namespace Rector\Doctrine\Rector\Property;
 
-use RectorPrefix202303\Doctrine\ORM\Mapping\Embedded;
-use RectorPrefix202303\Doctrine\ORM\Mapping\ManyToMany;
-use RectorPrefix202303\Doctrine\ORM\Mapping\ManyToOne;
-use RectorPrefix202303\Doctrine\ORM\Mapping\OneToMany;
-use RectorPrefix202303\Doctrine\ORM\Mapping\OneToOne;
+use RectorPrefix202304\Doctrine\ORM\Mapping\Embedded;
+use RectorPrefix202304\Doctrine\ORM\Mapping\ManyToMany;
+use RectorPrefix202304\Doctrine\ORM\Mapping\ManyToOne;
+use RectorPrefix202304\Doctrine\ORM\Mapping\OneToMany;
+use RectorPrefix202304\Doctrine\ORM\Mapping\OneToOne;
 use PhpParser\Node;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\Identifier;
@@ -95,7 +95,7 @@ CODE_SAMPLE
         $phpDocInfo = $this->phpDocInfoFactory->createFromNode($node);
         if ($phpDocInfo instanceof PhpDocInfo) {
             $property = $this->changeTypeInAnnotationTypes($node, $phpDocInfo);
-            $annotationDetected = $property !== null || $phpDocInfo->hasChanged();
+            $annotationDetected = $property instanceof Property || $phpDocInfo->hasChanged();
             if ($annotationDetected) {
                 return $property;
             }

@@ -6,10 +6,13 @@ namespace Rector\BetterPhpDocParser\PhpDocManipulator;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
+use PHPStan\PhpDocParser\Ast\ConstExpr\ConstFetchNode;
 use PHPStan\PhpDocParser\Ast\Node;
+use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\VarTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type\ArrayShapeNode;
+use PHPStan\PhpDocParser\Ast\Type\ConstTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
@@ -36,7 +39,7 @@ final class PhpDocTypeChanger
     /**
      * @var array<class-string<Node>>
      */
-    public const ALLOWED_TYPES = [GenericTypeNode::class, SpacingAwareArrayTypeNode::class, SpacingAwareCallableTypeNode::class, ArrayShapeNode::class];
+    private const ALLOWED_TYPES = [GenericTypeNode::class, SpacingAwareArrayTypeNode::class, SpacingAwareCallableTypeNode::class, ArrayShapeNode::class];
     /**
      * @var string[]
      */
@@ -106,7 +109,7 @@ final class PhpDocTypeChanger
         // override existing type
         $newPHPStanPhpDocType = $this->staticTypeMapper->mapPHPStanTypeToPHPStanPhpDocTypeNode($newType, TypeKind::PROPERTY);
         $currentVarTagValueNode = $phpDocInfo->getVarTagValueNode();
-        if ($currentVarTagValueNode !== null) {
+        if ($currentVarTagValueNode instanceof VarTagValueNode) {
             // only change type
             $currentVarTagValueNode->type = $newPHPStanPhpDocType;
             $phpDocInfo->markAsChanged();
@@ -132,7 +135,7 @@ final class PhpDocTypeChanger
         // override existing type
         $newPHPStanPhpDocType = $this->staticTypeMapper->mapPHPStanTypeToPHPStanPhpDocTypeNode($newType, TypeKind::RETURN);
         $currentReturnTagValueNode = $phpDocInfo->getReturnTagValue();
-        if ($currentReturnTagValueNode !== null) {
+        if ($currentReturnTagValueNode instanceof ReturnTagValueNode) {
             // only change type
             $currentReturnTagValueNode->type = $newPHPStanPhpDocType;
             $phpDocInfo->markAsChanged();
@@ -155,7 +158,7 @@ final class PhpDocTypeChanger
         $phpDocType = $this->staticTypeMapper->mapPHPStanTypeToPHPStanPhpDocTypeNode($newType, TypeKind::PARAM);
         $paramTagValueNode = $phpDocInfo->getParamTagValueByName($paramName);
         // override existing type
-        if ($paramTagValueNode !== null) {
+        if ($paramTagValueNode instanceof ParamTagValueNode) {
             // already set
             $currentType = $this->staticTypeMapper->mapPHPStanPhpDocTypeNodeToPHPStanType($paramTagValueNode->type, $param);
             // avoid overriding better type
@@ -180,6 +183,9 @@ final class PhpDocTypeChanger
                     return \true;
                 }
             }
+        }
+        if ($typeNode instanceof ConstTypeNode && $typeNode->constExpr instanceof ConstFetchNode) {
+            return \true;
         }
         if (\in_array(\get_class($typeNode), self::ALLOWED_TYPES, \true)) {
             return \true;

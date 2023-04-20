@@ -7,8 +7,9 @@ use Rector\Core\DependencyInjection\TypeResolver\ParameterTypeResolver;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
-use RectorPrefix202303\Symfony\Component\Config\Loader\LoaderInterface;
-use RectorPrefix202303\Symfony\Component\DependencyInjection\Definition;
+use ReflectionType;
+use RectorPrefix202304\Symfony\Component\Config\Loader\LoaderInterface;
+use RectorPrefix202304\Symfony\Component\DependencyInjection\Definition;
 final class ParameterSkipper
 {
     /**
@@ -62,7 +63,7 @@ final class ParameterSkipper
     }
     private function isArrayType(ReflectionParameter $reflectionParameter) : bool
     {
-        if ($reflectionParameter->getType() === null) {
+        if (!$reflectionParameter->getType() instanceof ReflectionType) {
             return \false;
         }
         $reflectionParameterType = $reflectionParameter->getType();

@@ -9,8 +9,8 @@ use Rector\Core\Configuration\ValueObjectInliner;
 use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\Contract\Rector\RectorInterface;
 use Rector\Core\ValueObject\PhpVersion;
-use RectorPrefix202303\Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use RectorPrefix202303\Webmozart\Assert\Assert;
+use RectorPrefix202304\Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use RectorPrefix202304\Webmozart\Assert\Assert;
 /**
  * @api
  * Same as Symfony container configurator, with patched return type for "set()" method for easier DX.
@@ -47,9 +47,19 @@ final class RectorConfig extends ContainerConfigurator
     {
         $parameters = $this->parameters();
         $parameters->set(Option::PARALLEL, \true);
-        $parameters->set(Option::PARALLEL_TIMEOUT_IN_SECONDS, $seconds);
+        $parameters->set(Option::PARALLEL_JOB_TIMEOUT_IN_SECONDS, $seconds);
         $parameters->set(Option::PARALLEL_MAX_NUMBER_OF_PROCESSES, $maxNumberOfProcess);
         $parameters->set(Option::PARALLEL_JOB_SIZE, $jobSize);
+    }
+    public function noDiffs() : void
+    {
+        $parameters = $this->parameters();
+        $parameters->set(Option::NO_DIFFS, \true);
+    }
+    public function memoryLimit(string $memoryLimit) : void
+    {
+        $parameters = $this->parameters();
+        $parameters->set(Option::MEMORY_LIMIT, $memoryLimit);
     }
     /**
      * @param array<int|string, mixed> $criteria

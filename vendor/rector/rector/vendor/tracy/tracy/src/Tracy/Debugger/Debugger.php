@@ -5,7 +5,7 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202303\Tracy;
+namespace RectorPrefix202304\Tracy;
 
 use ErrorException;
 /**
@@ -13,7 +13,7 @@ use ErrorException;
  */
 class Debugger
 {
-    public const VERSION = '2.10.0';
+    public const VERSION = '2.10.2';
     /** server modes for Debugger::enable() */
     public const Development = \false, Production = \true, Detect = null;
     public const DEVELOPMENT = self::Development, PRODUCTION = self::Production, DETECT = self::Detect;

@@ -18,11 +18,11 @@ use Rector\Core\ValueObject\Reporting\FileDiff;
 use Rector\Core\ValueObjectFactory\Application\FileFactory;
 use Rector\Parallel\Application\ParallelFileProcessor;
 use Rector\Parallel\ValueObject\Bridge;
-use RectorPrefix202303\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202303\Symfony\Component\Filesystem\Filesystem;
-use RectorPrefix202303\Symplify\EasyParallel\CpuCoreCountProvider;
-use RectorPrefix202303\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
-use RectorPrefix202303\Symplify\EasyParallel\ScheduleFactory;
+use RectorPrefix202304\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202304\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202304\Symplify\EasyParallel\CpuCoreCountProvider;
+use RectorPrefix202304\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
+use RectorPrefix202304\Symplify\EasyParallel\ScheduleFactory;
 final class ApplicationFileProcessor
 {
     /**
@@ -128,7 +128,7 @@ final class ApplicationFileProcessor
             // 1. collect all files from files+dirs provided paths
             $files = $this->fileFactory->createFromPaths($filePaths);
             // 2. PHPStan has to know about all files too
-            $this->configurePHPStanNodeScopeResolver($filePaths);
+            $this->configurePHPStanNodeScopeResolver($filePaths, $configuration);
             $systemErrorsAndFileDiffs = $this->processFiles($files, $configuration);
             $this->fileDiffFileDecorator->decorate($files);
             $this->printFiles($files, $configuration);
@@ -149,6 +149,7 @@ final class ApplicationFileProcessor
         if ($shouldShowProgressBar) {
             $fileCount = \count($files);
             $this->rectorOutputStyle->progressStart($fileCount);
+            $this->rectorOutputStyle->progressAdvance(0);
         }
         $systemErrorsAndFileDiffs = [Bridge::SYSTEM_ERRORS => [], Bridge::FILE_DIFFS => []];
         foreach ($files as $file) {
@@ -170,13 +171,15 @@ final class ApplicationFileProcessor
     /**
      * @param string[] $filePaths
      */
-    public function configurePHPStanNodeScopeResolver(array $filePaths) : void
+    public function configurePHPStanNodeScopeResolver(array $filePaths, Configuration $configuration) : void
     {
-        $phpFilter = static function (string $filePath) : bool {
-            return \substr_compare($filePath, '.php', -\strlen('.php')) === 0;
+        $fileExtensions = $configuration->getFileExtensions();
+        $fileWithExtensionsFilter = static function (string $filePath) use($fileExtensions) : bool {
+            $filePathExtension = \pathinfo($filePath, \PATHINFO_EXTENSION);
+            return \in_array($filePathExtension, $fileExtensions, \true);
         };
-        $phpFilePaths = \array_filter($filePaths, $phpFilter);
-        $this->nodeScopeResolver->setAnalysedFiles($phpFilePaths);
+        $filePaths = \array_filter($filePaths, $fileWithExtensionsFilter);
+        $this->nodeScopeResolver->setAnalysedFiles($filePaths);
     }
     /**
      * @param File[] $files
@@ -233,20 +236,17 @@ final class ApplicationFileProcessor
         // must be a string, otherwise the serialization returns empty arrays
         // $filePaths // = $this->filePathNormalizer->resolveFilePathsFromFileInfos($filePaths);
         $schedule = $this->scheduleFactory->create($this->cpuCoreCountProvider->provide(), $this->parameterProvider->provideIntParameter(Option::PARALLEL_JOB_SIZE), $this->parameterProvider->provideIntParameter(Option::PARALLEL_MAX_NUMBER_OF_PROCESSES), $filePaths);
-        // for progress bar
-        $isProgressBarStarted = \false;
-        $postFileCallback = function (int $stepCount) use(&$isProgressBarStarted, $filePaths, $configuration) : void {
-            if (!$configuration->shouldShowProgressBar()) {
-                return;
-            }
-            if (!$isProgressBarStarted) {
-                $fileCount = \count($filePaths);
-                $this->rectorOutputStyle->progressStart($fileCount);
-                $isProgressBarStarted = \true;
-            }
-            $this->rectorOutputStyle->progressAdvance($stepCount);
-            // running in parallel here → nothing else to do
+        $postFileCallback = static function (int $stepCount) : void {
         };
+        if ($configuration->shouldShowProgressBar()) {
+            $fileCount = \count($filePaths);
+            $this->rectorOutputStyle->progressStart($fileCount);
+            $this->rectorOutputStyle->progressAdvance(0);
+            $postFileCallback = function (int $stepCount) : void {
+                $this->rectorOutputStyle->progressAdvance($stepCount);
+                // running in parallel here → nothing else to do
+            };
+        }
         $mainScript = $this->resolveCalledRectorBinary();
         if ($mainScript === null) {
             throw new ParallelShouldNotHappenException('[parallel] Main script was not found');

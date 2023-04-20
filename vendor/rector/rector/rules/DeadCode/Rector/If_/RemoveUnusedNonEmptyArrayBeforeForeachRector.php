@@ -4,11 +4,14 @@ declare (strict_types=1);
 namespace Rector\DeadCode\Rector\If_;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
 use PHPStan\Analyser\Scope;
+use Rector\Core\Contract\PhpParser\Node\StmtsAwareInterface;
 use Rector\Core\NodeAnalyzer\PropertyFetchAnalyzer;
 use Rector\Core\NodeManipulator\IfManipulator;
 use Rector\Core\Php\ReservedKeywordAnalyzer;
@@ -91,24 +94,27 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [If_::class];
+        return [If_::class, StmtsAwareInterface::class];
     }
     /**
-     * @param If_ $node
-     * @return Stmt[]|Foreach_|null
+     * @param If_|StmtsAwareInterface $node
+     * @return Stmt[]|Foreach_|StmtsAwareInterface|null
      */
     public function refactorWithScope(Node $node, Scope $scope)
     {
-        if (!$this->isUselessBeforeForeachCheck($node, $scope)) {
-            return null;
+        if ($node instanceof If_) {
+            if (!$this->isUselessBeforeForeachCheck($node, $scope)) {
+                return null;
+            }
+            /** @var Foreach_ $stmt */
+            $stmt = $node->stmts[0];
+            $ifComments = $node->getAttribute(AttributeKey::COMMENTS) ?? [];
+            $stmtComments = $stmt->getAttribute(AttributeKey::COMMENTS) ?? [];
+            $comments = \array_merge($ifComments, $stmtComments);
+            $stmt->setAttribute(AttributeKey::COMMENTS, $comments);
+            return $stmt;
         }
-        /** @var Foreach_ $stmt */
-        $stmt = $node->stmts[0];
-        $ifComments = $node->getAttribute(AttributeKey::COMMENTS) ?? [];
-        $stmtComments = $stmt->getAttribute(AttributeKey::COMMENTS) ?? [];
-        $comments = \array_merge($ifComments, $stmtComments);
-        $stmt->setAttribute(AttributeKey::COMMENTS, $comments);
-        return $stmt;
+        return $this->refactorStmtsAware($node);
     }
     private function isUselessBeforeForeachCheck(If_ $if, Scope $scope) : bool
     {
@@ -124,8 +130,13 @@ CODE_SAMPLE
                 return \false;
             }
         }
-        if (($if->cond instanceof Variable || $this->propertyFetchAnalyzer->isPropertyFetch($if->cond)) && $this->nodeComparator->areNodesEqual($if->cond, $foreachExpr)) {
-            return $scope->getType($if->cond)->isArray()->yes();
+        $ifCond = $if->cond;
+        if ($ifCond instanceof BooleanAnd) {
+            return $this->isUselessBooleanAnd($ifCond, $foreachExpr);
+        }
+        if (($ifCond instanceof Variable || $this->propertyFetchAnalyzer->isPropertyFetch($ifCond)) && $this->nodeComparator->areNodesEqual($ifCond, $foreachExpr)) {
+            $ifType = $scope->getType($ifCond);
+            return $ifType->isArray()->yes();
         }
         if ($this->uselessIfCondBeforeForeachDetector->isMatchingNotIdenticalEmptyArray($if, $foreachExpr)) {
             return \true;
@@ -134,5 +145,40 @@ CODE_SAMPLE
             return \true;
         }
         return $this->countManipulator->isCounterHigherThanOne($if->cond, $foreachExpr);
+    }
+    private function isUselessBooleanAnd(BooleanAnd $booleanAnd, Expr $foreachExpr) : bool
+    {
+        if (!$booleanAnd->left instanceof Variable) {
+            return \false;
+        }
+        if (!$this->nodeComparator->areNodesEqual($booleanAnd->left, $foreachExpr)) {
+            return \false;
+        }
+        return $this->countManipulator->isCounterHigherThanOne($booleanAnd->right, $foreachExpr);
+    }
+    private function refactorStmtsAware(StmtsAwareInterface $stmtsAware) : ?StmtsAwareInterface
+    {
+        if ($stmtsAware->stmts === null) {
+            return null;
+        }
+        \end($stmtsAware->stmts);
+        /** @var int $lastKey */
+        $lastKey = \key($stmtsAware->stmts);
+        if (!isset($stmtsAware->stmts[$lastKey], $stmtsAware->stmts[$lastKey - 1])) {
+            return null;
+        }
+        $stmt = $stmtsAware->stmts[$lastKey - 1];
+        if (!$stmt instanceof If_) {
+            return null;
+        }
+        $nextStmt = $stmtsAware->stmts[$lastKey];
+        if (!$nextStmt instanceof Foreach_) {
+            return null;
+        }
+        if (!$this->uselessIfCondBeforeForeachDetector->isMatchingEmptyAndForeachedExpr($stmt, $nextStmt->expr)) {
+            return null;
+        }
+        unset($stmtsAware->stmts[$lastKey - 1]);
+        return $stmtsAware;
     }
 }

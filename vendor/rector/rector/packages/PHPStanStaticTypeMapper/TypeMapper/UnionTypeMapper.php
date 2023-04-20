@@ -38,10 +38,9 @@ use Rector\PHPStanStaticTypeMapper\TypeAnalyzer\BoolUnionTypeAnalyzer;
 use Rector\PHPStanStaticTypeMapper\TypeAnalyzer\UnionTypeAnalyzer;
 use Rector\PHPStanStaticTypeMapper\TypeAnalyzer\UnionTypeCommonTypeNarrower;
 use Rector\PHPStanStaticTypeMapper\ValueObject\UnionTypeAnalysis;
-use function RectorPrefix202303\Symfony\Component\String\b;
-use RectorPrefix202303\Symfony\Contracts\Service\Attribute\Required;
-use RectorPrefix202303\Webmozart\Assert\Assert;
-use RectorPrefix202303\Webmozart\Assert\InvalidArgumentException;
+use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202304\Webmozart\Assert\Assert;
+use RectorPrefix202304\Webmozart\Assert\InvalidArgumentException;
 /**
  * @implements TypeMapperInterface<UnionType>
  */
@@ -205,7 +204,7 @@ final class UnionTypeMapper implements TypeMapperInterface
     private function mapNullabledType(Type $nullabledType, string $typeKind) : ?Node
     {
         // void cannot be nullable
-        if ($nullabledType instanceof VoidType) {
+        if ($nullabledType->isVoid()->yes()) {
             return null;
         }
         $nullabledTypeNode = $this->phpStanStaticTypeMapper->mapToPhpParserNode($nullabledType, $typeKind);
@@ -285,7 +284,7 @@ final class UnionTypeMapper implements TypeMapperInterface
         if ($phpParserUnionType instanceof NullableType) {
             return $phpParserUnionType;
         }
-        if ($phpParserUnionType !== null) {
+        if ($phpParserUnionType instanceof PhpParserUnionType) {
             return $this->narrowBoolType($unionType, $phpParserUnionType, $typeKind);
         }
         if ($this->boolUnionTypeAnalyzer->isBoolUnionType($unionType)) {

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Php72\NodeFactory;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\ComplexType;
 use PhpParser\Node\Expr;
@@ -35,7 +35,6 @@ use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Reflection\Php\PhpMethodReflection;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
-use PHPStan\Type\VoidType;
 use Rector\Core\PhpParser\AstResolver;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PhpParser\Node\NodeFactory;
@@ -360,7 +359,7 @@ final class AnonymousFunctionFactory
      */
     private function resolveStmts(FunctionVariantWithPhpDocs $functionVariantWithPhpDocs, $innerMethodCall) : array
     {
-        if ($functionVariantWithPhpDocs->getReturnType() instanceof VoidType) {
+        if ($functionVariantWithPhpDocs->getReturnType()->isVoid()->yes()) {
             return [new Expression($innerMethodCall)];
         }
         return [new Return_($innerMethodCall)];

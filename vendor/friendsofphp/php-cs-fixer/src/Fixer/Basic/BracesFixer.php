@@ -18,8 +18,9 @@ use PhpCsFixer\AbstractProxyFixer;
 use PhpCsFixer\Fixer\ConfigurableFixerInterface;
 use PhpCsFixer\Fixer\ControlStructure\ControlStructureBracesFixer;
 use PhpCsFixer\Fixer\ControlStructure\ControlStructureContinuationPositionFixer;
+use PhpCsFixer\Fixer\DeprecatedFixerInterface;
 use PhpCsFixer\Fixer\LanguageConstruct\DeclareParenthesesFixer;
-use PhpCsFixer\Fixer\LanguageConstruct\SingleSpaceAfterConstructFixer;
+use PhpCsFixer\Fixer\LanguageConstruct\SingleSpaceAroundConstructFixer;
 use PhpCsFixer\Fixer\Whitespace\NoExtraBlankLinesFixer;
 use PhpCsFixer\Fixer\Whitespace\StatementIndentationFixer;
 use PhpCsFixer\Fixer\WhitespacesAwareFixerInterface;
@@ -29,15 +30,15 @@ use PhpCsFixer\FixerConfiguration\FixerOptionBuilder;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
-use PhpCsFixer\Tokenizer\CT;
-use PhpCsFixer\Tokenizer\Tokens;
 
 /**
  * Fixer for rules defined in PSR2 ¶4.1, ¶4.4, ¶5.
  *
  * @author Dariusz Rumiński <dariusz.ruminski@gmail.com>
+ *
+ * @deprecated
  */
-final class BracesFixer extends AbstractProxyFixer implements ConfigurableFixerInterface, WhitespacesAwareFixerInterface
+final class BracesFixer extends AbstractProxyFixer implements ConfigurableFixerInterface, WhitespacesAwareFixerInterface, DeprecatedFixerInterface
 {
     /**
      * @internal
@@ -142,11 +143,19 @@ class Foo
      * {@inheritdoc}
      *
      * Must run before HeredocIndentationFixer.
-     * Must run after ClassAttributesSeparationFixer, ClassDefinitionFixer, EmptyLoopBodyFixer, NoAlternativeSyntaxFixer, NoEmptyStatementFixer, NoUselessElseFixer, SingleLineThrowFixer, SingleSpaceAfterConstructFixer, SingleTraitInsertPerStatementFixer.
+     * Must run after ClassAttributesSeparationFixer, ClassDefinitionFixer, EmptyLoopBodyFixer, NoAlternativeSyntaxFixer, NoEmptyStatementFixer, NoUselessElseFixer, SingleLineThrowFixer, SingleSpaceAfterConstructFixer, SingleSpaceAroundConstructFixer, SingleTraitInsertPerStatementFixer.
      */
     public function getPriority(): int
     {
         return 35;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSuccessorsNames(): array
+    {
+        return array_keys($this->proxyFixers);
     }
 
     public function configure(array $configuration = null): void
@@ -168,22 +177,6 @@ class Foo
                 ? ControlStructureContinuationPositionFixer::NEXT_LINE
                 : ControlStructureContinuationPositionFixer::SAME_LINE,
         ]);
-
-        $this->configuration = $configuration;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function applyFix(\SplFileInfo $file, Tokens $tokens): void
-    {
-        for ($index = \count($tokens) - 1; $index > 0; --$index) {
-            if ($tokens[$index]->isGivenKind(CT::T_USE_LAMBDA)) {
-                $tokens->ensureWhitespaceAtIndex($index - 1, 1, ' ');
-            }
-        }
-
-        parent::applyFix($file, $tokens);
     }
 
     /**
@@ -200,15 +193,15 @@ class Foo
                 ->setAllowedTypes(['bool'])
                 ->setDefault(false)
                 ->getOption(),
-            (new FixerOptionBuilder('position_after_functions_and_oop_constructs', 'whether the opening brace should be placed on "next" or "same" line after classy constructs (non-anonymous classes, interfaces, traits, methods and non-lambda functions).'))
+            (new FixerOptionBuilder('position_after_functions_and_oop_constructs', 'Whether the opening brace should be placed on "next" or "same" line after classy constructs (non-anonymous classes, interfaces, traits, methods and non-lambda functions).'))
                 ->setAllowedValues([self::LINE_NEXT, self::LINE_SAME])
                 ->setDefault(self::LINE_NEXT)
                 ->getOption(),
-            (new FixerOptionBuilder('position_after_control_structures', 'whether the opening brace should be placed on "next" or "same" line after control structures.'))
+            (new FixerOptionBuilder('position_after_control_structures', 'Whether the opening brace should be placed on "next" or "same" line after control structures.'))
                 ->setAllowedValues([self::LINE_NEXT, self::LINE_SAME])
                 ->setDefault(self::LINE_SAME)
                 ->getOption(),
-            (new FixerOptionBuilder('position_after_anonymous_constructs', 'whether the opening brace should be placed on "next" or "same" line after anonymous constructs (anonymous classes and lambda functions).'))
+            (new FixerOptionBuilder('position_after_anonymous_constructs', 'Whether the opening brace should be placed on "next" or "same" line after anonymous constructs (anonymous classes and lambda functions).'))
                 ->setAllowedValues([self::LINE_NEXT, self::LINE_SAME])
                 ->setDefault(self::LINE_SAME)
                 ->getOption(),
@@ -217,9 +210,11 @@ class Foo
 
     protected function createProxyFixers(): array
     {
-        $singleSpaceAfterConstructFixer = new SingleSpaceAfterConstructFixer();
-        $singleSpaceAfterConstructFixer->configure([
-            'constructs' => ['elseif', 'for', 'foreach', 'if', 'match', 'while', 'use_lambda'],
+        $singleSpaceAroundConstructFixer = new SingleSpaceAroundConstructFixer();
+        $singleSpaceAroundConstructFixer->configure([
+            'constructs_contain_a_single_space' => [],
+            'constructs_followed_by_a_single_space' => ['elseif', 'for', 'foreach', 'if', 'match', 'while', 'use_lambda'],
+            'constructs_preceded_by_a_single_space' => ['use_lambda'],
         ]);
 
         $noExtraBlankLinesFixer = new NoExtraBlankLinesFixer();
@@ -228,7 +223,7 @@ class Foo
         ]);
 
         return [
-            $singleSpaceAfterConstructFixer,
+            $singleSpaceAroundConstructFixer,
             new ControlStructureBracesFixer(),
             $noExtraBlankLinesFixer,
             $this->getCurlyBracesPositionFixer(),
@@ -261,7 +256,6 @@ class Foo
     {
         return self::LINE_NEXT === $option
             ? CurlyBracesPositionFixer::NEXT_LINE_UNLESS_NEWLINE_AT_SIGNATURE_END
-            : CurlyBracesPositionFixer::SAME_LINE
-        ;
+            : CurlyBracesPositionFixer::SAME_LINE;
     }
 }

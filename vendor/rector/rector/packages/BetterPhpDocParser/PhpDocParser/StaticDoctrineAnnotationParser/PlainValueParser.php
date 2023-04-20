@@ -17,7 +17,7 @@ use Rector\BetterPhpDocParser\ValueObject\Parser\BetterTokenIterator;
 use Rector\BetterPhpDocParser\ValueObject\PhpDocAttributeKey;
 use Rector\Core\Configuration\CurrentNodeProvider;
 use Rector\Core\Exception\ShouldNotHappenException;
-use RectorPrefix202303\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
 final class PlainValueParser
 {
     /**
@@ -69,7 +69,7 @@ final class PlainValueParser
         $tokenIterator->next();
         // normalize value
         $constExprNode = $this->matchConstantValue($currentTokenValue);
-        if ($constExprNode !== null) {
+        if ($constExprNode instanceof ConstExprNode) {
             return $constExprNode;
         }
         while ($tokenIterator->isCurrentTokenType(Lexer::TOKEN_DOUBLE_COLON) || $tokenIterator->isCurrentTokenType(Lexer::TOKEN_IDENTIFIER)) {

@@ -3,7 +3,8 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Application;
 
-use RectorPrefix202303\Nette\Utils\Strings;
+use RectorPrefix202304\Nette\Utils\Strings;
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Declare_;
 use PhpParser\Node\Stmt\Namespace_;
@@ -144,7 +145,7 @@ final class UseImportsAdder
     }
     private function getNamespaceName(Namespace_ $namespace) : ?string
     {
-        if ($namespace->name === null) {
+        if (!$namespace->name instanceof Name) {
             return null;
         }
         return $namespace->name->toString();

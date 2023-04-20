@@ -492,6 +492,7 @@ class ComposerStaticInit432d9322d3d4193d52e9a1d1ec2ff418
         'PhpCsFixer\\Fixer\\LanguageConstruct\\IsNullFixer' => __DIR__ . '/..' . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/IsNullFixer.php',
         'PhpCsFixer\\Fixer\\LanguageConstruct\\NoUnsetOnPropertyFixer' => __DIR__ . '/..' . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/NoUnsetOnPropertyFixer.php',
         'PhpCsFixer\\Fixer\\LanguageConstruct\\SingleSpaceAfterConstructFixer' => __DIR__ . '/..' . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/SingleSpaceAfterConstructFixer.php',
+        'PhpCsFixer\\Fixer\\LanguageConstruct\\SingleSpaceAroundConstructFixer' => __DIR__ . '/..' . '/friendsofphp/php-cs-fixer/src/Fixer/LanguageConstruct/SingleSpaceAroundConstructFixer.php',
         'PhpCsFixer\\Fixer\\ListNotation\\ListSyntaxFixer' => __DIR__ . '/..' . '/friendsofphp/php-cs-fixer/src/Fixer/ListNotation/ListSyntaxFixer.php',
         'PhpCsFixer\\Fixer\\NamespaceNotation\\BlankLineAfterNamespaceFixer' => __DIR__ . '/..' . '/friendsofphp/php-cs-fixer/src/Fixer/NamespaceNotation/BlankLineAfterNamespaceFixer.php',
         'PhpCsFixer\\Fixer\\NamespaceNotation\\CleanNamespaceFixer' => __DIR__ . '/..' . '/friendsofphp/php-cs-fixer/src/Fixer/NamespaceNotation/CleanNamespaceFixer.php',

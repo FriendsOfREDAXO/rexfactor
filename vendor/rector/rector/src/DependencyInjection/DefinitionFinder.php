@@ -4,8 +4,8 @@ declare (strict_types=1);
 namespace Rector\Core\DependencyInjection;
 
 use Rector\Core\DependencyInjection\Exception\DefinitionForTypeNotFoundException;
-use RectorPrefix202303\Symfony\Component\DependencyInjection\ContainerBuilder;
-use RectorPrefix202303\Symfony\Component\DependencyInjection\Definition;
+use RectorPrefix202304\Symfony\Component\DependencyInjection\ContainerBuilder;
+use RectorPrefix202304\Symfony\Component\DependencyInjection\Definition;
 use Throwable;
 /**
  * @api
@@ -34,7 +34,7 @@ final class DefinitionFinder
     public function getByType(ContainerBuilder $containerBuilder, string $type) : Definition
     {
         $definition = $this->getByTypeIfExists($containerBuilder, $type);
-        if ($definition !== null) {
+        if ($definition instanceof Definition) {
             return $definition;
         }
         throw new DefinitionForTypeNotFoundException(\sprintf('Definition for type "%s" was not found.', $type));

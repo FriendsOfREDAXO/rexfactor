@@ -23,8 +23,6 @@ use PHPStan\Broker\ClassAutoloadingException;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\Constant\ConstantBooleanType;
-use PHPStan\Type\FloatType;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
@@ -51,10 +49,6 @@ final class NodeTypeResolver
      * @var array<class-string<Node>, NodeTypeResolverInterface>
      */
     private $nodeTypeResolvers = [];
-    /**
-     * @var array<string, bool>
-     */
-    private $traitExistsCache = [];
     /**
      * @readonly
      * @var \Rector\TypeDeclaration\PHPStan\ObjectTypeSpecifier
@@ -177,7 +171,7 @@ final class NodeTypeResolver
             }
         }
         $type = $this->resolveByNodeTypeResolvers($node);
-        if ($type !== null) {
+        if ($type instanceof Type) {
             $type = $this->accessoryNonEmptyStringTypeCorrector->correct($type);
             $type = $this->genericClassStringTypeCorrector->correct($type);
             if ($type instanceof ObjectType) {
@@ -242,10 +236,10 @@ final class NodeTypeResolver
     public function isNumberType(Expr $expr) : bool
     {
         $nodeType = $this->getType($expr);
-        if ($nodeType instanceof IntegerType) {
+        if ($nodeType->isInteger()->yes()) {
             return \true;
         }
-        return $nodeType instanceof FloatType;
+        return $nodeType->isFloat()->yes();
     }
     /**
      * @api
@@ -321,27 +315,30 @@ final class NodeTypeResolver
     }
     private function isObjectTypeOfObjectType(ObjectType $resolvedObjectType, ObjectType $requiredObjectType) : bool
     {
-        if ($resolvedObjectType->isInstanceOf($requiredObjectType->getClassName())->yes()) {
+        $requiredClassName = $requiredObjectType->getClassName();
+        $resolvedClassName = $resolvedObjectType->getClassName();
+        if ($resolvedClassName === $requiredClassName) {
             return \true;
         }
-        if ($resolvedObjectType->getClassName() === $requiredObjectType->getClassName()) {
+        if ($resolvedObjectType->isInstanceOf($requiredClassName)->yes()) {
             return \true;
         }
-        if (!$this->reflectionProvider->hasClass($resolvedObjectType->getClassName())) {
+        if (!$this->reflectionProvider->hasClass($requiredClassName)) {
             return \false;
         }
-        $classReflection = $this->reflectionProvider->getClass($resolvedObjectType->getClassName());
-        if (!isset($this->traitExistsCache[$classReflection->getName()])) {
-            $this->traitExistsCache[$classReflection->getName()] = \trait_exists($requiredObjectType->getClassName());
+        $requiredClassReflection = $this->reflectionProvider->getClass($requiredClassName);
+        if (!$this->reflectionProvider->hasClass($resolvedClassName)) {
+            return \false;
         }
-        if ($this->traitExistsCache[$classReflection->getName()]) {
-            foreach ($classReflection->getAncestors() as $ancestorClassReflection) {
-                if ($ancestorClassReflection->hasTraitUse($requiredObjectType->getClassName())) {
+        $resolvedClassReflection = $this->reflectionProvider->getClass($resolvedClassName);
+        if ($requiredClassReflection->isTrait()) {
+            foreach ($resolvedClassReflection->getAncestors() as $ancestorClassReflection) {
+                if ($ancestorClassReflection->hasTraitUse($requiredClassName)) {
                     return \true;
                 }
             }
         }
-        return $classReflection->isSubclassOf($requiredObjectType->getClassName());
+        return \false;
     }
     private function resolveObjectType(ObjectType $resolvedObjectType, ObjectType $requiredObjectType) : bool
     {
@@ -359,7 +356,7 @@ final class NodeTypeResolver
      */
     private function resolveTernaryType(Ternary $ternary)
     {
-        if ($ternary->if !== null) {
+        if ($ternary->if instanceof Expr) {
             $first = $this->getType($ternary->if);
             $second = $this->getType($ternary->else);
             if ($this->isUnionTypeable($first, $second)) {

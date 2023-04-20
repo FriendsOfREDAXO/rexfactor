@@ -148,7 +148,7 @@ final class PhpdocTagTypeFixer extends AbstractFixer implements ConfigurableFixe
     protected function createConfigurationDefinition(): FixerConfigurationResolverInterface
     {
         return new FixerConfigurationResolver([
-            (new FixerOptionBuilder('tags', 'The list of tags to fix'))
+            (new FixerOptionBuilder('tags', 'The list of tags to fix.'))
                 ->setAllowedTypes(['array'])
                 ->setAllowedValues([static function (array $value): bool {
                     foreach ($value as $type) {
@@ -202,8 +202,7 @@ final class PhpdocTagTypeFixer extends AbstractFixer implements ConfigurableFixe
     {
         return
             Preg::match('/(^|\R)\h*[^@\s]\N*/', $this->cleanComment($parts[$index - 1]))
-            || Preg::match('/^.*?\R\s*[^@\s]/', $this->cleanComment($parts[$index + 1]))
-        ;
+            || Preg::match('/^.*?\R\s*[^@\s]/', $this->cleanComment($parts[$index + 1]));
     }
 
     private function cleanComment(string $comment): string

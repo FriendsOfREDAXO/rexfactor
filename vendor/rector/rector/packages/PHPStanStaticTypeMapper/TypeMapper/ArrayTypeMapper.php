@@ -14,7 +14,6 @@ use PHPStan\Type\ClassStringType;
 use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Generic\GenericClassStringType;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\ObjectType;
@@ -28,7 +27,7 @@ use Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeAnalyzer\UnionTypeCommonTypeNarrower;
 use Rector\TypeDeclaration\NodeTypeAnalyzer\DetailedTypeAnalyzer;
 use Rector\TypeDeclaration\TypeAnalyzer\GenericClassStringTypeNormalizer;
-use RectorPrefix202303\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @see \Rector\Tests\PHPStanStaticTypeMapper\TypeMapper\ArrayTypeMapperTest
  *
@@ -209,7 +208,7 @@ final class ArrayTypeMapper implements TypeMapperInterface
     }
     private function isIntegerKeyAndNonNestedArray(ArrayType $arrayType) : bool
     {
-        if (!$arrayType->getKeyType() instanceof IntegerType) {
+        if (!$arrayType->getKeyType()->isInteger()->yes()) {
             return \false;
         }
         return !$arrayType->getItemType() instanceof ArrayType;

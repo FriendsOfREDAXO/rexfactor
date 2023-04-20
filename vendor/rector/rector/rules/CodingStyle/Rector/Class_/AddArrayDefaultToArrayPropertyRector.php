@@ -101,6 +101,9 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        if ($node->isReadonly()) {
+            return null;
+        }
         $changedProperties = $this->collectPropertyNamesWithMissingDefaultArray($node);
         if ($changedProperties === []) {
             return null;
@@ -122,7 +125,7 @@ CODE_SAMPLE
             if (!$node instanceof PropertyProperty) {
                 return null;
             }
-            if ($node->default !== null) {
+            if ($node->default instanceof Expr) {
                 return null;
             }
             $varType = $this->resolveVarType($node);
