@@ -10,6 +10,9 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->sets([
         %%RECTOR_SETS%%
     ]);
+    $rectorConfig->rules([
+        %%RECTOR_RULES%%
+    ]);
 
     $rectorConfig->phpVersion(%%TARGET_PHP_VERSION%%);
 
