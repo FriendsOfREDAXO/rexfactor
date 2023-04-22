@@ -5,8 +5,11 @@ namespace rexfactor;
 use Exception;
 use InvalidArgumentException;
 use PhpCsFixer\Console\Command\FixCommandExitStatusCalculator;
+use Rector\Core\Contract\Rector\RectorInterface;
+use Rector\Core\Rector\AbstractRector;
 use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\Set\ValueObject\SetList;
+use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
 use rex_path;
 use RuntimeException;
 
@@ -21,6 +24,7 @@ final class RexFactor
     private const CODE_QUALITY = 'Improve Code Quality';
     private const MISC_MIGRATIONS = 'Misc';
     private const REX_CODE_STYLE_SETNAME = 'REX_CODE_STYLE';
+
     private const USE_CASES = [
         self::PHP_MIGRATIONS => [
             'PHP_72' => 'PHP 7.2',
@@ -56,6 +60,7 @@ final class RexFactor
         self::MISC_MIGRATIONS => [
             self::REX_CODE_STYLE_SETNAME => 'REDAXO specific code style v1',
             'CODING_STYLE' => 'More explicit coding style',
+            DeclareStrictTypesRector::class => 'PHP Strict Types',
         ],
     ];
 
@@ -71,6 +76,10 @@ final class RexFactor
             foreach ($groupSetLists as $setList => $label) {
                 // rex code style is not a rector set. skip it from validation.
                 if ($setList === self::REX_CODE_STYLE_SETNAME) {
+                    continue;
+                }
+                // allow to configure rector rules
+                if (is_subclass_of($setList, RectorInterface::class)) {
                     continue;
                 }
 
@@ -171,9 +180,15 @@ final class RexFactor
         return $path;
     }
 
-    private static function writeRectorConfig(string $setName, string $targetVersion): string
+    private static function writeRectorConfig(string $setNameOrRector, string $targetVersion): string
     {
-        $setListClass = self::getSetListFqcn($setName);
+        if (is_subclass_of($setNameOrRector, RectorInterface::class)) {
+            $setListClass = '';
+            $rulesListClass = $setNameOrRector.'::class';
+        } else {
+            $setListClass = self::getSetListFqcn($setNameOrRector);
+            $rulesListClass = '';
+        }
 
         $tplPath = __DIR__.'/../rector.php.tpl';
         $configPath = __DIR__.'/../rector.php';
@@ -184,6 +199,7 @@ final class RexFactor
         }
 
         $tpl = str_replace('%%RECTOR_SETS%%', $setListClass, $tpl);
+        $tpl = str_replace('%%RECTOR_RULES%%', $rulesListClass, $tpl);
         if ($targetVersion === TargetVersion::PHP8_1) {
             $tpl = str_replace('%%TARGET_PHP_VERSION%%', '80100', $tpl);
         } elseif ($targetVersion === TargetVersion::PHP7_2_COMPAT) {
@@ -194,7 +210,7 @@ final class RexFactor
 
         $skipList = [];
         $skipList[] = "'*/vendor/*'";
-        if (!self::constantExists(PHPUnitSetList::class, $setName)) {
+        if (!self::constantExists(PHPUnitSetList::class, $setNameOrRector)) {
             $skipList[] = "'*/tests/*'";
         }
         $tpl = str_replace('%%SKIP_LIST%%', implode(',', $skipList), $tpl);
