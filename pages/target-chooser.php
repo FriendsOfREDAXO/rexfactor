@@ -1,6 +1,7 @@
 <?php
 
 use rexfactor\RexCmd;
+use rexfactor\RexFactor;
 
 $useCaseUrl = rex_url::backendPage('rexfactor/use-case');
 $content = '';
@@ -27,10 +28,7 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
         }
     }
 
-    $buttonLabel = $availableAddon->getName();
-    if ($buttonLabel === 'developer') {
-        $buttonLabel .= ': modules/templates';
-    }
+    $buttonLabel = RexFactor::getAddonLabel($availableAddon->getName());
 
     $content .= '<li class="list-group-item">
     <div class="pull-right">
