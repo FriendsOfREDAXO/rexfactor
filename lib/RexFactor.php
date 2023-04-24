@@ -153,7 +153,7 @@ final class RexFactor
     public static function getAddonLabel(string $addonName): string
     {
         if ('developer' === $addonName) {
-            return $addonName . 'xxx: modules/templates';
+            return $addonName . ': modules/templates';
         }
         return $addonName;
     }
