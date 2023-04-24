@@ -5,11 +5,8 @@ use rexfactor\RexFactor;
 use rexfactor\TargetVersion;
 
 $addon = rex_get('addon', 'string');
-$addonLabel = $addon;
 
-if ('developer' === $addon) {
-    $addonLabel .= ': modules/templates';
-}
+$addonLabel = RexFactor::getAddonLabel($addon);
 
 echo '<h2>AddOn: '. rex_escape($addonLabel) .'</h2>';
 $setList = rex_get('set-list', 'string');
