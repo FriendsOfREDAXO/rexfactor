@@ -3,11 +3,8 @@
 use rexfactor\RexFactor;
 
 $addon = rex_get('addon', 'string');
-$addonLabel = $addon;
 
-if ('developer' === $addon) {
-    $addonLabel .= ': modules/templates';
-}
+$addonLabel = RexFactor::getAddonLabel($addon);
 
 $backUrl = rex_url::backendPage('rexfactor/target-chooser');
 $previewUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url');
