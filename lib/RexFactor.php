@@ -153,9 +153,9 @@ final class RexFactor
     public static function getAddonLabel(string $addonName): string
     {
         if ('developer' === $addonName) {
-            return $addonName . ': modules/templates';
+            return rex_escape($addonName . ': modules/templates');
         }
-        return $addonName;
+        return rex_escape($addonName);
     }
     
     private static function rectorBinpath(): string
