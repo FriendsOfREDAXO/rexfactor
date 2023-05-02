@@ -8,7 +8,7 @@ $addon = rex_get('addon', 'string');
 
 $addonLabel = RexFactor::getAddonLabel($addon);
 
-echo '<h2>AddOn: '. rex_escape($addonLabel) .'</h2>';
+echo '<h2>AddOn: '. $addonLabel .'</h2>';
 $setList = rex_get('set-list', 'string');
 if ($usecase = RexFactor::getUseCase($setList)) {
     echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
