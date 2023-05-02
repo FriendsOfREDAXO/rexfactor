@@ -12,7 +12,7 @@ $previewUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($ad
 $rexAddOn = rex_addon::get($addon);
 $hasTests = is_dir($rexAddOn->getPath().'/tests');
 
-echo '<h2>AddOn: '. rex_escape($addonLabel) .'</h2><hr>';
+echo '<h2>AddOn: '. $addonLabel .'</h2><hr>';
 $content = '';
 $content .= '<ul class="list-group">';
 foreach (RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
