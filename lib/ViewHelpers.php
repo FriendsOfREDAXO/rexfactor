@@ -13,4 +13,13 @@ final class ViewHelpers
         // https://github.com/redaxo/redaxo/pull/5664
         return "document.querySelector('#rex-js-ajax-loader').classList.add('rex-visible');";
     }
+
+    public static function getAddonLabel(string $addonName): string
+    {
+        if ('developer' === $addonName) {
+            return rex_escape($addonName . ': modules/templates');
+        }
+        return rex_escape($addonName);
+    }
+
 }

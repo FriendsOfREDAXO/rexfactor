@@ -150,14 +150,6 @@ final class RexFactor
         return new RectorResult($json);
     }
 
-    public static function getAddonLabel(string $addonName): string
-    {
-        if ('developer' === $addonName) {
-            return rex_escape($addonName . ': modules/templates');
-        }
-        return rex_escape($addonName);
-    }
-    
     private static function rectorBinpath(): string
     {
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {

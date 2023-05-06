@@ -3,10 +3,11 @@
 use rexfactor\DiffHtml;
 use rexfactor\RexFactor;
 use rexfactor\TargetVersion;
+use rexfactor\ViewHelpers;
 
 $addon = rex_get('addon', 'string');
 
-$addonLabel = RexFactor::getAddonLabel($addon);
+$addonLabel = ViewHelpers::getAddonLabel($addon);
 
 echo '<h2>AddOn: '. $addonLabel .'</h2>';
 $setList = rex_get('set-list', 'string');
