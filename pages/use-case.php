@@ -1,8 +1,11 @@
 <?php
 
 use rexfactor\RexFactor;
+use rexfactor\ViewHelpers;
 
 $addon = rex_get('addon', 'string');
+
+$addonLabel = ViewHelpers::getAddonLabel($addon);
 
 $backUrl = rex_url::backendPage('rexfactor/target-chooser');
 $previewUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url');
@@ -10,7 +13,7 @@ $previewUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($ad
 $rexAddOn = rex_addon::get($addon);
 $hasTests = is_dir($rexAddOn->getPath().'/tests');
 
-echo '<h2>AddOn: '. rex_escape($addon) .'</h2><hr>';
+echo '<h2>AddOn: '. $addonLabel .'</h2><hr>';
 $content = '';
 $content .= '<ul class="list-group">';
 foreach (RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
@@ -25,7 +28,7 @@ foreach (RexFactor::getUseCases() as $groupLabel => $groupSetLists) {
         if ('developer' === $addon && 'DEAD_CODE' === $setList) {
             continue;
         }
-        $loader = \rexfactor\ViewHelpers::jsLoader();
+        $loader = ViewHelpers::jsLoader();
         $content .= '<li class="list-group-item"><a class="list-group-item-heading" href="'.$previewUrl.'&set-list='.rex_escape($setList, 'url').'" onclick="'.$loader.'">'.rex_escape($label).'</a></li>';
     }
     $content .= '</ul>';

@@ -3,9 +3,13 @@
 use rexfactor\DiffHtml;
 use rexfactor\RexFactor;
 use rexfactor\TargetVersion;
+use rexfactor\ViewHelpers;
 
 $addon = rex_get('addon', 'string');
-echo '<h2>AddOn: '. rex_escape($addon) .'</h2>';
+
+$addonLabel = ViewHelpers::getAddonLabel($addon);
+
+echo '<h2>AddOn: '. $addonLabel .'</h2>';
 $setList = rex_get('set-list', 'string');
 if ($usecase = RexFactor::getUseCase($setList)) {
     echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
