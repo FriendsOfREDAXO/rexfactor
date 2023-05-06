@@ -12,7 +12,7 @@ use PhpParser\Node\Stmt\Trait_;
 use PHPStan\Reflection\ClassReflection;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\NodeNameResolver\NodeNameResolver;
-use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
 final class ClassLikeAstResolver
 {
     /**
@@ -49,7 +49,6 @@ final class ClassLikeAstResolver
         if ($classReflection->isBuiltin()) {
             return null;
         }
-        $className = $classReflection->getName();
         $fileName = $classReflection->getFileName();
         // probably internal class
         if ($fileName === null) {
@@ -59,6 +58,7 @@ final class ClassLikeAstResolver
         if ($stmts === []) {
             return null;
         }
+        $className = $classReflection->getName();
         /** @var Class_|Trait_|Interface_|Enum_|null $classLike */
         $classLike = $this->betterNodeFinder->findFirst($stmts, function (Node $node) use($className) : bool {
             if (!$node instanceof ClassLike) {

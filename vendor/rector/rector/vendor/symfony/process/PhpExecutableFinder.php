@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202304\Symfony\Component\Process;
+namespace RectorPrefix202305\Symfony\Component\Process;
 
 /**
  * An executable finder specifically designed for the PHP executable.
@@ -48,7 +48,7 @@ class PhpExecutableFinder
         $args = $this->findArguments();
         $args = $includeArgs && $args ? ' ' . \implode(' ', $args) : '';
         // PHP_BINARY return the current sapi executable
-        if (\PHP_BINARY && \in_array(\PHP_SAPI, ['cgi-fcgi', 'cli', 'cli-server', 'phpdbg'], \true)) {
+        if (\PHP_BINARY && \in_array(\PHP_SAPI, ['cli', 'cli-server', 'phpdbg'], \true)) {
             return \PHP_BINARY . $args;
         }
         if ($php = \getenv('PHP_PATH')) {

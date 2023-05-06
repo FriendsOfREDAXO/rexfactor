@@ -4,11 +4,11 @@ declare (strict_types=1);
 namespace Rector\Testing\PHPUnit;
 
 use Iterator;
-use RectorPrefix202304\Nette\Utils\FileSystem;
-use RectorPrefix202304\Nette\Utils\Strings;
+use RectorPrefix202305\Nette\Utils\FileSystem;
+use RectorPrefix202305\Nette\Utils\Strings;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPUnit\Framework\ExpectationFailedException;
-use RectorPrefix202304\Psr\Container\ContainerInterface;
+use RectorPrefix202305\Psr\Container\ContainerInterface;
 use Rector\Core\Application\ApplicationFileProcessor;
 use Rector\Core\Application\FileSystem\RemovedAndAddedFilesCollector;
 use Rector\Core\Autoloading\AdditionalAutoloader;
@@ -99,7 +99,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
         $fixtureFileContents = FileSystem::read($fixtureFilePath);
         if (FixtureSplitter::containsSplit($fixtureFileContents)) {
             // changed content
-            [$inputFileContents, $expectedFileContents] = FixtureSplitter::split($fixtureFilePath);
+            [$inputFileContents, $expectedFileContents] = FixtureSplitter::splitFixtureFileContents($fixtureFileContents);
         } else {
             // no change
             $inputFileContents = $fixtureFileContents;
@@ -113,7 +113,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
         }
         // write temp file
         FileSystem::write($inputFilePath, $inputFileContents);
-        $this->doTestFileMatchesExpectedContent($inputFilePath, $expectedFileContents, $fixtureFilePath);
+        $this->doTestFileMatchesExpectedContent($inputFilePath, $inputFileContents, $expectedFileContents, $fixtureFilePath);
     }
     private function includePreloadFilesAndScoperAutoload() : void
     {
@@ -129,10 +129,10 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
             require_once __DIR__ . '/../../../vendor/scoper-autoload.php';
         }
     }
-    private function doTestFileMatchesExpectedContent(string $originalFilePath, string $expectedFileContents, string $fixtureFilePath) : void
+    private function doTestFileMatchesExpectedContent(string $originalFilePath, string $inputFileContents, string $expectedFileContents, string $fixtureFilePath) : void
     {
         $this->parameterProvider->changeParameter(Option::SOURCE, [$originalFilePath]);
-        $changedContent = $this->processFilePath($originalFilePath);
+        $changedContent = $this->processFilePath($originalFilePath, $inputFileContents);
         // file is removed, we cannot compare it
         if ($this->removedAndAddedFilesCollector->isFileRemoved($originalFilePath)) {
             return;
@@ -147,7 +147,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
             $this->assertStringMatchesFormat($expectedFileContents, $changedContent, $failureMessage);
         }
     }
-    private function processFilePath(string $filePath) : string
+    private function processFilePath(string $filePath, string $inputFileContents) : string
     {
         $this->dynamicSourceLocatorProvider->setFilePath($filePath);
         // needed for PHPStan, because the analyzed file is just created in /temp - need for trait and similar deps
@@ -157,7 +157,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
         /** @var ConfigurationFactory $configurationFactory */
         $configurationFactory = $this->getService(ConfigurationFactory::class);
         $configuration = $configurationFactory->createForTests([$filePath]);
-        $file = new File($filePath, FileSystem::read($filePath));
+        $file = new File($filePath, $inputFileContents);
         $this->applicationFileProcessor->processFiles([$file], $configuration);
         return $file->getFileContent();
     }

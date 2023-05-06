@@ -31,7 +31,7 @@ use Rector\Core\ValueObject\MethodName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-use RectorPrefix202304\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
 final class ReflectionResolver
 {
     /**
@@ -221,6 +221,10 @@ final class ReflectionResolver
      */
     public function resolvePropertyReflectionFromPropertyFetch($propertyFetch) : ?PhpPropertyReflection
     {
+        $propertyName = $this->nodeNameResolver->getName($propertyFetch->name);
+        if ($propertyName === null) {
+            return null;
+        }
         $fetcheeType = $propertyFetch instanceof PropertyFetch ? $this->nodeTypeResolver->getType($propertyFetch->var) : $this->nodeTypeResolver->getType($propertyFetch->class);
         if (!$fetcheeType instanceof TypeWithClassName) {
             return null;
@@ -229,10 +233,6 @@ final class ReflectionResolver
             return null;
         }
         $classReflection = $this->reflectionProvider->getClass($fetcheeType->getClassName());
-        $propertyName = $this->nodeNameResolver->getName($propertyFetch->name);
-        if ($propertyName === null) {
-            return null;
-        }
         if (!$classReflection->hasProperty($propertyName)) {
             return null;
         }

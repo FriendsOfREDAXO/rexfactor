@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\PhpParser;
 
-use RectorPrefix202304\Nette\Utils\FileSystem;
+use RectorPrefix202305\Nette\Utils\FileSystem;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\FuncCall;
@@ -113,8 +113,6 @@ final class AstResolver
     public function resolveClassMethodFromMethodReflection(MethodReflection $methodReflection) : ?ClassMethod
     {
         $classReflection = $methodReflection->getDeclaringClass();
-        $classLikeName = $classReflection->getName();
-        $methodName = $methodReflection->getName();
         $fileName = $classReflection->getFileName();
         // probably native PHP method → un-parseable
         if ($fileName === null) {
@@ -124,6 +122,8 @@ final class AstResolver
         if ($nodes === []) {
             return null;
         }
+        $classLikeName = $classReflection->getName();
+        $methodName = $methodReflection->getName();
         $classMethod = null;
         $this->simpleCallableNodeTraverser->traverseNodesWithCallable($nodes, function (Node $node) use($classLikeName, $methodName, &$classMethod) : ?int {
             if (!$node instanceof ClassLike) {
@@ -155,7 +155,6 @@ final class AstResolver
     }
     public function resolveFunctionFromFunctionReflection(FunctionReflection $functionReflection) : ?Function_
     {
-        $functionName = $functionReflection->getName();
         $fileName = $functionReflection->getFileName();
         if ($fileName === null) {
             return null;
@@ -164,6 +163,7 @@ final class AstResolver
         if ($nodes === []) {
             return null;
         }
+        $functionName = $functionReflection->getName();
         $functionNode = null;
         $this->simpleCallableNodeTraverser->traverseNodesWithCallable($nodes, function (Node $node) use($functionName, &$functionNode) : ?int {
             if (!$node instanceof Function_) {

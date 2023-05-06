@@ -6,7 +6,7 @@ namespace Rector\Core\PhpParser\Comparing;
 use PhpParser\Node;
 use Rector\Comments\CommentRemover;
 use Rector\Core\Contract\PhpParser\NodePrinterInterface;
-use RectorPrefix202304\Webmozart\Assert\Assert;
+use RectorPrefix202305\Webmozart\Assert\Assert;
 final class NodeComparator
 {
     /**
@@ -40,23 +40,23 @@ final class NodeComparator
      */
     public function areNodesEqual($firstNode, $secondNode) : bool
     {
-        if ($firstNode instanceof Node && $secondNode === null) {
+        if ($firstNode instanceof Node && !$secondNode instanceof Node) {
             return \false;
         }
-        if ($secondNode instanceof Node && $firstNode === null) {
+        if (!$firstNode instanceof Node && $secondNode instanceof Node) {
             return \false;
         }
         if (\is_array($firstNode)) {
-            Assert::allIsAOf($firstNode, Node::class);
-            if ($secondNode === null) {
+            if (!\is_array($secondNode)) {
                 return \false;
             }
+            Assert::allIsAOf($firstNode, Node::class);
         }
         if (\is_array($secondNode)) {
-            Assert::allIsAOf($secondNode, Node::class);
-            if ($firstNode === null) {
+            if (!\is_array($firstNode)) {
                 return \false;
             }
+            Assert::allIsAOf($secondNode, Node::class);
         }
         return $this->printWithoutComments($firstNode) === $this->printWithoutComments($secondNode);
     }

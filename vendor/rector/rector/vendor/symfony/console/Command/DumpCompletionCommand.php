@@ -8,15 +8,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202304\Symfony\Component\Console\Command;
+namespace RectorPrefix202305\Symfony\Component\Console\Command;
 
-use RectorPrefix202304\Symfony\Component\Console\Attribute\AsCommand;
-use RectorPrefix202304\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202304\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202304\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202304\Symfony\Component\Console\Output\ConsoleOutputInterface;
-use RectorPrefix202304\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202304\Symfony\Component\Process\Process;
+use RectorPrefix202305\Symfony\Component\Console\Attribute\AsCommand;
+use RectorPrefix202305\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202305\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202305\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202305\Symfony\Component\Console\Output\ConsoleOutputInterface;
+use RectorPrefix202305\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202305\Symfony\Component\Process\Process;
 /**
  * Dumps the completion script for the current shell.
  *
@@ -47,7 +47,7 @@ final class DumpCompletionCommand extends Command
                 [$rcFile, $completionFile] = ['~/.config/fish/config.fish', "/etc/fish/completions/{$commandName}.fish"];
                 break;
             case 'zsh':
-                [$rcFile, $completionFile] = ['~/.zshrc', '$fpath[1]/' . $commandName];
+                [$rcFile, $completionFile] = ['~/.zshrc', '$fpath[1]/_' . $commandName];
                 break;
             default:
                 [$rcFile, $completionFile] = ['~/.bashrc', "/etc/bash_completion.d/{$commandName}"];
@@ -128,8 +128,16 @@ EOH
      */
     private function getSupportedShells() : array
     {
-        return $this->supportedShells = $this->supportedShells ?? \array_map(function ($f) {
-            return \pathinfo($f, \PATHINFO_EXTENSION);
-        }, \glob(__DIR__ . '/../Resources/completion.*'));
+        if (isset($this->supportedShells)) {
+            return $this->supportedShells;
+        }
+        $shells = [];
+        foreach (new \DirectoryIterator(__DIR__ . '/../Resources/') as $file) {
+            if (\strncmp($file->getBasename(), 'completion.', \strlen('completion.')) === 0 && $file->isFile()) {
+                $shells[] = $file->getExtension();
+            }
+        }
+        \sort($shells);
+        return $this->supportedShells = $shells;
     }
 }

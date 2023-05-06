@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202304\Symfony\Component\Filesystem;
+namespace RectorPrefix202305\Symfony\Component\Filesystem;
 
-use RectorPrefix202304\Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use RectorPrefix202304\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
-use RectorPrefix202304\Symfony\Component\Filesystem\Exception\IOException;
+use RectorPrefix202305\Symfony\Component\Filesystem\Exception\FileNotFoundException;
+use RectorPrefix202305\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
+use RectorPrefix202305\Symfony\Component\Filesystem\Exception\IOException;
 /**
  * Provides basic utility to manipulate the file system.
  *
@@ -144,7 +144,7 @@ class Filesystem
                 }
             } elseif (\is_dir($file)) {
                 if (!$isRecursive) {
-                    $tmpName = \dirname(\realpath($file)) . '/.' . \strrev(\strtr(\base64_encode(\random_bytes(2)), '/=', '-.'));
+                    $tmpName = \dirname(\realpath($file)) . '/.' . \strrev(\strtr(\base64_encode(\random_bytes(2)), '/=', '-_'));
                     if (\file_exists($tmpName)) {
                         try {
                             self::doRemove([$tmpName], \true);

@@ -5,7 +5,7 @@ namespace Rector\Core\ValueObject;
 
 use Rector\Core\ValueObject\Error\SystemError;
 use Rector\Core\ValueObject\Reporting\FileDiff;
-use RectorPrefix202304\Webmozart\Assert\Assert;
+use RectorPrefix202305\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Core\ValueObjectFactory\ProcessResultFactory
  */
@@ -79,16 +79,5 @@ final class ProcessResult
     public function getRemovedNodeCount() : int
     {
         return $this->removedNodeCount;
-    }
-    /**
-     * @return string[]
-     */
-    public function getChangedFilePaths() : array
-    {
-        $fileInfos = [];
-        foreach ($this->fileDiffs as $fileDiff) {
-            $fileInfos[] = $fileDiff->getRelativeFilePath();
-        }
-        return \array_unique($fileInfos);
     }
 }
