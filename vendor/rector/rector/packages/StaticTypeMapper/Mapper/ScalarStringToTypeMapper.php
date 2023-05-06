@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\StaticTypeMapper\Mapper;
 
-use RectorPrefix202304\Nette\Utils\Strings;
+use RectorPrefix202305\Nette\Utils\Strings;
 use PHPStan\Type\Accessory\AccessoryNonEmptyStringType;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
@@ -11,6 +11,7 @@ use PHPStan\Type\CallableType;
 use PHPStan\Type\ClassStringType;
 use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\FloatType;
+use PHPStan\Type\IntegerRangeType;
 use PHPStan\Type\IntegerType;
 use PHPStan\Type\IterableType;
 use PHPStan\Type\MixedType;
@@ -35,6 +36,12 @@ final class ScalarStringToTypeMapper
         }
         if ($loweredScalarName === 'true') {
             return new ConstantBooleanType(\true);
+        }
+        if ($loweredScalarName === 'positive-int') {
+            return IntegerRangeType::createAllGreaterThan(0);
+        }
+        if ($loweredScalarName === 'negative-int') {
+            return IntegerRangeType::createAllSmallerThan(0);
         }
         foreach (self::SCALAR_NAME_BY_TYPE as $objectType => $scalarNames) {
             if (!\in_array($loweredScalarName, $scalarNames, \true)) {

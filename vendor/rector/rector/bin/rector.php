@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202304;
+namespace RectorPrefix202305;
 
-use RectorPrefix202304\Nette\Utils\Json;
+use RectorPrefix202305\Nette\Utils\Json;
 use Rector\ChangesReporting\Output\JsonOutputFormatter;
 use Rector\Core\Bootstrap\RectorConfigsResolver;
 use Rector\Core\Configuration\Option;
@@ -12,8 +12,8 @@ use Rector\Core\Console\Style\RectorConsoleOutputStyleFactory;
 use Rector\Core\DependencyInjection\RectorContainerFactory;
 use Rector\Core\Kernel\RectorKernel;
 use Rector\Core\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202304\Symfony\Component\Console\Command\Command;
-use RectorPrefix202304\Symfony\Component\Console\Input\ArgvInput;
+use RectorPrefix202305\Symfony\Component\Console\Command\Command;
+use RectorPrefix202305\Symfony\Component\Console\Input\ArgvInput;
 // @ intentionally: continue anyway
 @\ini_set('memory_limit', '-1');
 // Performance boost
@@ -97,6 +97,10 @@ final class AutoloadIncluder
 }
 if (\file_exists(__DIR__ . '/../preload.php') && \is_dir(__DIR__ . '/../vendor')) {
     require_once __DIR__ . '/../preload.php';
+}
+// require rector-src on split packages
+if (\file_exists(__DIR__ . '/../preload-split-package.php') && \is_dir(__DIR__ . '/../../../../vendor')) {
+    require_once __DIR__ . '/../preload-split-package.php';
 }
 require_once __DIR__ . '/../src/constants.php';
 $autoloadIncluder->loadIfExistsAndNotLoadedYet(__DIR__ . '/../vendor/scoper-autoload.php');

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\If_;
 
-use RectorPrefix202304\Nette\Utils\Strings;
+use RectorPrefix202305\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
@@ -153,8 +153,8 @@ CODE_SAMPLE
     private function haveNestedTernary(array $nodes) : bool
     {
         foreach ($nodes as $node) {
-            $betterNodeFinderFindInstanceOf = $this->betterNodeFinder->findInstanceOf($node, Ternary::class);
-            if ($betterNodeFinderFindInstanceOf !== []) {
+            $ternary = $this->betterNodeFinder->findFirstInstanceOf($node, Ternary::class);
+            if ($ternary instanceof Ternary) {
                 return \true;
             }
         }

@@ -84,10 +84,10 @@ final class UndefinedVariableResolver
                 return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
             /**
-             * The Stmt that doesn't have origNode attribute yet
-             * means the Stmt is a replacement below other changed node
+             * The Node that doesn't have origNode attribute yet
+             * means the Node is a replacement below other changed node
              */
-            if ($node instanceof Stmt && !$node->hasAttribute(AttributeKey::ORIGINAL_NODE)) {
+            if (!$node->hasAttribute(AttributeKey::ORIGINAL_NODE)) {
                 return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
             if (!$node instanceof Variable) {
@@ -147,9 +147,6 @@ final class UndefinedVariableResolver
         if ($this->isAsCoalesceLeftOrAssignOpCoalesceVar($parentNode, $variable)) {
             return \true;
         }
-        if ($this->variableAnalyzer->isStaticOrGlobal($variable)) {
-            return \true;
-        }
         if ($this->isAssign($parentNode)) {
             return \true;
         }
@@ -160,15 +157,18 @@ final class UndefinedVariableResolver
         if ($this->isListAssign($parentNode)) {
             return \true;
         }
-        if ($this->isDifferentWithOriginalNodeOrNoScope($variable)) {
-            return \true;
-        }
         $variableName = $this->nodeNameResolver->getName($variable);
         // skip $this, as probably in outer scope
         if ($variableName === 'this') {
             return \true;
         }
         if ($variableName === null) {
+            return \true;
+        }
+        if ($this->isDifferentWithOriginalNodeOrNoScope($variable)) {
+            return \true;
+        }
+        if ($this->variableAnalyzer->isStaticOrGlobal($variable)) {
             return \true;
         }
         if ($this->hasPreviousCheckedWithIsset($variable)) {

@@ -14,6 +14,14 @@ use Rector\Caching\Enum\CacheKey;
 final class ChangedFilesDetector
 {
     /**
+     * @var array<string, string[]>
+     */
+    private $dependentFiles = [];
+    /**
+     * @var array<string, true>
+     */
+    private $cachableFiles = [];
+    /**
      * @readonly
      * @var \Rector\Caching\Config\FileHashComputer
      */
@@ -31,24 +39,45 @@ final class ChangedFilesDetector
     /**
      * @param string[] $dependentFiles
      */
-    public function addFileWithDependencies(string $filePath, array $dependentFiles) : void
+    public function addFileDependentFiles(string $filePath, array $dependentFiles) : void
     {
         $filePathCacheKey = $this->getFilePathCacheKey($filePath);
+        $this->dependentFiles[$filePathCacheKey] = $dependentFiles;
+    }
+    public function cacheFileWithDependencies(string $filePath) : void
+    {
+        $filePathCacheKey = $this->getFilePathCacheKey($filePath);
+        if (!isset($this->cachableFiles[$filePathCacheKey])) {
+            return;
+        }
         $hash = $this->hashFile($filePath);
         $this->cache->save($filePathCacheKey, CacheKey::FILE_HASH_KEY, $hash);
-        $this->cache->save($filePathCacheKey . '_files', CacheKey::DEPENDENT_FILES_KEY, $dependentFiles);
+        if (!isset($this->dependentFiles[$filePathCacheKey])) {
+            return;
+        }
+        $this->cache->save($filePathCacheKey . '_files', CacheKey::DEPENDENT_FILES_KEY, $this->dependentFiles[$filePathCacheKey]);
+    }
+    public function addCachableFile(string $filePath) : void
+    {
+        $filePathCacheKey = $this->getFilePathCacheKey($filePath);
+        $this->cachableFiles[$filePathCacheKey] = \true;
     }
     public function hasFileChanged(string $filePath) : bool
     {
-        $currentFileHash = $this->hashFile($filePath);
         $fileInfoCacheKey = $this->getFilePathCacheKey($filePath);
         $cachedValue = $this->cache->load($fileInfoCacheKey, CacheKey::FILE_HASH_KEY);
-        return $currentFileHash !== $cachedValue;
+        if ($cachedValue !== null) {
+            $currentFileHash = $this->hashFile($filePath);
+            return $currentFileHash !== $cachedValue;
+        }
+        // we don't have a value to compare against. Be defensive and assume its changed
+        return \true;
     }
     public function invalidateFile(string $filePath) : void
     {
         $fileInfoCacheKey = $this->getFilePathCacheKey($filePath);
         $this->cache->clean($fileInfoCacheKey);
+        unset($this->cachableFiles[$fileInfoCacheKey]);
     }
     public function clear() : void
     {

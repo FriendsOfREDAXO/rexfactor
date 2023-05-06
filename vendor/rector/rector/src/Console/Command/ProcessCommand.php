@@ -19,9 +19,9 @@ use Rector\Core\Validation\EmptyConfigurableRectorChecker;
 use Rector\Core\ValueObject\Configuration;
 use Rector\Core\ValueObject\ProcessResult;
 use Rector\Core\ValueObjectFactory\ProcessResultFactory;
-use RectorPrefix202304\Symfony\Component\Console\Application;
-use RectorPrefix202304\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202304\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202305\Symfony\Component\Console\Application;
+use RectorPrefix202305\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202305\Symfony\Component\Console\Output\OutputInterface;
 final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessCommand
 {
     /**
@@ -124,8 +124,6 @@ final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessC
         $outputFormatter = $this->outputFormatterCollector->getByName($outputFormat);
         $processResult = $this->processResultFactory->create($systemErrorsAndFileDiffs);
         $outputFormatter->report($processResult, $configuration);
-        // invalidate affected files
-        $this->invalidateCacheForChangedAndErroredFiles($processResult);
         return $this->resolveReturnCode($processResult, $configuration);
     }
     protected function initialize(InputInterface $input, OutputInterface $output) : void
@@ -142,19 +140,6 @@ final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessC
         $optionClearCache = (bool) $input->getOption(Option::CLEAR_CACHE);
         if ($optionDebug || $optionClearCache) {
             $this->changedFilesDetector->clear();
-        }
-    }
-    private function invalidateCacheForChangedAndErroredFiles(ProcessResult $processResult) : void
-    {
-        foreach ($processResult->getChangedFilePaths() as $changedFilePath) {
-            $this->changedFilesDetector->invalidateFile($changedFilePath);
-        }
-        foreach ($processResult->getErrors() as $systemError) {
-            $errorFile = $systemError->getFile();
-            if (!\is_string($errorFile)) {
-                continue;
-            }
-            $this->changedFilesDetector->invalidateFile($errorFile);
         }
     }
     /**

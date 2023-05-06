@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace Rector\Core\Application;
 
 use PHPStan\Analyser\NodeScopeResolver;
+use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\Core\Application\FileDecorator\FileDiffFileDecorator;
 use Rector\Core\Application\FileSystem\RemovedAndAddedFilesProcessor;
 use Rector\Core\Configuration\Option;
@@ -18,11 +19,11 @@ use Rector\Core\ValueObject\Reporting\FileDiff;
 use Rector\Core\ValueObjectFactory\Application\FileFactory;
 use Rector\Parallel\Application\ParallelFileProcessor;
 use Rector\Parallel\ValueObject\Bridge;
-use RectorPrefix202304\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202304\Symfony\Component\Filesystem\Filesystem;
-use RectorPrefix202304\Symplify\EasyParallel\CpuCoreCountProvider;
-use RectorPrefix202304\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
-use RectorPrefix202304\Symplify\EasyParallel\ScheduleFactory;
+use RectorPrefix202305\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202305\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202305\Symplify\EasyParallel\CpuCoreCountProvider;
+use RectorPrefix202305\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
+use RectorPrefix202305\Symplify\EasyParallel\ScheduleFactory;
 final class ApplicationFileProcessor
 {
     /**
@@ -89,6 +90,11 @@ final class ApplicationFileProcessor
      */
     private $cpuCoreCountProvider;
     /**
+     * @readonly
+     * @var \Rector\Caching\Detector\ChangedFilesDetector
+     */
+    private $changedFilesDetector;
+    /**
      * @var FileProcessorInterface[]
      * @readonly
      */
@@ -96,7 +102,7 @@ final class ApplicationFileProcessor
     /**
      * @param FileProcessorInterface[] $fileProcessors
      */
-    public function __construct(Filesystem $filesystem, FileDiffFileDecorator $fileDiffFileDecorator, RemovedAndAddedFilesProcessor $removedAndAddedFilesProcessor, OutputStyleInterface $rectorOutputStyle, FileFactory $fileFactory, NodeScopeResolver $nodeScopeResolver, ArrayParametersMerger $arrayParametersMerger, ParallelFileProcessor $parallelFileProcessor, ParameterProvider $parameterProvider, ScheduleFactory $scheduleFactory, CpuCoreCountProvider $cpuCoreCountProvider, array $fileProcessors = [])
+    public function __construct(Filesystem $filesystem, FileDiffFileDecorator $fileDiffFileDecorator, RemovedAndAddedFilesProcessor $removedAndAddedFilesProcessor, OutputStyleInterface $rectorOutputStyle, FileFactory $fileFactory, NodeScopeResolver $nodeScopeResolver, ArrayParametersMerger $arrayParametersMerger, ParallelFileProcessor $parallelFileProcessor, ParameterProvider $parameterProvider, ScheduleFactory $scheduleFactory, CpuCoreCountProvider $cpuCoreCountProvider, ChangedFilesDetector $changedFilesDetector, array $fileProcessors = [])
     {
         $this->filesystem = $filesystem;
         $this->fileDiffFileDecorator = $fileDiffFileDecorator;
@@ -109,6 +115,7 @@ final class ApplicationFileProcessor
         $this->parameterProvider = $parameterProvider;
         $this->scheduleFactory = $scheduleFactory;
         $this->cpuCoreCountProvider = $cpuCoreCountProvider;
+        $this->changedFilesDetector = $changedFilesDetector;
         $this->fileProcessors = $fileProcessors;
     }
     /**
@@ -130,7 +137,9 @@ final class ApplicationFileProcessor
             // 2. PHPStan has to know about all files too
             $this->configurePHPStanNodeScopeResolver($filePaths, $configuration);
             $systemErrorsAndFileDiffs = $this->processFiles($files, $configuration);
-            $this->fileDiffFileDecorator->decorate($files);
+            if ($configuration->shouldShowDiffs()) {
+                $this->fileDiffFileDecorator->decorate($files);
+            }
             $this->printFiles($files, $configuration);
         }
         $systemErrorsAndFileDiffs[Bridge::SYSTEM_ERRORS] = \array_merge($systemErrorsAndFileDiffs[Bridge::SYSTEM_ERRORS], $this->systemErrors);
@@ -159,6 +168,11 @@ final class ApplicationFileProcessor
                 }
                 $result = $fileProcessor->process($file, $configuration);
                 $systemErrorsAndFileDiffs = $this->arrayParametersMerger->merge($systemErrorsAndFileDiffs, $result);
+            }
+            if ($systemErrorsAndFileDiffs[Bridge::SYSTEM_ERRORS] !== []) {
+                $this->changedFilesDetector->invalidateFile($file->getFilePath());
+            } elseif (!$configuration->isDryRun()) {
+                $this->changedFilesDetector->cacheFileWithDependencies($file->getFilePath());
             }
             // progress bar +1
             if ($shouldShowProgressBar) {

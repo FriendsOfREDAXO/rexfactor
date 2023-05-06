@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\NonPhpFile;
 
+use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory;
 use Rector\Core\Application\FileSystem\RemovedAndAddedFilesCollector;
 use Rector\Core\Contract\Processor\FileProcessorInterface;
@@ -11,11 +12,14 @@ use Rector\Core\ValueObject\Application\File;
 use Rector\Core\ValueObject\Configuration;
 use Rector\Core\ValueObject\Error\SystemError;
 use Rector\Core\ValueObject\Reporting\FileDiff;
-use Rector\Core\ValueObject\StaticNonPhpFileSuffixes;
 use Rector\Parallel\ValueObject\Bridge;
-use RectorPrefix202304\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202305\Symfony\Component\Filesystem\Filesystem;
 final class NonPhpFileProcessor implements FileProcessorInterface
 {
+    /**
+     * @var string[]
+     */
+    private const SUFFIXES = ['neon', 'yaml', 'xml', 'yml', 'twig', 'latte', 'blade.php', 'tpl'];
     /**
      * @var NonPhpRectorInterface[]
      * @readonly
@@ -26,6 +30,11 @@ final class NonPhpFileProcessor implements FileProcessorInterface
      * @var \Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory
      */
     private $fileDiffFactory;
+    /**
+     * @readonly
+     * @var \Rector\Caching\Detector\ChangedFilesDetector
+     */
+    private $changedFilesDetector;
     /**
      * @readonly
      * @var \Symfony\Component\Filesystem\Filesystem
@@ -39,10 +48,11 @@ final class NonPhpFileProcessor implements FileProcessorInterface
     /**
      * @param NonPhpRectorInterface[] $nonPhpRectors
      */
-    public function __construct(array $nonPhpRectors, FileDiffFactory $fileDiffFactory, Filesystem $filesystem, RemovedAndAddedFilesCollector $removedAndAddedFilesCollector)
+    public function __construct(array $nonPhpRectors, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, Filesystem $filesystem, RemovedAndAddedFilesCollector $removedAndAddedFilesCollector)
     {
         $this->nonPhpRectors = $nonPhpRectors;
         $this->fileDiffFactory = $fileDiffFactory;
+        $this->changedFilesDetector = $changedFilesDetector;
         $this->filesystem = $filesystem;
         $this->removedAndAddedFilesCollector = $removedAndAddedFilesCollector;
     }
@@ -68,6 +78,8 @@ final class NonPhpFileProcessor implements FileProcessorInterface
             $fileDiff = $this->fileDiffFactory->createFileDiff($file, $oldFileContent, $newFileContent);
             $systemErrorsAndFileDiffs[Bridge::FILE_DIFFS][] = $fileDiff;
             $this->printFile($file, $configuration);
+        } else {
+            $this->changedFilesDetector->addCachableFile($file->getFilePath());
         }
         return $systemErrorsAndFileDiffs;
     }
@@ -89,7 +101,7 @@ final class NonPhpFileProcessor implements FileProcessorInterface
      */
     public function getSupportedFileExtensions() : array
     {
-        return StaticNonPhpFileSuffixes::SUFFIXES;
+        return self::SUFFIXES;
     }
     private function printFile(File $file, Configuration $configuration) : void
     {
