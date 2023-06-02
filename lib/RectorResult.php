@@ -4,6 +4,7 @@ namespace rexfactor;
 
 use InvalidArgumentException;
 
+use Rector\Core\Contract\Rector\RectorInterface;
 use function is_array;
 use function is_string;
 
@@ -53,5 +54,21 @@ diff --git a/{$fileDiff['file']} b/{$fileDiff['file']}
         }
 
         return $this->json['file_diffs'];
+    }
+
+    /**
+     * @return list<class-string<RectorInterface>>
+     */
+    public function getAppliedRectors(): array
+    {
+        $rectors = [];
+
+        foreach ($this->json['file_diffs'] as $fileDiff) {
+            foreach($fileDiff['applied_rectors'] as $appliedRector) {
+                $rectors[] = $appliedRector;
+            }
+        }
+
+        return array_unique($rectors);
     }
 }

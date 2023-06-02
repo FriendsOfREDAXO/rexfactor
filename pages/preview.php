@@ -2,6 +2,7 @@
 
 use rexfactor\DiffHtml;
 use rexfactor\RexFactor;
+use rexfactor\SkipList;
 use rexfactor\TargetVersion;
 use rexfactor\ViewHelpers;
 
@@ -17,14 +18,18 @@ if ($usecase = RexFactor::getUseCase($setList)) {
 $outputFormat = rex_get('format', 'string', DiffHtml::FORMAT_LINE_BY_LINE);
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
+$urlSkipped = rex_get('skip', 'array[string]', []);
+$skipList = SkipList::fromStrings($urlSkipped);
+
 if ($addon === '') {
     throw new rex_exception('Missing addon parameter');
 }
 
-$backUrl = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');
-$formatToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
-$versionToggleUrl = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
-$applyUrl = rex_url::backendPage('rexfactor/apply').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
+$backUrl           = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');
+$formatToggleUrl   = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
+$versionToggleUrl  = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
+$skipUrl           = rex_url::backendPage('rexfactor/preview').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
+$applyUrl          = rex_url::backendPage('rexfactor/apply').'&addon='.rex_escape($addon, 'url') .'&set-list='.rex_escape($setList, 'url');
 
 if ($outputFormat === DiffHtml::FORMAT_LINE_BY_LINE) {
     $formatToggleUrl .= '&format='.DiffHtml::FORMAT_SIDE_BY_SIDE;
@@ -45,10 +50,10 @@ if ($targetVersion === TargetVersion::PHP8_1) {
 }
 
 // append other configs, so we don't loose config state
-$formatToggleUrl .= '&target-version='.rex_escape($targetVersion, 'url');
-$versionToggleUrl .= '&format='.$outputFormat;
+$formatToggleUrl .= '&target-version='.rex_escape($targetVersion, 'url').'&'. $skipList->toUrl();;
+$versionToggleUrl .= '&format='.$outputFormat.'&'. $skipList->toUrl();
 
-$result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true);
+$result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true, $skipList->toRectorSkipList());
 
 $html = $content = $diffout = '';
 $total = $result->getTotals();
@@ -59,6 +64,26 @@ if ($total['changed_files'] > 0) {
 
     $content .= '<p>Target Version: '. rex_escape($targetVersion) .'</p>';
     $content .= '<p>Diff Format: '. $outputFormat .'</p>';
+
+    if ($result instanceof \rexfactor\RectorResult) {
+        $content .= '<p>Applied Rectors:';
+        $content .= '<ul>';
+        foreach($result->getAppliedRectors() as $appliedRector) {
+            $content .= '<li>'. $appliedRector .' <a class="btn btn-xs btn-default" href="'. $skipUrl .'&'. $skipList->addSkipItem($appliedRector)->toUrl() .'">Skip</a></li>';
+        }
+        $content .= '</ul>';
+        $content .= '</p>';
+
+        if (count($urlSkipped) > 0) {
+            $content .= '<p>Skipped Rectors:';
+            $content .= '<ul>';
+            foreach($urlSkipped as $skipped) {
+                $content .= '<li>'. $skipped .' <a class="btn btn-xs btn-default" href="'. $skipUrl .'&'. $skipList->removeSkipItem($skipped)->toUrl() .'">Un-Skip</a></li>';
+            }
+            $content .= '</ul>';
+            $content .= '</p>';
+        }
+    }
 
     $content .= ' <a class="btn btn-info" href="'. $backUrl .'">back</a>';
     $content .= ' <a class="btn btn-default" href="'. $formatToggleUrl .'">Change Format: '. $formatToggleLabel .'</a>';
