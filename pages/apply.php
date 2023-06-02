@@ -1,24 +1,28 @@
 <?php
 
 use rexfactor\RexFactor;
+use rexfactor\SkipList;
 use rexfactor\TargetVersion;
 
 $addon = rex_get('addon', 'string');
-echo '<h2>AddOn: '. rex_escape($addon) .'</h2><hr>';
 $setList = rex_get('set-list', 'string');
-if ($usecase = RexFactor::getUseCase($setList)) {
-    echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
-}
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
+$urlSkipped = rex_get('skip', 'array[string]', []);
+$skipList = SkipList::fromStrings($urlSkipped);
 
 if ($addon === '') {
     throw new rex_exception('Missing addon parameter');
 }
 
+echo '<h2>AddOn: '. rex_escape($addon) .'</h2><hr>';
+if ($usecase = RexFactor::getUseCase($setList)) {
+    echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
+}
+
 $backToUseCaseUrl = rex_url::backendPage('rexfactor/use-case').'&addon='.rex_escape($addon, 'url');
 $backToStartUrl = rex_url::backendPage('rexfactor');
 
-$result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false);
+$result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false, $skipList->toRectorSkipList());
 
 $total = $result->getTotals();
 $content = '';

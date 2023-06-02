@@ -52,6 +52,7 @@ if ($targetVersion === TargetVersion::PHP8_1) {
 // append other configs, so we don't loose config state
 $formatToggleUrl .= '&target-version='.rex_escape($targetVersion, 'url').'&'. $skipList->toUrl();;
 $versionToggleUrl .= '&format='.$outputFormat.'&'. $skipList->toUrl();
+$applyUrl .= '&'. $skipList->toUrl();
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true, $skipList->toRectorSkipList());
 
