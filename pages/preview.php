@@ -10,11 +10,7 @@ $addon = rex_get('addon', 'string');
 
 $addonLabel = ViewHelpers::getAddonLabel($addon);
 
-echo '<h2>AddOn: '. $addonLabel .'</h2>';
 $setList = rex_get('set-list', 'string');
-if ($usecase = RexFactor::getUseCase($setList)) {
-    echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
-}
 $outputFormat = rex_get('format', 'string', DiffHtml::FORMAT_LINE_BY_LINE);
 $targetVersion = rex_get('target-version', 'string', TargetVersion::PHP7_2_COMPAT);
 
@@ -101,5 +97,11 @@ if ($total['changed_files'] > 0) {
 $fragment = new rex_fragment();
 $fragment->setVar('title', 'Migration preview');
 $fragment->setVar('body', $content, false);
+
+echo '<h2>AddOn: '. $addonLabel .'</h2>';
+if ($usecase = RexFactor::getUseCase($setList)) {
+    echo '<h3>'.$usecase[0].': '.$usecase[1].'</h3>';
+}
+
 echo $fragment->parse('core/page/section.php');
 echo $diffout;
