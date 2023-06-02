@@ -15,7 +15,7 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $addonPath = $availableAddon->getPath();
 
     // system packages are maintained within the redaxo/redaxo codebase with more advanced tooling then rexfactor
-    if ($availableAddon->isSystemPackage()) {
+    if ($availableAddon->isSystemPackage() && $availableAddon->getName() !== 'project') {
         continue;
     }
 
