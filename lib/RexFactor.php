@@ -110,10 +110,11 @@ final class RexFactor
 
     /**
      * @param non-empty-string $addonName
+     * @param list<string> $skipList
      *
      * @return RectorResult|CsFixerResult
      */
-    public static function runRexFactor(string $addonName, string $setName, string $targetVersion, bool $preview)
+    public static function runRexFactor(string $addonName, string $setName, string $targetVersion, bool $preview, array $skipList)
     {
         $addonPath = rex_path::addon($addonName);
         if (!is_dir($addonPath)) {
@@ -141,7 +142,7 @@ final class RexFactor
             return new CsFixerResult($output);
         }
 
-        $configPath = self::writeRectorConfig($setName, $targetVersion);
+        $configPath = self::writeRectorConfig($setName, $targetVersion, $skipList);
         $rectorBin = self::rectorBinpath();
 
         $cmd = $rectorBin.' process '. implode(' ', $processPath) .' -c ' . escapeshellarg($configPath) . ($preview ? ' --dry-run' : ' --no-diffs') . ' --clear-cache --output-format=json';
@@ -180,7 +181,10 @@ final class RexFactor
         return $path;
     }
 
-    private static function writeRectorConfig(string $setNameOrRector, string $targetVersion): string
+    /**
+     * @param list<string>  $skipList
+     */
+    private static function writeRectorConfig(string $setNameOrRector, string $targetVersion, array $skipList): string
     {
         if (is_subclass_of($setNameOrRector, RectorInterface::class)) {
             $setListClass = '';
@@ -208,7 +212,6 @@ final class RexFactor
             throw new InvalidArgumentException('Unknown target version: ' . $targetVersion);
         }
 
-        $skipList = [];
         $skipList[] = "'*/vendor/*'";
         if (!self::constantExists(PHPUnitSetList::class, $setNameOrRector)) {
             $skipList[] = "'*/tests/*'";
