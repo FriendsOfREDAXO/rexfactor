@@ -19,7 +19,6 @@ final class SkipList {
 
     /**
      * @param list<string> $skipList
-     * @return void
      */
     static public function fromStrings(array $skipList): self {
         $skipped = [];
@@ -71,6 +70,9 @@ final class SkipList {
         return implode('&', $url);
     }
 
+    /**
+     * @return list<string>
+     */
     public function toRectorSkipList(): array {
         $skipList = [];
 
