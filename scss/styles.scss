@@ -1,0 +1,66 @@
+$border_color: #151c22;
+$bg_error: #f39b9f;
+$bg_green: #ace7ac;
+$bg_yellow: #f8e198;
+$bg_table_diff: #242f3c;
+$bg_file_header: rgba(46, 59, 74, 0.8);
+
+@mixin _rexfactor-diff {
+
+    .rexfactor-diff {
+        .d2h-file-wrapper,
+        .d2h-code-linenumber,
+        .d2h-info,
+        .d2h-file-header {
+            border-color: $border_color;
+        }
+
+        .d2h-tag{
+            background-color: inherit;
+        }
+        .d2h-file-header {
+            background-color: $bg_file_header;
+        }
+        .d2h-diff-table{
+            background-color: $bg_table_diff;
+        }
+        .d2h-info,
+        .d2h-code-linenumber{
+            background-color: inherit;
+            color: white;
+        }
+
+        .d2h-del{
+            background-color: $bg_error;
+            border-color: darken($bg_error, 30%);
+            color: black;
+        }
+        .d2h-change{
+            background-color: $bg_yellow;
+            border-color: darken($bg_yellow, 30%);
+            color: black;
+        }
+        .d2h-ins{
+            background-color: $bg_green;
+            border-color: darken($bg_green, 30%);
+            color: black;
+        }
+        .d2h-cntx .hljs{
+            color: white;
+
+            .hljs-meta .hljs-string, .hljs-regexp, .hljs-string {
+                color: #99cf1f;
+            }
+        }
+    }
+}
+
+body.rex-theme-dark {
+    @include _rexfactor-diff;
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not(.rex-theme-light) {
+        @include _rexfactor-diff;
+    }
+}

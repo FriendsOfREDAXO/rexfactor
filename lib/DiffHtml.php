@@ -58,7 +58,7 @@ final class DiffHtml
           diff2htmlUi.highlightCode();
         });
         </script>
-        <div id='my-diff-view'></div>";
+        <div id='my-diff-view' class='rexfactor-diff'></div>";
     }
 
     public static function getHead(): string
