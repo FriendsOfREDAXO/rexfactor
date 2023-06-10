@@ -1,3 +1,4 @@
 /rector.php
 .php-cs-fixer.cache
 .DS_Store
+assets/styles.css
