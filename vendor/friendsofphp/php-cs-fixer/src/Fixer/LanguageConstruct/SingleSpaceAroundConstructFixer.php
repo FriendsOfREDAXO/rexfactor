@@ -46,7 +46,7 @@ final class SingleSpaceAroundConstructFixer extends AbstractFixer implements Con
      * @var array<string, null|int>
      */
     private static array $tokenMapPrecededByASingleSpace = [
-        // for now, only one case - but we are ready to extend it, when we learn about new cases to cover
+        'as' => T_AS,
         'use_lambda' => CT::T_USE_LAMBDA,
     ];
 
@@ -320,7 +320,7 @@ yield  from  baz();
 
             if (
                 $token->isGivenKind(T_STATIC)
-                && !$tokens[$tokens->getNextMeaningfulToken($index)]->isGivenKind([T_FUNCTION, T_VARIABLE])
+                && !$tokens[$tokens->getNextMeaningfulToken($index)]->isGivenKind([T_FN, T_FUNCTION, T_NS_SEPARATOR, T_STRING, T_VARIABLE, CT::T_ARRAY_TYPEHINT, CT::T_NULLABLE_TYPE])
             ) {
                 continue;
             }
