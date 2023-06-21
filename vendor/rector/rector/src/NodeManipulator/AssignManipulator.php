@@ -20,16 +20,13 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\FunctionLike;
 use Rector\Core\NodeAnalyzer\PropertyFetchAnalyzer;
+use Rector\Core\PhpParser\Comparing\NodeComparator;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\Util\MultiInstanceofChecker;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 final class AssignManipulator
 {
-    /**
-     * @var array<class-string<Expr>>
-     */
-    private const MODIFYING_NODE_TYPES = [Assign::class, AssignOp::class, PreDec::class, PostDec::class, PreInc::class, PostInc::class];
     /**
      * @readonly
      * @var \Rector\NodeNameResolver\NodeNameResolver
@@ -50,12 +47,22 @@ final class AssignManipulator
      * @var \Rector\Core\Util\MultiInstanceofChecker
      */
     private $multiInstanceofChecker;
-    public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, PropertyFetchAnalyzer $propertyFetchAnalyzer, MultiInstanceofChecker $multiInstanceofChecker)
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Comparing\NodeComparator
+     */
+    private $nodeComparator;
+    /**
+     * @var array<class-string<Expr>>
+     */
+    private const MODIFYING_NODE_TYPES = [Assign::class, AssignOp::class, PreDec::class, PostDec::class, PreInc::class, PostInc::class];
+    public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, PropertyFetchAnalyzer $propertyFetchAnalyzer, MultiInstanceofChecker $multiInstanceofChecker, NodeComparator $nodeComparator)
     {
         $this->nodeNameResolver = $nodeNameResolver;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->propertyFetchAnalyzer = $propertyFetchAnalyzer;
         $this->multiInstanceofChecker = $multiInstanceofChecker;
+        $this->nodeComparator = $nodeComparator;
     }
     /**
      * Matches:
@@ -75,8 +82,12 @@ final class AssignManipulator
     {
         $parentNode = $node->getAttribute(AttributeKey::PARENT_NODE);
         if ($parentNode instanceof Node && $this->multiInstanceofChecker->isInstanceOf($parentNode, self::MODIFYING_NODE_TYPES)) {
-            /** @var Assign|AssignOp|PreDec|PostDec|PreInc|PostInc $parentNode */
-            return $parentNode->var === $node;
+            /**
+             * @var Assign|AssignOp|PreDec|PostDec|PreInc|PostInc $parentNode
+             *
+             * Compare same node to ensure php_doc_info info not be checked
+             */
+            return $this->nodeComparator->areSameNode($parentNode->var, $node);
         }
         if ($this->isOnArrayDestructuring($parentNode)) {
             return \true;

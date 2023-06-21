@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Contracts\Service\Attribute;
+namespace RectorPrefix202306\Symfony\Contracts\Service\Attribute;
 
-use RectorPrefix202305\Symfony\Contracts\Service\ServiceSubscriberInterface;
-use RectorPrefix202305\Symfony\Contracts\Service\ServiceSubscriberTrait;
+use RectorPrefix202306\Symfony\Contracts\Service\ServiceSubscriberInterface;
+use RectorPrefix202306\Symfony\Contracts\Service\ServiceSubscriberTrait;
 /**
  * For use as the return value for {@see ServiceSubscriberInterface}.
  *
@@ -25,8 +25,6 @@ use RectorPrefix202305\Symfony\Contracts\Service\ServiceSubscriberTrait;
 #[\Attribute(\Attribute::TARGET_METHOD)]
 final class SubscribedService
 {
-    /** @var object[] */
-    public $attributes;
     /**
      * @var string|null
      */
@@ -39,6 +37,8 @@ final class SubscribedService
      * @var bool
      */
     public $nullable = \false;
+    /** @var object[] */
+    public $attributes;
     /**
      * @param string|null       $key        The key to use for the service
      * @param class-string|null $type       The service class

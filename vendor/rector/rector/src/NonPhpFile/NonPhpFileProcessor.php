@@ -5,7 +5,6 @@ namespace Rector\Core\NonPhpFile;
 
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory;
-use Rector\Core\Application\FileSystem\RemovedAndAddedFilesCollector;
 use Rector\Core\Contract\Processor\FileProcessorInterface;
 use Rector\Core\Contract\Rector\NonPhpRectorInterface;
 use Rector\Core\ValueObject\Application\File;
@@ -13,13 +12,9 @@ use Rector\Core\ValueObject\Configuration;
 use Rector\Core\ValueObject\Error\SystemError;
 use Rector\Core\ValueObject\Reporting\FileDiff;
 use Rector\Parallel\ValueObject\Bridge;
-use RectorPrefix202305\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202306\Symfony\Component\Filesystem\Filesystem;
 final class NonPhpFileProcessor implements FileProcessorInterface
 {
-    /**
-     * @var string[]
-     */
-    private const SUFFIXES = ['neon', 'yaml', 'xml', 'yml', 'twig', 'latte', 'blade.php', 'tpl'];
     /**
      * @var NonPhpRectorInterface[]
      * @readonly
@@ -41,20 +36,18 @@ final class NonPhpFileProcessor implements FileProcessorInterface
      */
     private $filesystem;
     /**
-     * @readonly
-     * @var \Rector\Core\Application\FileSystem\RemovedAndAddedFilesCollector
+     * @var string[]
      */
-    private $removedAndAddedFilesCollector;
+    private const SUFFIXES = ['neon', 'yaml', 'xml', 'yml', 'twig', 'latte', 'blade.php', 'tpl'];
     /**
      * @param NonPhpRectorInterface[] $nonPhpRectors
      */
-    public function __construct(array $nonPhpRectors, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, Filesystem $filesystem, RemovedAndAddedFilesCollector $removedAndAddedFilesCollector)
+    public function __construct(iterable $nonPhpRectors, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, Filesystem $filesystem)
     {
         $this->nonPhpRectors = $nonPhpRectors;
         $this->fileDiffFactory = $fileDiffFactory;
         $this->changedFilesDetector = $changedFilesDetector;
         $this->filesystem = $filesystem;
-        $this->removedAndAddedFilesCollector = $removedAndAddedFilesCollector;
     }
     /**
      * @return array{system_errors: SystemError[], file_diffs: FileDiff[]}
@@ -105,14 +98,10 @@ final class NonPhpFileProcessor implements FileProcessorInterface
     }
     private function printFile(File $file, Configuration $configuration) : void
     {
-        $filePath = $file->getFilePath();
-        if ($this->removedAndAddedFilesCollector->isFileRemoved($filePath)) {
-            // skip, because this file exists no more
-            return;
-        }
         if ($configuration->isDryRun()) {
             return;
         }
+        $filePath = $file->getFilePath();
         $this->filesystem->dumpFile($filePath, $file->getFileContent());
     }
 }

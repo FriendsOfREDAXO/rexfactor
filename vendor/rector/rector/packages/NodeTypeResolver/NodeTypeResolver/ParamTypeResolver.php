@@ -22,7 +22,7 @@ use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\StaticTypeMapper\StaticTypeMapper;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @see \Rector\Tests\NodeTypeResolver\PerNodeTypeResolver\ParamTypeResolver\ParamTypeResolverTest
  *
@@ -30,14 +30,6 @@ use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
  */
 final class ParamTypeResolver implements NodeTypeResolverInterface
 {
-    /**
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
-     */
-    private $nodeTypeResolver;
-    /**
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
-     */
-    private $staticTypeMapper;
     /**
      * @readonly
      * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
@@ -58,6 +50,14 @@ final class ParamTypeResolver implements NodeTypeResolverInterface
      * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
+    /**
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
+     */
+    private $nodeTypeResolver;
+    /**
+     * @var \Rector\StaticTypeMapper\StaticTypeMapper
+     */
+    private $staticTypeMapper;
     public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeNameResolver $nodeNameResolver, PhpDocInfoFactory $phpDocInfoFactory, BetterNodeFinder $betterNodeFinder)
     {
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;

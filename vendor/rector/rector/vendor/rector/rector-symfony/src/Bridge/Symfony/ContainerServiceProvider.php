@@ -5,19 +5,19 @@ namespace Rector\Symfony\Bridge\Symfony;
 
 use Rector\Core\Configuration\RectorConfigProvider;
 use Rector\Core\Exception\ShouldNotHappenException;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\Container;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Container;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 final class ContainerServiceProvider
 {
-    /**
-     * @var object|null
-     */
-    private $container;
     /**
      * @readonly
      * @var \Rector\Core\Configuration\RectorConfigProvider
      */
     private $rectorConfigProvider;
+    /**
+     * @var object|null
+     */
+    private $container;
     public function __construct(RectorConfigProvider $rectorConfigProvider)
     {
         $this->rectorConfigProvider = $rectorConfigProvider;

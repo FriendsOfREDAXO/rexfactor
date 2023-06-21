@@ -6,7 +6,6 @@ namespace Rector\Core\Application;
 use PHPStan\Analyser\NodeScopeResolver;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\Core\Application\FileDecorator\FileDiffFileDecorator;
-use Rector\Core\Application\FileSystem\RemovedAndAddedFilesProcessor;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\ParameterProvider;
 use Rector\Core\Contract\Console\OutputStyleInterface;
@@ -19,21 +18,13 @@ use Rector\Core\ValueObject\Reporting\FileDiff;
 use Rector\Core\ValueObjectFactory\Application\FileFactory;
 use Rector\Parallel\Application\ParallelFileProcessor;
 use Rector\Parallel\ValueObject\Bridge;
-use RectorPrefix202305\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202305\Symfony\Component\Filesystem\Filesystem;
-use RectorPrefix202305\Symplify\EasyParallel\CpuCoreCountProvider;
-use RectorPrefix202305\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
-use RectorPrefix202305\Symplify\EasyParallel\ScheduleFactory;
+use RectorPrefix202306\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202306\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202306\Symplify\EasyParallel\CpuCoreCountProvider;
+use RectorPrefix202306\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
+use RectorPrefix202306\Symplify\EasyParallel\ScheduleFactory;
 final class ApplicationFileProcessor
 {
-    /**
-     * @var string
-     */
-    private const ARGV = 'argv';
-    /**
-     * @var SystemError[]
-     */
-    private $systemErrors = [];
     /**
      * @readonly
      * @var \Symfony\Component\Filesystem\Filesystem
@@ -44,11 +35,6 @@ final class ApplicationFileProcessor
      * @var \Rector\Core\Application\FileDecorator\FileDiffFileDecorator
      */
     private $fileDiffFileDecorator;
-    /**
-     * @readonly
-     * @var \Rector\Core\Application\FileSystem\RemovedAndAddedFilesProcessor
-     */
-    private $removedAndAddedFilesProcessor;
     /**
      * @readonly
      * @var \Rector\Core\Contract\Console\OutputStyleInterface
@@ -98,15 +84,22 @@ final class ApplicationFileProcessor
      * @var FileProcessorInterface[]
      * @readonly
      */
-    private $fileProcessors = [];
+    private $fileProcessors;
+    /**
+     * @var string
+     */
+    private const ARGV = 'argv';
+    /**
+     * @var SystemError[]
+     */
+    private $systemErrors = [];
     /**
      * @param FileProcessorInterface[] $fileProcessors
      */
-    public function __construct(Filesystem $filesystem, FileDiffFileDecorator $fileDiffFileDecorator, RemovedAndAddedFilesProcessor $removedAndAddedFilesProcessor, OutputStyleInterface $rectorOutputStyle, FileFactory $fileFactory, NodeScopeResolver $nodeScopeResolver, ArrayParametersMerger $arrayParametersMerger, ParallelFileProcessor $parallelFileProcessor, ParameterProvider $parameterProvider, ScheduleFactory $scheduleFactory, CpuCoreCountProvider $cpuCoreCountProvider, ChangedFilesDetector $changedFilesDetector, array $fileProcessors = [])
+    public function __construct(Filesystem $filesystem, FileDiffFileDecorator $fileDiffFileDecorator, OutputStyleInterface $rectorOutputStyle, FileFactory $fileFactory, NodeScopeResolver $nodeScopeResolver, ArrayParametersMerger $arrayParametersMerger, ParallelFileProcessor $parallelFileProcessor, ParameterProvider $parameterProvider, ScheduleFactory $scheduleFactory, CpuCoreCountProvider $cpuCoreCountProvider, ChangedFilesDetector $changedFilesDetector, iterable $fileProcessors)
     {
         $this->filesystem = $filesystem;
         $this->fileDiffFileDecorator = $fileDiffFileDecorator;
-        $this->removedAndAddedFilesProcessor = $removedAndAddedFilesProcessor;
         $this->rectorOutputStyle = $rectorOutputStyle;
         $this->fileFactory = $fileFactory;
         $this->nodeScopeResolver = $nodeScopeResolver;
@@ -179,7 +172,6 @@ final class ApplicationFileProcessor
                 $this->rectorOutputStyle->progressAdvance();
             }
         }
-        $this->removedAndAddedFilesProcessor->run($configuration);
         return $systemErrorsAndFileDiffs;
     }
     /**

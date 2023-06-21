@@ -4,7 +4,6 @@ declare (strict_types=1);
 namespace Rector\CodingStyle\Rector\Class_;
 
 use PhpParser\Node;
-use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\BinaryOp;
@@ -17,10 +16,8 @@ use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\PropertyProperty;
 use PHPStan\Type\Type;
 use Rector\CodingStyle\TypeAnalyzer\IterableTypeAnalyzer;
-use Rector\Core\NodeAnalyzer\ArgsAnalyzer;
 use Rector\Core\NodeAnalyzer\PropertyFetchAnalyzer;
 use Rector\Core\Rector\AbstractRector;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Privatization\NodeManipulator\VisibilityManipulator;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -42,19 +39,13 @@ final class AddArrayDefaultToArrayPropertyRector extends AbstractRector
     private $iterableTypeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Core\NodeAnalyzer\ArgsAnalyzer
-     */
-    private $argsAnalyzer;
-    /**
-     * @readonly
      * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
     private $visibilityManipulator;
-    public function __construct(PropertyFetchAnalyzer $propertyFetchAnalyzer, IterableTypeAnalyzer $iterableTypeAnalyzer, ArgsAnalyzer $argsAnalyzer, VisibilityManipulator $visibilityManipulator)
+    public function __construct(PropertyFetchAnalyzer $propertyFetchAnalyzer, IterableTypeAnalyzer $iterableTypeAnalyzer, VisibilityManipulator $visibilityManipulator)
     {
         $this->propertyFetchAnalyzer = $propertyFetchAnalyzer;
         $this->iterableTypeAnalyzer = $iterableTypeAnalyzer;
-        $this->argsAnalyzer = $argsAnalyzer;
         $this->visibilityManipulator = $visibilityManipulator;
     }
     public function getRuleDefinition() : RuleDefinition
@@ -122,24 +113,22 @@ CODE_SAMPLE
     {
         $propertyNames = [];
         $this->traverseNodesWithCallable($class, function (Node $node) use(&$propertyNames) {
-            if (!$node instanceof PropertyProperty) {
+            if (!$node instanceof Property) {
                 return null;
             }
-            if ($node->default instanceof Expr) {
-                return null;
+            foreach ($node->props as $propertyProperty) {
+                if ($propertyProperty->default instanceof Expr) {
+                    continue;
+                }
+                $varType = $this->resolveVarType($node);
+                if (!$this->iterableTypeAnalyzer->detect($varType)) {
+                    continue;
+                }
+                if ($this->visibilityManipulator->isReadonly($node)) {
+                    return null;
+                }
+                $propertyNames[] = $this->getName($propertyProperty);
             }
-            $varType = $this->resolveVarType($node);
-            if (!$this->iterableTypeAnalyzer->detect($varType)) {
-                return null;
-            }
-            $property = $node->getAttribute(AttributeKey::PARENT_NODE);
-            if (!$property instanceof Property) {
-                return null;
-            }
-            if ($this->visibilityManipulator->isReadonly($property)) {
-                return null;
-            }
-            $propertyNames[] = $this->getName($node);
             return null;
         });
         return $propertyNames;
@@ -176,15 +165,13 @@ CODE_SAMPLE
                 if (!$node instanceof FuncCall) {
                     return \false;
                 }
+                if ($node->isFirstClassCallable()) {
+                    return \false;
+                }
                 if (!$this->isName($node, 'count')) {
                     return \false;
                 }
-                if (!$this->argsAnalyzer->isArgInstanceInArgsPosition($node->args, 0)) {
-                    return \false;
-                }
-                /** @var Arg $firstArg */
-                $firstArg = $node->args[0];
-                $countedArgument = $firstArg->value;
+                $countedArgument = $node->getArgs()[0]->value;
                 if (!$countedArgument instanceof PropertyFetch) {
                     return \false;
                 }
@@ -215,11 +202,9 @@ CODE_SAMPLE
             return $node;
         });
     }
-    private function resolveVarType(PropertyProperty $propertyProperty) : Type
+    private function resolveVarType(Property $property) : Type
     {
-        /** @var Property $propertyNode */
-        $propertyNode = $propertyProperty->getAttribute(AttributeKey::PARENT_NODE);
-        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($propertyNode);
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
         return $phpDocInfo->getVarType();
     }
     /**

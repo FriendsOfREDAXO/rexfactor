@@ -62,6 +62,9 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         if (!$this->isName($node, 'call_user_func')) {
             return null;
         }
@@ -69,7 +72,7 @@ CODE_SAMPLE
             return null;
         }
         // change the node
-        if (!isset($node->args[0])) {
+        if (!isset($node->getArgs()[0])) {
             return null;
         }
         $firstArg = $node->args[0];

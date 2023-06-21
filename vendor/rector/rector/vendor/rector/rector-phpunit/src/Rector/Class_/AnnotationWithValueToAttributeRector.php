@@ -18,16 +18,12 @@ use Rector\PHPUnit\ValueObject\AnnotationWithValueToAttribute;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\PHPUnit\Tests\Rector\Class_\AnnotationWithValueToAttributeRector\AnnotationWithValueToAttributeRectorTest
  */
 final class AnnotationWithValueToAttributeRector extends AbstractRector implements ConfigurableRectorInterface, MinPhpVersionInterface
 {
-    /**
-     * @var AnnotationWithValueToAttribute[]
-     */
-    private $annotationWithValueToAttributes = [];
     /**
      * @readonly
      * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover
@@ -38,6 +34,10 @@ final class AnnotationWithValueToAttributeRector extends AbstractRector implemen
      * @var \Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory
      */
     private $phpAttributeGroupFactory;
+    /**
+     * @var AnnotationWithValueToAttribute[]
+     */
+    private $annotationWithValueToAttributes = [];
     public function __construct(PhpDocTagRemover $phpDocTagRemover, PhpAttributeGroupFactory $phpAttributeGroupFactory)
     {
         $this->phpDocTagRemover = $phpDocTagRemover;

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\ValueObjectFactory\Application;
 
-use RectorPrefix202305\Nette\Utils\FileSystem;
+use RectorPrefix202306\Nette\Utils\FileSystem;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\Core\Contract\Processor\FileProcessorInterface;
 use Rector\Core\FileSystem\FilesFinder;
@@ -32,7 +32,7 @@ final class FileFactory
     /**
      * @param FileProcessorInterface[] $fileProcessors
      */
-    public function __construct(FilesFinder $filesFinder, ChangedFilesDetector $changedFilesDetector, array $fileProcessors)
+    public function __construct(FilesFinder $filesFinder, ChangedFilesDetector $changedFilesDetector, iterable $fileProcessors)
     {
         $this->filesFinder = $filesFinder;
         $this->changedFilesDetector = $changedFilesDetector;

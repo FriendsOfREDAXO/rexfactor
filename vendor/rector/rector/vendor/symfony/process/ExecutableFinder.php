@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Process;
+namespace RectorPrefix202306\Symfony\Component\Process;
 
 /**
  * Generic executable finder.
@@ -21,6 +21,8 @@ class ExecutableFinder
     private $suffixes = ['.exe', '.bat', '.cmd', '.com'];
     /**
      * Replaces default suffixes of executable.
+     *
+     * @return void
      */
     public function setSuffixes(array $suffixes)
     {
@@ -28,6 +30,8 @@ class ExecutableFinder
     }
     /**
      * Adds new possible suffix to check for executable.
+     *
+     * @return void
      */
     public function addSuffix(string $suffix)
     {

@@ -9,9 +9,9 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use Rector\Core\Enum\ObjectReference;
@@ -77,40 +77,38 @@ CODE_SAMPLE
     }
     /**
      * @param ClassMethod $node
+     * @return \PhpParser\Node\Stmt\ClassMethod|int|null
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactorWithScope(Node $node, Scope $scope)
     {
+        if (!$scope->isInClass()) {
+            return null;
+        }
         if (!$this->php4ConstructorClassMethodAnalyzer->detect($node, $scope)) {
             return null;
         }
-        $classLike = $this->betterNodeFinder->findParentType($node, Class_::class);
-        if (!$classLike instanceof Class_) {
-            return null;
-        }
+        $classReflection = $scope->getClassReflection();
         // process parent call references first
         $this->processClassMethodStatementsForParentConstructorCalls($node, $scope);
         // not PSR-4 constructor
-        if (!$this->nodeNameResolver->areNamesEqual($classLike, $node)) {
+        if (!$this->nodeNameResolver->isName($node, $classReflection->getName())) {
             return null;
         }
-        $classMethod = $classLike->getMethod(MethodName::CONSTRUCT);
         // does it already have a __construct method?
-        if (!$classMethod instanceof ClassMethod) {
+        if (!$classReflection->hasConstructor()) {
             $node->name = new Identifier(MethodName::CONSTRUCT);
         }
-        $stmts = $node->stmts;
-        if ($stmts === null) {
+        $classMethodStmts = $node->stmts;
+        if ($classMethodStmts === null) {
             return null;
         }
-        if (\count($stmts) === 1) {
-            /** @var Expression|Expr $stmt */
-            $stmt = $stmts[0];
+        if (\count($classMethodStmts) === 1) {
+            $stmt = $node->stmts[0];
             if (!$stmt instanceof Expression) {
                 return null;
             }
             if ($this->isLocalMethodCallNamed($stmt->expr, MethodName::CONSTRUCT)) {
-                $this->removeNode($node);
-                return null;
+                return NodeTraverser::REMOVE_NODE;
             }
         }
         return $node;

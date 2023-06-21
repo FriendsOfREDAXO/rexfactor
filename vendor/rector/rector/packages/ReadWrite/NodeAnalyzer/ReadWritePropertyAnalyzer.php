@@ -12,12 +12,16 @@ use PhpParser\Node\Expr\Isset_;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Stmt\Unset_;
+use PHPStan\Analyser\Scope;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeManipulator\AssignManipulator;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\DeadCode\SideEffect\PureFunctionDetector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\ReadWrite\Contract\ParentNodeReadAnalyzerInterface;
+use Rector\ReadWrite\ParentNodeReadAnalyzer\ArgParentNodeReadAnalyzer;
+use Rector\ReadWrite\ParentNodeReadAnalyzer\ArrayDimFetchParentNodeReadAnalyzer;
+use Rector\ReadWrite\ParentNodeReadAnalyzer\IncDecParentNodeReadAnalyzer;
 /**
  * Possibly re-use the same logic from PHPStan rule:
  * https://github.com/phpstan/phpstan-src/blob/8f16632f6ccb312159250bc06df5531fa4a1ff91/src/Rules/DeadCode/UnusedPrivatePropertyRule.php#L64-L116
@@ -46,24 +50,20 @@ final class ReadWritePropertyAnalyzer
     private $pureFunctionDetector;
     /**
      * @var ParentNodeReadAnalyzerInterface[]
-     * @readonly
      */
-    private $parentNodeReadAnalyzers;
-    /**
-     * @param ParentNodeReadAnalyzerInterface[] $parentNodeReadAnalyzers
-     */
-    public function __construct(AssignManipulator $assignManipulator, \Rector\ReadWrite\NodeAnalyzer\ReadExprAnalyzer $readExprAnalyzer, BetterNodeFinder $betterNodeFinder, PureFunctionDetector $pureFunctionDetector, array $parentNodeReadAnalyzers)
+    private $parentNodeReadAnalyzers = [];
+    public function __construct(AssignManipulator $assignManipulator, \Rector\ReadWrite\NodeAnalyzer\ReadExprAnalyzer $readExprAnalyzer, BetterNodeFinder $betterNodeFinder, PureFunctionDetector $pureFunctionDetector, ArgParentNodeReadAnalyzer $argParentNodeReadAnalyzer, IncDecParentNodeReadAnalyzer $incDecParentNodeReadAnalyzer, ArrayDimFetchParentNodeReadAnalyzer $arrayDimFetchParentNodeReadAnalyzer)
     {
         $this->assignManipulator = $assignManipulator;
         $this->readExprAnalyzer = $readExprAnalyzer;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->pureFunctionDetector = $pureFunctionDetector;
-        $this->parentNodeReadAnalyzers = $parentNodeReadAnalyzers;
+        $this->parentNodeReadAnalyzers = [$argParentNodeReadAnalyzer, $incDecParentNodeReadAnalyzer, $arrayDimFetchParentNodeReadAnalyzer];
     }
     /**
      * @param \PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\StaticPropertyFetch $node
      */
-    public function isRead($node) : bool
+    public function isRead($node, Scope $scope) : bool
     {
         $parentNode = $node->getAttribute(AttributeKey::PARENT_NODE);
         if (!$parentNode instanceof Node) {
@@ -86,12 +86,12 @@ final class ReadWritePropertyAnalyzer
         if ($this->assignManipulator->isLeftPartOfAssign($parentNode)) {
             return \false;
         }
-        if (!$this->isArrayDimFetchInImpureFunction($parentNode, $node)) {
+        if (!$this->isArrayDimFetchInImpureFunction($parentNode, $node, $scope)) {
             return $this->isNotInsideIssetUnset($parentNode);
         }
         return \false;
     }
-    private function isArrayDimFetchInImpureFunction(ArrayDimFetch $arrayDimFetch, Node $node) : bool
+    private function isArrayDimFetchInImpureFunction(ArrayDimFetch $arrayDimFetch, Node $node, Scope $scope) : bool
     {
         if ($arrayDimFetch->var === $node) {
             $arg = $this->betterNodeFinder->findParentType($arrayDimFetch, Arg::class);
@@ -100,7 +100,7 @@ final class ReadWritePropertyAnalyzer
                 if (!$parentArg instanceof FuncCall) {
                     return \false;
                 }
-                return !$this->pureFunctionDetector->detect($parentArg);
+                return !$this->pureFunctionDetector->detect($parentArg, $scope);
             }
         }
         return \false;

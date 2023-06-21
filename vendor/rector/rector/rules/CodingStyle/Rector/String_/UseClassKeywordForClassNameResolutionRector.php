@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Rector\String_;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name\FullyQualified;
@@ -19,15 +19,15 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class UseClassKeywordForClassNameResolutionRector extends AbstractRector
 {
     /**
-     * @var string
-     * @see https://regex101.com/r/Vv41Qr/1/
-     */
-    private const CLASS_BEFORE_STATIC_ACCESS_REGEX = '#(?<class_name>[\\\\a-zA-Z0-9_\\x80-\\xff]*)::#';
-    /**
      * @readonly
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
+    /**
+     * @var string
+     * @see https://regex101.com/r/Vv41Qr/1/
+     */
+    private const CLASS_BEFORE_STATIC_ACCESS_REGEX = '#(?<class_name>[\\\\a-zA-Z0-9_\\x80-\\xff]*)::#';
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->reflectionProvider = $reflectionProvider;

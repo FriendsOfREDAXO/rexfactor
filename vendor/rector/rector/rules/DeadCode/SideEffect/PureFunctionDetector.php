@@ -5,12 +5,22 @@ namespace Rector\DeadCode\SideEffect;
 
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
+use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\Native\NativeFunctionReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 final class PureFunctionDetector
 {
+    /**
+     * @readonly
+     * @var \Rector\NodeNameResolver\NodeNameResolver
+     */
+    private $nodeNameResolver;
+    /**
+     * @readonly
+     * @var \PHPStan\Reflection\ReflectionProvider
+     */
+    private $reflectionProvider;
     /**
      * @see https://github.com/vimeo/psalm/blob/d470903722cfcbc1cd04744c5491d3e6d13ec3d9/src/Psalm/Internal/Codebase/Functions.php#L288
      * @var string[]
@@ -225,28 +235,17 @@ final class PureFunctionDetector
         // stream
         'stream_filter_append',
     ];
-    /**
-     * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
-     */
-    private $nodeNameResolver;
-    /**
-     * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
-     */
-    private $reflectionProvider;
     public function __construct(NodeNameResolver $nodeNameResolver, ReflectionProvider $reflectionProvider)
     {
         $this->nodeNameResolver = $nodeNameResolver;
         $this->reflectionProvider = $reflectionProvider;
     }
-    public function detect(FuncCall $funcCall) : bool
+    public function detect(FuncCall $funcCall, Scope $scope) : bool
     {
         $funcCallName = $this->nodeNameResolver->getName($funcCall);
         if ($funcCallName === null) {
             return \false;
         }
-        $scope = $funcCall->getAttribute(AttributeKey::SCOPE);
         $name = new Name($funcCallName);
         $hasFunction = $this->reflectionProvider->hasFunction($name, $scope);
         if (!$hasFunction) {

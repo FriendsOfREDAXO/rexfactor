@@ -3,14 +3,14 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Rector\StaticCall;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\Constant\ConstantStringType;
 use PHPStan\Type\ObjectType;
-use Rector\Core\Contract\PhpParser\NodePrinterInterface;
+use Rector\Core\PhpParser\Printer\BetterStandardPrinter;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\Util\StringUtils;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -22,28 +22,28 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class ParseFileRector extends AbstractRector
 {
     /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Printer\BetterStandardPrinter
+     */
+    private $betterStandardPrinter;
+    /**
      * @var string
-     * @see https://regex101.com/r/ZaY42i/1
+     * @changelog https://regex101.com/r/ZaY42i/1
      */
     private const YAML_SUFFIX_IN_QUOTE_REGEX = '#\\.(yml|yaml)(\'|\\")$#';
     /**
      * @var string
-     * @see https://regex101.com/r/YHA05g/1
+     * @changelog https://regex101.com/r/YHA05g/1
      */
     private const FILE_SUFFIX_REGEX = '#File$#';
     /**
      * @var string
-     * @see https://regex101.com/r/JmNhZj/1
+     * @changelog https://regex101.com/r/JmNhZj/1
      */
     private const YAML_SUFFIX_REGEX = '#\\.(yml|yaml)$#';
-    /**
-     * @readonly
-     * @var \Rector\Core\Contract\PhpParser\NodePrinterInterface
-     */
-    private $nodePrinter;
-    public function __construct(NodePrinterInterface $nodePrinter)
+    public function __construct(BetterStandardPrinter $betterStandardPrinter)
     {
-        $this->nodePrinter = $nodePrinter;
+        $this->betterStandardPrinter = $betterStandardPrinter;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -93,7 +93,7 @@ CODE_SAMPLE
             return \false;
         }
         $possibleFileNode = $firstArg->value;
-        $possibleFileNodeAsString = $this->nodePrinter->print($possibleFileNode);
+        $possibleFileNodeAsString = $this->betterStandardPrinter->print($possibleFileNode);
         // is yml/yaml file
         if (StringUtils::isMatch($possibleFileNodeAsString, self::YAML_SUFFIX_IN_QUOTE_REGEX)) {
             return \true;

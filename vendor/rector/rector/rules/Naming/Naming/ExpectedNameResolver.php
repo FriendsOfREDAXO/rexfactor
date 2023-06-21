@@ -11,7 +11,6 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PhpParser\Node\Param;
-use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\UnionType;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\MixedType;
@@ -19,8 +18,8 @@ use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use Rector\Naming\ExpectedNameResolver\MatchParamTypeExpectedNameResolver;
 use Rector\Naming\ValueObject\ExpectedName;
+use Rector\Naming\ValueObject\VariableAndCallForeach;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 final class ExpectedNameResolver
@@ -141,11 +140,9 @@ final class ExpectedNameResolver
         }
         return null;
     }
-    /**
-     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\FuncCall $expr
-     */
-    public function resolveForForeach($expr) : ?string
+    public function resolveForForeach(VariableAndCallForeach $variableAndCallForeach) : ?string
     {
+        $expr = $variableAndCallForeach->getCall();
         if ($this->isDynamicNameCall($expr)) {
             return null;
         }
@@ -159,7 +156,7 @@ final class ExpectedNameResolver
         }
         $innerReturnedType = null;
         if ($returnedType instanceof ArrayType) {
-            $innerReturnedType = $this->resolveReturnTypeFromArrayType($expr, $returnedType);
+            $innerReturnedType = $this->resolveReturnTypeFromArrayType($returnedType);
             if (!$innerReturnedType instanceof Type) {
                 return null;
             }
@@ -194,15 +191,8 @@ final class ExpectedNameResolver
         }
         return $expr->name instanceof FuncCall;
     }
-    /**
-     * @param \PhpParser\Node\Expr\FuncCall|\PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $expr
-     */
-    private function resolveReturnTypeFromArrayType($expr, ArrayType $arrayType) : ?Type
+    private function resolveReturnTypeFromArrayType(ArrayType $arrayType) : ?Type
     {
-        $parentNode = $expr->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$parentNode instanceof Foreach_) {
-            return null;
-        }
         if (!$arrayType->getItemType() instanceof ObjectType) {
             return null;
         }

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\PHPStan\Reflection\TypeToCallReflectionResolver;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node\Name;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\FunctionReflection;
@@ -20,6 +20,11 @@ use Rector\Core\Contract\PHPStan\Reflection\TypeToCallReflectionResolver\TypeToC
 final class ConstantStringTypeToCallReflectionResolver implements TypeToCallReflectionResolverInterface
 {
     /**
+     * @readonly
+     * @var \PHPStan\Reflection\ReflectionProvider
+     */
+    private $reflectionProvider;
+    /**
      * Took from https://github.com/phpstan/phpstan-src/blob/8376548f76e2c845ae047e3010e873015b796818/src/Type/Constant/ConstantStringType.php#L158
      *
      * @see https://regex101.com/r/IE6lcM/4
@@ -35,11 +40,6 @@ final class ConstantStringTypeToCallReflectionResolver implements TypeToCallRefl
      * @var string
      */
     private const METHOD_KEY = 'method';
-    /**
-     * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
-     */
-    private $reflectionProvider;
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->reflectionProvider = $reflectionProvider;

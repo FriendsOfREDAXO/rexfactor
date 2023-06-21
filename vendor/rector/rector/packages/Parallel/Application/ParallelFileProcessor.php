@@ -3,12 +3,12 @@
 declare (strict_types=1);
 namespace Rector\Parallel\Application;
 
-use RectorPrefix202305\Clue\React\NDJson\Decoder;
-use RectorPrefix202305\Clue\React\NDJson\Encoder;
-use RectorPrefix202305\Nette\Utils\Random;
-use RectorPrefix202305\React\EventLoop\StreamSelectLoop;
-use RectorPrefix202305\React\Socket\ConnectionInterface;
-use RectorPrefix202305\React\Socket\TcpServer;
+use RectorPrefix202306\Clue\React\NDJson\Decoder;
+use RectorPrefix202306\Clue\React\NDJson\Encoder;
+use RectorPrefix202306\Nette\Utils\Random;
+use RectorPrefix202306\React\EventLoop\StreamSelectLoop;
+use RectorPrefix202306\React\Socket\ConnectionInterface;
+use RectorPrefix202306\React\Socket\TcpServer;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\ParameterProvider;
 use Rector\Core\Console\Command\ProcessCommand;
@@ -16,16 +16,16 @@ use Rector\Core\ValueObject\Error\SystemError;
 use Rector\Core\ValueObject\Reporting\FileDiff;
 use Rector\Parallel\Command\WorkerCommandLineFactory;
 use Rector\Parallel\ValueObject\Bridge;
-use RectorPrefix202305\Symfony\Component\Console\Command\Command;
-use RectorPrefix202305\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202305\Symplify\EasyParallel\Contract\SerializableInterface;
-use RectorPrefix202305\Symplify\EasyParallel\Enum\Action;
-use RectorPrefix202305\Symplify\EasyParallel\Enum\Content;
-use RectorPrefix202305\Symplify\EasyParallel\Enum\ReactCommand;
-use RectorPrefix202305\Symplify\EasyParallel\Enum\ReactEvent;
-use RectorPrefix202305\Symplify\EasyParallel\ValueObject\ParallelProcess;
-use RectorPrefix202305\Symplify\EasyParallel\ValueObject\ProcessPool;
-use RectorPrefix202305\Symplify\EasyParallel\ValueObject\Schedule;
+use RectorPrefix202306\Symfony\Component\Console\Command\Command;
+use RectorPrefix202306\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202306\Symplify\EasyParallel\Contract\SerializableInterface;
+use RectorPrefix202306\Symplify\EasyParallel\Enum\Action;
+use RectorPrefix202306\Symplify\EasyParallel\Enum\Content;
+use RectorPrefix202306\Symplify\EasyParallel\Enum\ReactCommand;
+use RectorPrefix202306\Symplify\EasyParallel\Enum\ReactEvent;
+use RectorPrefix202306\Symplify\EasyParallel\ValueObject\ParallelProcess;
+use RectorPrefix202306\Symplify\EasyParallel\ValueObject\ProcessPool;
+use RectorPrefix202306\Symplify\EasyParallel\ValueObject\Schedule;
 use Throwable;
 /**
  * Inspired from @see
@@ -36,14 +36,6 @@ use Throwable;
 final class ParallelFileProcessor
 {
     /**
-     * @var int
-     */
-    private const SYSTEM_ERROR_LIMIT = 50;
-    /**
-     * @var \Symplify\EasyParallel\ValueObject\ProcessPool|null
-     */
-    private $processPool = null;
-    /**
      * @readonly
      * @var \Rector\Parallel\Command\WorkerCommandLineFactory
      */
@@ -53,6 +45,14 @@ final class ParallelFileProcessor
      * @var \Rector\Core\Configuration\Parameter\ParameterProvider
      */
     private $parameterProvider;
+    /**
+     * @var int
+     */
+    private const SYSTEM_ERROR_LIMIT = 50;
+    /**
+     * @var \Symplify\EasyParallel\ValueObject\ProcessPool|null
+     */
+    private $processPool = null;
     public function __construct(WorkerCommandLineFactory $workerCommandLineFactory, ParameterProvider $parameterProvider)
     {
         $this->workerCommandLineFactory = $workerCommandLineFactory;
@@ -125,8 +125,8 @@ final class ParallelFileProcessor
                         }
                         $systemErrors[] = SystemError::decode($jsonError);
                     }
-                    foreach ($json[Bridge::FILE_DIFFS] as $jsonError) {
-                        $fileDiffs[] = FileDiff::decode($jsonError);
+                    foreach ($json[Bridge::FILE_DIFFS] as $jsonFileDiff) {
+                        $fileDiffs[] = FileDiff::decode($jsonFileDiff);
                     }
                     $postFileCallback($json[Bridge::FILES_COUNT]);
                     $systemErrorsCount += $json[Bridge::SYSTEM_ERRORS_COUNT];

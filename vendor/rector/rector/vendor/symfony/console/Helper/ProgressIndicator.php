@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Console\Helper;
+namespace RectorPrefix202306\Symfony\Component\Console\Helper;
 
-use RectorPrefix202305\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202305\Symfony\Component\Console\Exception\LogicException;
-use RectorPrefix202305\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202306\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202306\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  */
@@ -79,6 +79,8 @@ class ProgressIndicator
     }
     /**
      * Sets the current indicator message.
+     *
+     * @return void
      */
     public function setMessage(?string $message)
     {
@@ -87,6 +89,8 @@ class ProgressIndicator
     }
     /**
      * Starts the indicator output.
+     *
+     * @return void
      */
     public function start(string $message)
     {
@@ -102,6 +106,8 @@ class ProgressIndicator
     }
     /**
      * Advances the indicator.
+     *
+     * @return void
      */
     public function advance()
     {
@@ -121,6 +127,8 @@ class ProgressIndicator
     }
     /**
      * Finish the indicator with message.
+     *
+     * @return void
      */
     public function finish(string $message)
     {
@@ -143,6 +151,8 @@ class ProgressIndicator
      * Sets a placeholder formatter for a given name.
      *
      * This method also allow you to override an existing placeholder.
+     *
+     * @return void
      */
     public static function setPlaceholderFormatterDefinition(string $name, callable $callable)
     {
@@ -157,7 +167,7 @@ class ProgressIndicator
         self::$formatters = self::$formatters ?? self::initPlaceholderFormatters();
         return self::$formatters[$name] ?? null;
     }
-    private function display()
+    private function display() : void
     {
         if (OutputInterface::VERBOSITY_QUIET === $this->output->getVerbosity()) {
             return;
@@ -171,20 +181,12 @@ class ProgressIndicator
     }
     private function determineBestFormat() : string
     {
-        switch ($this->output->getVerbosity()) {
-            case OutputInterface::VERBOSITY_VERBOSE:
-                return $this->output->isDecorated() ? 'verbose' : 'verbose_no_ansi';
-            case OutputInterface::VERBOSITY_VERY_VERBOSE:
-            case OutputInterface::VERBOSITY_DEBUG:
-                return $this->output->isDecorated() ? 'very_verbose' : 'very_verbose_no_ansi';
-            default:
-                return $this->output->isDecorated() ? 'normal' : 'normal_no_ansi';
-        }
+        return $this->output->getVerbosity() === OutputInterface::VERBOSITY_VERBOSE ? $this->output->isDecorated() ? 'verbose' : 'verbose_no_ansi' : ($this->output->getVerbosity() === OutputInterface::VERBOSITY_VERY_VERBOSE || $this->output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG ? $this->output->isDecorated() ? 'very_verbose' : 'very_verbose_no_ansi' : ($this->output->isDecorated() ? 'normal' : 'normal_no_ansi'));
     }
     /**
      * Overwrites a previous message to the output.
      */
-    private function overwrite(string $message)
+    private function overwrite(string $message) : void
     {
         if ($this->output->isDecorated()) {
             $this->output->write("\r\x1b[2K");

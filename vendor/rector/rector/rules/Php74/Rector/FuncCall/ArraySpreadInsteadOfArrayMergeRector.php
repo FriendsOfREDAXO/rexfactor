@@ -110,9 +110,7 @@ CODE_SAMPLE
                 return null;
             }
             if ($value instanceof Array_) {
-                $item0Unpacked = $array->items;
-                $item1Unpacked = $value->items;
-                $array->items = \array_merge($item0Unpacked, $item1Unpacked);
+                $array->items = \array_merge($array->items, $value->items);
                 continue;
             }
             $value = $this->resolveValue($value);
@@ -176,9 +174,9 @@ CODE_SAMPLE
         if (!$this->nodeNameResolver->isName($expr, 'iterator_to_array')) {
             return \false;
         }
-        if (!isset($expr->args[0])) {
+        if ($expr->isFirstClassCallable()) {
             return \false;
         }
-        return $expr->args[0] instanceof Arg;
+        return isset($expr->getArgs()[0]);
     }
 }

@@ -67,10 +67,14 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
-        if ($node->getArgs() !== []) {
-            \end($node->args);
-            $lastArgumentPosition = \key($node->args);
-            $last = $node->args[$lastArgumentPosition];
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $args = $node->getArgs();
+        if ($args !== []) {
+            \end($args);
+            $lastArgumentPosition = \key($args);
+            $last = $args[$lastArgumentPosition];
             if (!$this->followedByCommaAnalyzer->isFollowed($this->file, $last)) {
                 return null;
             }

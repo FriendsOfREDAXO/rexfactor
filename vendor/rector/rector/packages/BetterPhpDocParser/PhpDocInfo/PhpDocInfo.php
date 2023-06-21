@@ -40,23 +40,6 @@ use Rector\StaticTypeMapper\StaticTypeMapper;
 final class PhpDocInfo
 {
     /**
-     * @var array<class-string<PhpDocTagValueNode>, string>
-     */
-    private const TAGS_TYPES_TO_NAMES = [ReturnTagValueNode::class => '@return', ParamTagValueNode::class => '@param', VarTagValueNode::class => '@var', MethodTagValueNode::class => '@method', PropertyTagValueNode::class => '@property'];
-    /**
-     * @var bool
-     */
-    private $isSingleLine = \false;
-    /**
-     * @readonly
-     * @var \PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode
-     */
-    private $originalPhpDocNode;
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
-    /**
      * @readonly
      * @var \PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode
      */
@@ -96,6 +79,23 @@ final class PhpDocInfo
      * @var \Rector\BetterPhpDocParser\PhpDocNodeFinder\PhpDocNodeByTypeFinder
      */
     private $phpDocNodeByTypeFinder;
+    /**
+     * @var array<class-string<PhpDocTagValueNode>, string>
+     */
+    private const TAGS_TYPES_TO_NAMES = [ReturnTagValueNode::class => '@return', ParamTagValueNode::class => '@param', VarTagValueNode::class => '@var', MethodTagValueNode::class => '@method', PropertyTagValueNode::class => '@property'];
+    /**
+     * @var bool
+     */
+    private $isSingleLine = \false;
+    /**
+     * @readonly
+     * @var \PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode
+     */
+    private $originalPhpDocNode;
+    /**
+     * @var bool
+     */
+    private $hasChanged = \false;
     public function __construct(PhpDocNode $phpDocNode, BetterTokenIterator $betterTokenIterator, StaticTypeMapper $staticTypeMapper, \PhpParser\Node $node, AnnotationNaming $annotationNaming, CurrentNodeProvider $currentNodeProvider, RectorChangeCollector $rectorChangeCollector, PhpDocNodeByTypeFinder $phpDocNodeByTypeFinder)
     {
         $this->phpDocNode = $phpDocNode;
@@ -236,6 +236,9 @@ final class PhpDocInfo
         $doctrineAnnotationTagValueNodes = $this->phpDocNodeByTypeFinder->findDoctrineAnnotationsByClass($this->phpDocNode, $class);
         return $doctrineAnnotationTagValueNodes[0] ?? null;
     }
+    /**
+     * @api used in tests
+     */
     public function hasByAnnotationClass(string $class) : bool
     {
         return $this->findByAnnotationClass($class) !== [];
@@ -246,20 +249,6 @@ final class PhpDocInfo
     public function hasByAnnotationClasses(array $annotationsClasses) : bool
     {
         return $this->getByAnnotationClasses($annotationsClasses) instanceof DoctrineAnnotationTagValueNode;
-    }
-    /**
-     * @param string[] $desiredClasses
-     */
-    public function findOneByAnnotationClasses(array $desiredClasses) : ?DoctrineAnnotationTagValueNode
-    {
-        foreach ($desiredClasses as $desiredClass) {
-            $doctrineAnnotationTagValueNode = $this->findOneByAnnotationClass($desiredClass);
-            if (!$doctrineAnnotationTagValueNode instanceof DoctrineAnnotationTagValueNode) {
-                continue;
-            }
-            return $doctrineAnnotationTagValueNode;
-        }
-        return null;
     }
     public function findOneByAnnotationClass(string $desiredClass) : ?DoctrineAnnotationTagValueNode
     {
@@ -318,10 +307,6 @@ final class PhpDocInfo
         }
         return $this->betterTokenIterator->count() === 0;
     }
-    public function makeSingleLined() : void
-    {
-        $this->isSingleLine = \true;
-    }
     public function isSingleLine() : bool
     {
         return $this->isSingleLine;
@@ -367,7 +352,7 @@ final class PhpDocInfo
         return $this->phpDocNode->getTemplateTagValues();
     }
     /**
-     * @deprecated
+     * @internal
      * Should be handled by attributes of phpdoc node - if stard_and_end is missing in one of nodes, it has been changed
      * Similar to missing original node in php-aprser
      */

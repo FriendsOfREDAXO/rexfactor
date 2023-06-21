@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config\Resource;
+namespace RectorPrefix202306\Symfony\Component\Config\Resource;
 
 /**
  * ComposerResource tracks the PHP version and Composer dependencies.
@@ -45,7 +45,7 @@ class ComposerResource implements SelfCheckingResourceInterface
         self::refresh();
         return \array_values(self::$runtimeVendors) === \array_values($this->vendors);
     }
-    private static function refresh()
+    private static function refresh() : void
     {
         self::$runtimeVendors = [];
         foreach (\get_declared_classes() as $class) {

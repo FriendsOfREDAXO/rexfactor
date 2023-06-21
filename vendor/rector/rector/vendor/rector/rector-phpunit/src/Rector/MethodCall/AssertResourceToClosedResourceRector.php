@@ -19,10 +19,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertResourceToClosedResourceRector extends AbstractRector
 {
     /**
-     * @var array<string, string>
-     */
-    private const RENAME_METHODS_MAP = ['assertIsNotResource' => 'assertIsClosedResource'];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
@@ -32,6 +28,10 @@ final class AssertResourceToClosedResourceRector extends AbstractRector
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const RENAME_METHODS_MAP = ['assertIsNotResource' => 'assertIsClosedResource'];
     public function __construct(IdentifierManipulator $identifierManipulator, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->identifierManipulator = $identifierManipulator;
@@ -60,7 +60,10 @@ final class AssertResourceToClosedResourceRector extends AbstractRector
         if (!$this->isNames($node->name, $methodNames)) {
             return null;
         }
-        if (!isset($node->args[0])) {
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        if (!isset($node->getArgs()[0])) {
             return null;
         }
         $this->identifierManipulator->renameNodeWithMap($node, self::RENAME_METHODS_MAP);

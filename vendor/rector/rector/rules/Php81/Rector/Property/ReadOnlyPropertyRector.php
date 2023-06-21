@@ -6,18 +6,19 @@ namespace Rector\Php81\Rector\Property;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\Clone_;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\NodeTraverser;
+use PHPStan\Analyser\Scope;
 use Rector\Core\NodeAnalyzer\ParamAnalyzer;
 use Rector\Core\NodeManipulator\PropertyFetchAssignManipulator;
 use Rector\Core\NodeManipulator\PropertyManipulator;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\Core\ValueObject\MethodName;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\Core\ValueObject\Visibility;
@@ -31,7 +32,7 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
  *
  * @see \Rector\Tests\Php81\Rector\Property\ReadOnlyPropertyRector\ReadOnlyPropertyRectorTest
  */
-final class ReadOnlyPropertyRector extends AbstractRector implements MinPhpVersionInterface
+final class ReadOnlyPropertyRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
@@ -97,34 +98,46 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [Property::class, Param::class];
+        return [Class_::class];
     }
     /**
-     * @param Property|Param $node
+     * @param Class_ $node
      */
-    public function refactor(Node $node) : ?Node
+    public function refactorWithScope(Node $node, Scope $scope) : ?Node
     {
-        if ($node instanceof Param) {
-            return $this->refactorParam($node);
+        $hasChanged = \false;
+        if ($node->isReadonly()) {
+            return null;
         }
-        return $this->refactorProperty($node);
+        // skip "clone $this" cases, as can create unexpected write to local constructor property
+        if ($this->hasCloneThis($node)) {
+            return null;
+        }
+        foreach ($node->getMethods() as $classMethod) {
+            foreach ($classMethod->params as $param) {
+                $justChanged = $this->refactorParam($node, $classMethod, $param, $scope);
+                // different variable to ensure $hasRemoved not replaced
+                if ($justChanged instanceof Param) {
+                    $hasChanged = \true;
+                }
+            }
+        }
+        foreach ($node->getProperties() as $property) {
+            $changedProperty = $this->refactorProperty($node, $property, $scope);
+            if ($changedProperty instanceof Property) {
+                $hasChanged = \true;
+            }
+        }
+        if ($hasChanged) {
+            return $node;
+        }
+        return null;
     }
     public function provideMinPhpVersion() : int
     {
         return PhpVersionFeature::READONLY_PROPERTY;
     }
-    /**
-     * @param \PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $node
-     */
-    private function shouldSkipInReadonlyClass($node) : bool
-    {
-        $class = $this->betterNodeFinder->findParentType($node, Class_::class);
-        if (!$class instanceof Class_) {
-            return \true;
-        }
-        return $class->isReadonly();
-    }
-    private function refactorProperty(Property $property) : ?Property
+    private function refactorProperty(Class_ $class, Property $property, Scope $scope) : ?Property
     {
         // 1. is property read-only?
         if ($property->isReadonly()) {
@@ -142,13 +155,10 @@ CODE_SAMPLE
         if (!$this->visibilityManipulator->hasVisibility($property, Visibility::PRIVATE)) {
             return null;
         }
-        if ($this->propertyManipulator->isPropertyChangeableExceptConstructor($property)) {
+        if ($this->propertyManipulator->isPropertyChangeableExceptConstructor($class, $property, $scope)) {
             return null;
         }
-        if ($this->propertyFetchAssignManipulator->isAssignedMultipleTimesInConstructor($property)) {
-            return null;
-        }
-        if ($this->shouldSkipInReadonlyClass($property)) {
+        if ($this->propertyFetchAssignManipulator->isAssignedMultipleTimesInConstructor($class, $property)) {
             return null;
         }
         $this->visibilityManipulator->makeReadonly($property);
@@ -158,7 +168,7 @@ CODE_SAMPLE
         }
         return $property;
     }
-    private function refactorParam(Param $param) : ?\PhpParser\Node\Param
+    private function refactorParam(Class_ $class, ClassMethod $classMethod, Param $param, Scope $scope) : ?\PhpParser\Node\Param
     {
         if (!$this->visibilityManipulator->hasVisibility($param, Visibility::PRIVATE)) {
             return null;
@@ -167,31 +177,24 @@ CODE_SAMPLE
             return null;
         }
         // promoted property?
-        if ($this->propertyManipulator->isPropertyChangeableExceptConstructor($param)) {
+        if ($this->propertyManipulator->isPropertyChangeableExceptConstructor($class, $param, $scope)) {
             return null;
         }
         if ($this->visibilityManipulator->isReadonly($param)) {
             return null;
         }
-        if ($this->paramAnalyzer->isParamReassign($param)) {
+        if ($this->paramAnalyzer->isParamReassign($classMethod, $param)) {
             return null;
         }
-        if ($this->isPromotedPropertyAssigned($param)) {
-            return null;
-        }
-        if ($this->shouldSkipInReadonlyClass($param)) {
+        if ($this->isPromotedPropertyAssigned($class, $param)) {
             return null;
         }
         $this->visibilityManipulator->makeReadonly($param);
         return $param;
     }
-    private function isPromotedPropertyAssigned(Param $param) : bool
+    private function isPromotedPropertyAssigned(Class_ $class, Param $param) : bool
     {
-        $classLike = $this->betterNodeFinder->findParentType($param, ClassLike::class);
-        if (!$classLike instanceof Class_) {
-            return \false;
-        }
-        $constructClassMethod = $classLike->getMethod(MethodName::CONSTRUCT);
+        $constructClassMethod = $class->getMethod(MethodName::CONSTRUCT);
         if (!$constructClassMethod instanceof ClassMethod) {
             return \false;
         }
@@ -199,15 +202,29 @@ CODE_SAMPLE
             return \false;
         }
         $propertyFetch = new PropertyFetch(new Variable('this'), $this->getName($param));
-        $stmts = $classLike->stmts;
         $isAssigned = \false;
-        $this->traverseNodesWithCallable($stmts, function (Node $node) use($propertyFetch, &$isAssigned) : ?int {
-            if ($node instanceof Assign && $this->nodeComparator->areNodesEqual($propertyFetch, $node->var)) {
+        $this->traverseNodesWithCallable($class->stmts, function (Node $node) use($propertyFetch, &$isAssigned) : ?int {
+            if (!$node instanceof Assign) {
+                return null;
+            }
+            if ($this->nodeComparator->areNodesEqual($propertyFetch, $node->var)) {
                 $isAssigned = \true;
                 return NodeTraverser::STOP_TRAVERSAL;
             }
             return null;
         });
         return $isAssigned;
+    }
+    private function hasCloneThis(Class_ $class) : bool
+    {
+        return (bool) $this->betterNodeFinder->findFirst($class, function (Node $node) : bool {
+            if (!$node instanceof Clone_) {
+                return \false;
+            }
+            if (!$node->expr instanceof Variable) {
+                return \false;
+            }
+            return $this->isName($node->expr, 'this');
+        });
     }
 }

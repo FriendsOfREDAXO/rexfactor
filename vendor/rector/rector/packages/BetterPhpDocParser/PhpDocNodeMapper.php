@@ -38,7 +38,7 @@ final class PhpDocNodeMapper
     /**
      * @param BasePhpDocNodeVisitorInterface[] $phpDocNodeVisitors
      */
-    public function __construct(CurrentTokenIteratorProvider $currentTokenIteratorProvider, ParentConnectingPhpDocNodeVisitor $parentConnectingPhpDocNodeVisitor, CloningPhpDocNodeVisitor $cloningPhpDocNodeVisitor, array $phpDocNodeVisitors)
+    public function __construct(CurrentTokenIteratorProvider $currentTokenIteratorProvider, ParentConnectingPhpDocNodeVisitor $parentConnectingPhpDocNodeVisitor, CloningPhpDocNodeVisitor $cloningPhpDocNodeVisitor, iterable $phpDocNodeVisitors)
     {
         $this->currentTokenIteratorProvider = $currentTokenIteratorProvider;
         $this->parentConnectingPhpDocNodeVisitor = $parentConnectingPhpDocNodeVisitor;

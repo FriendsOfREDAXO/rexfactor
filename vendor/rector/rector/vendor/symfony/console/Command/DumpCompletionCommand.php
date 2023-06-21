@@ -8,15 +8,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Console\Command;
+namespace RectorPrefix202306\Symfony\Component\Console\Command;
 
-use RectorPrefix202305\Symfony\Component\Console\Attribute\AsCommand;
-use RectorPrefix202305\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202305\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202305\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202305\Symfony\Component\Console\Output\ConsoleOutputInterface;
-use RectorPrefix202305\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202305\Symfony\Component\Process\Process;
+use RectorPrefix202306\Symfony\Component\Console\Attribute\AsCommand;
+use RectorPrefix202306\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202306\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202306\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202306\Symfony\Component\Console\Output\ConsoleOutputInterface;
+use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202306\Symfony\Component\Process\Process;
 /**
  * Dumps the completion script for the current shell.
  *
@@ -36,23 +36,13 @@ final class DumpCompletionCommand extends Command
      * @var mixed[]
      */
     private $supportedShells;
-    protected function configure()
+    protected function configure() : void
     {
         $fullCommand = $_SERVER['PHP_SELF'];
         $commandName = \basename($fullCommand);
         $fullCommand = @\realpath($fullCommand) ?: $fullCommand;
         $shell = $this->guessShell();
-        switch ($shell) {
-            case 'fish':
-                [$rcFile, $completionFile] = ['~/.config/fish/config.fish', "/etc/fish/completions/{$commandName}.fish"];
-                break;
-            case 'zsh':
-                [$rcFile, $completionFile] = ['~/.zshrc', '$fpath[1]/_' . $commandName];
-                break;
-            default:
-                [$rcFile, $completionFile] = ['~/.bashrc', "/etc/bash_completion.d/{$commandName}"];
-                break;
-        }
+        [$rcFile, $completionFile] = $shell === 'fish' ? ['~/.config/fish/config.fish', "/etc/fish/completions/{$commandName}.fish"] : ($shell === 'zsh' ? ['~/.zshrc', '$fpath[1]/_' . $commandName] : ['~/.bashrc', "/etc/bash_completion.d/{$commandName}"]);
         $supportedShells = \implode(', ', $this->getSupportedShells());
         $this->setHelp(<<<EOH
 The <info>%command.name%</> command dumps the shell completion script required
@@ -89,7 +79,7 @@ EOH
         $commandName = \basename($_SERVER['argv'][0]);
         if ($input->getOption('debug')) {
             $this->tailDebugLog($commandName, $output);
-            return self::SUCCESS;
+            return 0;
         }
         $shell = $input->getArgument('shell') ?? self::guessShell();
         $completionFile = __DIR__ . '/../Resources/completion.' . $shell;
@@ -103,10 +93,10 @@ EOH
             } else {
                 $output->writeln(\sprintf('<error>Shell not detected, Symfony shell completion only supports "%s").</>', \implode('", "', $supportedShells)));
             }
-            return self::INVALID;
+            return 2;
         }
         $output->write(\str_replace(['{{ COMMAND_NAME }}', '{{ VERSION }}'], [$commandName, CompleteCommand::COMPLETION_API_VERSION], \file_get_contents($completionFile)));
-        return self::SUCCESS;
+        return 0;
     }
     private static function guessShell() : string
     {

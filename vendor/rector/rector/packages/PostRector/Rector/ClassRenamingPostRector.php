@@ -4,14 +4,16 @@ declare (strict_types=1);
 namespace Rector\PostRector\Rector;
 
 use PhpParser\Node;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Namespace_;
+use PHPStan\Analyser\Scope;
 use Rector\CodingStyle\Application\UseImportsRemover;
 use Rector\Core\Configuration\RectorConfigProvider;
 use Rector\Core\Configuration\RenamedClassesDataCollector;
 use Rector\Core\Contract\Rector\RectorInterface;
 use Rector\Core\NonPhpFile\Rector\RenameClassNonPhpRector;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace;
+use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PostRector\Contract\Rector\PostRectorDependencyInterface;
 use Rector\Renaming\NodeManipulator\ClassRenamer;
 use Rector\Renaming\Rector\Name\RenameClassRector;
@@ -36,26 +38,35 @@ final class ClassRenamingPostRector extends \Rector\PostRector\Rector\AbstractPo
     private $rectorConfigProvider;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
-     */
-    private $betterNodeFinder;
-    /**
-     * @readonly
      * @var \Rector\CodingStyle\Application\UseImportsRemover
      */
     private $useImportsRemover;
-    public function __construct(ClassRenamer $classRenamer, RenamedClassesDataCollector $renamedClassesDataCollector, RectorConfigProvider $rectorConfigProvider, BetterNodeFinder $betterNodeFinder, UseImportsRemover $useImportsRemover)
+    /**
+     * @var \Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace|\PhpParser\Node\Stmt\Namespace_|null
+     */
+    private $rootNode = null;
+    public function __construct(ClassRenamer $classRenamer, RenamedClassesDataCollector $renamedClassesDataCollector, RectorConfigProvider $rectorConfigProvider, UseImportsRemover $useImportsRemover)
     {
         $this->classRenamer = $classRenamer;
         $this->renamedClassesDataCollector = $renamedClassesDataCollector;
         $this->rectorConfigProvider = $rectorConfigProvider;
-        $this->betterNodeFinder = $betterNodeFinder;
         $this->useImportsRemover = $useImportsRemover;
     }
-    public function getPriority() : int
+    /**
+     * @param Stmt[] $nodes
+     * @return Stmt[]
+     */
+    public function beforeTraverse(array $nodes) : array
     {
-        // must be run before name importing, so new names are imported
-        return 650;
+        // ensure reset early on every run to avoid reuse existing value
+        $this->rootNode = null;
+        foreach ($nodes as $node) {
+            if ($node instanceof FileWithoutNamespace || $node instanceof Namespace_) {
+                $this->rootNode = $node;
+                break;
+            }
+        }
+        return $nodes;
     }
     /**
      * @return class-string<RectorInterface>[]
@@ -70,16 +81,19 @@ final class ClassRenamingPostRector extends \Rector\PostRector\Rector\AbstractPo
         if ($oldToNewClasses === []) {
             return null;
         }
-        $result = $this->classRenamer->renameNode($node, $oldToNewClasses);
+        $originalNode = $node->getAttribute(AttributeKey::ORIGINAL_NODE);
+        $originalNode = $originalNode ?? $node;
+        /** @var Scope|null $scope */
+        $scope = $originalNode->getAttribute(AttributeKey::SCOPE);
+        $result = $this->classRenamer->renameNode($node, $oldToNewClasses, $scope);
         if (!$this->rectorConfigProvider->shouldImportNames()) {
             return $result;
         }
-        $rootNode = $this->betterNodeFinder->findParentByTypes($node, [Namespace_::class, FileWithoutNamespace::class]);
-        if (!$rootNode instanceof Node) {
+        if (!$this->rootNode instanceof FileWithoutNamespace && !$this->rootNode instanceof Namespace_) {
             return $result;
         }
         $removedUses = $this->renamedClassesDataCollector->getOldClasses();
-        $this->useImportsRemover->removeImportsFromStmts($rootNode->stmts, $removedUses);
+        $this->rootNode->stmts = $this->useImportsRemover->removeImportsFromStmts($this->rootNode->stmts, $removedUses);
         return $result;
     }
     public function getRuleDefinition() : RuleDefinition

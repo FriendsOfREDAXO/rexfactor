@@ -39,10 +39,6 @@ use Rector\ValueObject\ClassMethodWillChangeReturnType;
 final class PhpDocFromTypeDeclarationDecorator
 {
     /**
-     * @var ClassMethodWillChangeReturnType[]
-     */
-    private $classMethodWillChangeReturnTypes = [];
-    /**
      * @readonly
      * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
@@ -87,6 +83,10 @@ final class PhpDocFromTypeDeclarationDecorator
      * @var \Rector\Core\Php\PhpVersionProvider
      */
     private $phpVersionProvider;
+    /**
+     * @var ClassMethodWillChangeReturnType[]
+     */
+    private $classMethodWillChangeReturnTypes = [];
     public function __construct(StaticTypeMapper $staticTypeMapper, PhpDocInfoFactory $phpDocInfoFactory, NodeNameResolver $nodeNameResolver, PhpDocTypeChanger $phpDocTypeChanger, BetterNodeFinder $betterNodeFinder, PhpAttributeGroupFactory $phpAttributeGroupFactory, ReflectionResolver $reflectionResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, PhpVersionProvider $phpVersionProvider)
     {
         $this->staticTypeMapper = $staticTypeMapper;
@@ -120,7 +120,7 @@ final class PhpDocFromTypeDeclarationDecorator
             $functionLike->returnType = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($returnType, TypeKind::RETURN);
             return;
         }
-        $this->phpDocTypeChanger->changeReturnType($phpDocInfo, $returnType);
+        $this->phpDocTypeChanger->changeReturnType($functionLike, $phpDocInfo, $returnType);
         $functionLike->returnType = null;
         if (!$functionLike instanceof ClassMethod) {
             return;
@@ -239,7 +239,7 @@ final class PhpDocFromTypeDeclarationDecorator
     {
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($functionLike);
         $paramName = $this->nodeNameResolver->getName($param);
-        $this->phpDocTypeChanger->changeParamType($phpDocInfo, $type, $param, $paramName);
+        $this->phpDocTypeChanger->changeParamType($functionLike, $phpDocInfo, $type, $param, $paramName);
         $param->type = null;
     }
     /**

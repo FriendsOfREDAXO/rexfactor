@@ -3,13 +3,12 @@
 declare (strict_types=1);
 namespace Rector\Core\Application\FileProcessor;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PHPStan\AnalysedCodeException;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ChangesReporting\ValueObjectFactory\ErrorFactory;
 use Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory;
 use Rector\Core\Application\FileProcessor;
-use Rector\Core\Application\FileSystem\RemovedAndAddedFilesCollector;
 use Rector\Core\Contract\Console\OutputStyleInterface;
 use Rector\Core\Contract\Processor\FileProcessorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
@@ -23,14 +22,10 @@ use Rector\Core\ValueObject\Reporting\FileDiff;
 use Rector\Parallel\ValueObject\Bridge;
 use Rector\PostRector\Application\PostFileProcessor;
 use Rector\Testing\PHPUnit\StaticPHPUnitEnvironment;
+use RectorPrefix202306\Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
 final class PhpFileProcessor implements FileProcessorInterface
 {
-    /**
-     * @var string
-     * @see https://regex101.com/r/xP2MGa/1
-     */
-    private const OPEN_TAG_SPACED_REGEX = '#^(?<open_tag_spaced>[^\\S\\r\\n]+\\<\\?php)#m';
     /**
      * @readonly
      * @var \Rector\Core\PhpParser\Printer\FormatPerservingPrinter
@@ -41,11 +36,6 @@ final class PhpFileProcessor implements FileProcessorInterface
      * @var \Rector\Core\Application\FileProcessor
      */
     private $fileProcessor;
-    /**
-     * @readonly
-     * @var \Rector\Core\Application\FileSystem\RemovedAndAddedFilesCollector
-     */
-    private $removedAndAddedFilesCollector;
     /**
      * @readonly
      * @var \Rector\Core\Contract\Console\OutputStyleInterface
@@ -81,11 +71,20 @@ final class PhpFileProcessor implements FileProcessorInterface
      * @var \Rector\Core\FileSystem\FilePathHelper
      */
     private $filePathHelper;
-    public function __construct(FormatPerservingPrinter $formatPerservingPrinter, FileProcessor $fileProcessor, RemovedAndAddedFilesCollector $removedAndAddedFilesCollector, OutputStyleInterface $rectorOutputStyle, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, CurrentFileProvider $currentFileProvider, PostFileProcessor $postFileProcessor, ErrorFactory $errorFactory, FilePathHelper $filePathHelper)
+    /**
+     * @readonly
+     * @var \Symfony\Component\Console\Style\SymfonyStyle
+     */
+    private $symfonyStyle;
+    /**
+     * @var string
+     * @see https://regex101.com/r/xP2MGa/1
+     */
+    private const OPEN_TAG_SPACED_REGEX = '#^(?<open_tag_spaced>[^\\S\\r\\n]+\\<\\?php)#m';
+    public function __construct(FormatPerservingPrinter $formatPerservingPrinter, FileProcessor $fileProcessor, OutputStyleInterface $rectorOutputStyle, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, CurrentFileProvider $currentFileProvider, PostFileProcessor $postFileProcessor, ErrorFactory $errorFactory, FilePathHelper $filePathHelper, SymfonyStyle $symfonyStyle)
     {
         $this->formatPerservingPrinter = $formatPerservingPrinter;
         $this->fileProcessor = $fileProcessor;
-        $this->removedAndAddedFilesCollector = $removedAndAddedFilesCollector;
         $this->rectorOutputStyle = $rectorOutputStyle;
         $this->fileDiffFactory = $fileDiffFactory;
         $this->changedFilesDetector = $changedFilesDetector;
@@ -93,6 +92,7 @@ final class PhpFileProcessor implements FileProcessorInterface
         $this->postFileProcessor = $postFileProcessor;
         $this->errorFactory = $errorFactory;
         $this->filePathHelper = $filePathHelper;
+        $this->symfonyStyle = $symfonyStyle;
     }
     /**
      * @return array{system_errors: SystemError[], file_diffs: FileDiff[]}
@@ -112,7 +112,7 @@ final class PhpFileProcessor implements FileProcessorInterface
         $rectorWithLineChanges = null;
         do {
             $file->changeHasChanged(\false);
-            $this->fileProcessor->refactor($file, $configuration);
+            $this->fileProcessor->refactor($file);
             // 3. apply post rectors
             $newStmts = $this->postFileProcessor->traverse($file->getNewStmts());
             // this is needed for new tokens added in "afterTraverse()"
@@ -127,6 +127,10 @@ final class PhpFileProcessor implements FileProcessorInterface
                 $fileHasChanged = \true;
             }
         } while ($fileHasChangedInCurrentPass);
+        // show warning on has InlineHTML node if file has changed
+        if ($fileHasChanged && $file->hasInlineHTMLNode()) {
+            $this->symfonyStyle->warning(\sprintf('File %s has InlineHTML node, this may cause unexpected output, you may need to manually verify the changed file', $this->filePathHelper->relativePath($file->getFilePath())));
+        }
         // 5. add as cacheable if not changed at all
         if (!$fileHasChanged) {
             $this->changedFilesDetector->addCachableFile($file->getFilePath());
@@ -184,11 +188,6 @@ final class PhpFileProcessor implements FileProcessorInterface
     }
     private function printFile(File $file, Configuration $configuration) : void
     {
-        $filePath = $file->getFilePath();
-        if ($this->removedAndAddedFilesCollector->isFileRemoved($filePath)) {
-            // skip, because this file exists no more
-            return;
-        }
         // only save to string first, no need to print to file when not needed
         $newContent = $this->formatPerservingPrinter->printParsedStmstAndTokensToString($file);
         /**

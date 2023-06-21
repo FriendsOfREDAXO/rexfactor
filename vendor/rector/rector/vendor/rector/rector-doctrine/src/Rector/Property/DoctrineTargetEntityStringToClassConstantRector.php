@@ -3,17 +3,18 @@
 declare (strict_types=1);
 namespace Rector\Doctrine\Rector\Property;
 
-use RectorPrefix202305\Doctrine\ORM\Mapping\Embedded;
-use RectorPrefix202305\Doctrine\ORM\Mapping\ManyToMany;
-use RectorPrefix202305\Doctrine\ORM\Mapping\ManyToOne;
-use RectorPrefix202305\Doctrine\ORM\Mapping\OneToMany;
-use RectorPrefix202305\Doctrine\ORM\Mapping\OneToOne;
+use RectorPrefix202306\Doctrine\ORM\Mapping\Embedded;
+use RectorPrefix202306\Doctrine\ORM\Mapping\ManyToMany;
+use RectorPrefix202306\Doctrine\ORM\Mapping\ManyToOne;
+use RectorPrefix202306\Doctrine\ORM\Mapping\OneToMany;
+use RectorPrefix202306\Doctrine\ORM\Mapping\OneToOne;
 use PhpParser\Node;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Property;
 use Rector\BetterPhpDocParser\PhpDoc\ArrayItemNode;
 use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
+use Rector\BetterPhpDocParser\PhpDoc\StringNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Doctrine\NodeAnalyzer\AttributeFinder;
@@ -26,6 +27,16 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class DoctrineTargetEntityStringToClassConstantRector extends AbstractRector
 {
     /**
+     * @readonly
+     * @var \Rector\Doctrine\PhpDocParser\DoctrineClassAnnotationMatcher
+     */
+    private $doctrineClassAnnotationMatcher;
+    /**
+     * @readonly
+     * @var \Rector\Doctrine\NodeAnalyzer\AttributeFinder
+     */
+    private $attributeFinder;
+    /**
      * @var string
      */
     private const ATTRIBUTE_NAME__TARGET_ENTITY = 'targetEntity';
@@ -37,16 +48,6 @@ final class DoctrineTargetEntityStringToClassConstantRector extends AbstractRect
      * @var array<class-string<OneToMany|ManyToOne|OneToOne|ManyToMany|Embedded>, string>
      */
     private const VALID_DOCTRINE_CLASSES = ['Doctrine\\ORM\\Mapping\\OneToMany' => self::ATTRIBUTE_NAME__TARGET_ENTITY, 'Doctrine\\ORM\\Mapping\\ManyToOne' => self::ATTRIBUTE_NAME__TARGET_ENTITY, 'Doctrine\\ORM\\Mapping\\OneToOne' => self::ATTRIBUTE_NAME__TARGET_ENTITY, 'Doctrine\\ORM\\Mapping\\ManyToMany' => self::ATTRIBUTE_NAME__TARGET_ENTITY, 'Doctrine\\ORM\\Mapping\\Embedded' => self::ATTRIBUTE_NAME__CLASS];
-    /**
-     * @readonly
-     * @var \Rector\Doctrine\PhpDocParser\DoctrineClassAnnotationMatcher
-     */
-    private $doctrineClassAnnotationMatcher;
-    /**
-     * @readonly
-     * @var \Rector\Doctrine\NodeAnalyzer\AttributeFinder
-     */
-    private $attributeFinder;
     public function __construct(DoctrineClassAnnotationMatcher $doctrineClassAnnotationMatcher, AttributeFinder $attributeFinder)
     {
         $this->doctrineClassAnnotationMatcher = $doctrineClassAnnotationMatcher;
@@ -151,24 +152,25 @@ CODE_SAMPLE
         if (!$targetEntityArrayItemNode instanceof ArrayItemNode) {
             return null;
         }
-        $targetEntity = $targetEntityArrayItemNode->value;
-        if (!\is_string($targetEntity)) {
+        $targetEntityClass = $targetEntityArrayItemNode->value;
+        if ($targetEntityClass instanceof StringNode) {
+            $targetEntityClass = $targetEntityClass->value;
+        }
+        if (!\is_string($targetEntityClass)) {
             return null;
         }
         // resolve to FQN
-        $tagFullyQualifiedName = $this->doctrineClassAnnotationMatcher->resolveExpectingDoctrineFQCN($targetEntity, $property);
+        $tagFullyQualifiedName = $this->doctrineClassAnnotationMatcher->resolveExpectingDoctrineFQCN($targetEntityClass, $property);
         if ($tagFullyQualifiedName === null) {
             return null;
         }
-        if ($tagFullyQualifiedName === $targetEntity) {
+        if ($tagFullyQualifiedName === $targetEntityClass) {
             return null;
         }
         $currentArrayItemNode = $doctrineAnnotationTagValueNode->getValue($key);
         if (!$currentArrayItemNode instanceof ArrayItemNode) {
             return null;
         }
-        // no quotes needed, it's a constants
-        $currentArrayItemNode->kindValueQuoted = null;
         $currentArrayItemNode->value = '\\' . \ltrim($tagFullyQualifiedName, '\\') . '::class';
         $currentArrayItemNode->setAttribute('orig_node', null);
         return $property;

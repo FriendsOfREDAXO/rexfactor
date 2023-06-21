@@ -14,26 +14,17 @@ use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\Php\PhpVersionProvider;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\TypeDeclaration\ValueObject\AddReturnTypeDeclaration;
 use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\AddReturnTypeDeclarationRector\AddReturnTypeDeclarationRectorTest
  */
 final class AddReturnTypeDeclarationRector extends AbstractRector implements ConfigurableRectorInterface
 {
-    /**
-     * @var AddReturnTypeDeclaration[]
-     */
-    private $methodReturnTypes = [];
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
     /**
      * @readonly
      * @var \Rector\Core\Php\PhpVersionProvider
@@ -44,6 +35,14 @@ final class AddReturnTypeDeclarationRector extends AbstractRector implements Con
      * @var \Rector\VendorLocker\ParentClassMethodTypeOverrideGuard
      */
     private $parentClassMethodTypeOverrideGuard;
+    /**
+     * @var AddReturnTypeDeclaration[]
+     */
+    private $methodReturnTypes = [];
+    /**
+     * @var bool
+     */
+    private $hasChanged = \false;
     public function __construct(PhpVersionProvider $phpVersionProvider, ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard)
     {
         $this->phpVersionProvider = $phpVersionProvider;
@@ -75,28 +74,30 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [ClassMethod::class];
+        return [Class_::class];
     }
     /**
-     * @param ClassMethod $node
+     * @param Class_ $node
      */
     public function refactor(Node $node) : ?Node
     {
+        $this->hasChanged = \false;
         foreach ($this->methodReturnTypes as $methodReturnType) {
-            if (!$this->isName($node, $methodReturnType->getMethod())) {
-                continue;
-            }
             $objectType = $methodReturnType->getObjectType();
             if (!$this->isObjectType($node, $objectType)) {
                 continue;
             }
-            $this->processClassMethodNodeWithTypehints($node, $methodReturnType->getReturnType(), $objectType);
-            if (!$this->hasChanged) {
-                return null;
+            foreach ($node->getMethods() as $classMethod) {
+                if (!$this->isName($classMethod, $methodReturnType->getMethod())) {
+                    continue;
+                }
+                $this->processClassMethodNodeWithTypehints($classMethod, $node, $methodReturnType->getReturnType(), $objectType);
             }
-            return $node;
         }
-        return null;
+        if (!$this->hasChanged) {
+            return null;
+        }
+        return $node;
     }
     /**
      * @param mixed[] $configuration
@@ -106,14 +107,10 @@ CODE_SAMPLE
         Assert::allIsAOf($configuration, AddReturnTypeDeclaration::class);
         $this->methodReturnTypes = $configuration;
     }
-    private function processClassMethodNodeWithTypehints(ClassMethod $classMethod, Type $newType, ObjectType $objectType) : void
+    private function processClassMethodNodeWithTypehints(ClassMethod $classMethod, Class_ $class, Type $newType, ObjectType $objectType) : void
     {
         if ($newType instanceof MixedType) {
-            $parentNode = $classMethod->getAttribute(AttributeKey::PARENT_NODE);
-            if (!$parentNode instanceof Class_) {
-                return;
-            }
-            $className = (string) $this->nodeNameResolver->getName($parentNode);
+            $className = (string) $this->nodeNameResolver->getName($class);
             $currentObjectType = new ObjectType($className);
             if (!$objectType->equals($currentObjectType) && $classMethod->returnType !== null) {
                 return;

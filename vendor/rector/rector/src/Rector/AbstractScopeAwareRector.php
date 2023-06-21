@@ -4,13 +4,14 @@ declare (strict_types=1);
 namespace Rector\Core\Rector;
 
 use PhpParser\Node;
+use PhpParser\NodeTraverser;
 use PHPStan\Analyser\MutatingScope;
 use PHPStan\Analyser\Scope;
 use Rector\Core\Contract\Rector\ScopeAwarePhpRectorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeAnalyzer\ScopeAnalyzer;
 use Rector\NodeTypeResolver\Node\AttributeKey;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 abstract class AbstractScopeAwareRector extends \Rector\Core\Rector\AbstractRector implements ScopeAwarePhpRectorInterface
 {
     /**
@@ -26,7 +27,7 @@ abstract class AbstractScopeAwareRector extends \Rector\Core\Rector\AbstractRect
     }
     /**
      * Process Node of matched type with its PHPStan scope
-     * @return Node|Node[]|null
+     * @return Node|Node[]|null|NodeTraverser::*
      */
     public function refactor(Node $node)
     {
@@ -36,9 +37,6 @@ abstract class AbstractScopeAwareRector extends \Rector\Core\Rector\AbstractRect
         $currentScope = $originalNode->getAttribute(AttributeKey::SCOPE);
         if (!$currentScope instanceof MutatingScope) {
             $currentScope = $this->scopeAnalyzer->resolveScope($node, $this->file->getFilePath());
-            if ($currentScope instanceof MutatingScope) {
-                $this->changedNodeScopeRefresher->refresh($node, $currentScope, $this->file->getFilePath());
-            }
         }
         if (!$currentScope instanceof Scope) {
             /**

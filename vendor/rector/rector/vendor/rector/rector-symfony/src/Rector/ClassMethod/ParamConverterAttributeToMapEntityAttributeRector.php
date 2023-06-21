@@ -7,6 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\Variable;
@@ -16,29 +17,18 @@ use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassMethod;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
-use Rector\NodeTypeResolver\Node\AttributeKey;
-use Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer;
+use Rector\Symfony\Enum\SensioAttribute;
+use Rector\Symfony\Enum\SymfonyAnnotation;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @see https://symfony.com/blog/new-in-symfony-6-2-built-in-cache-security-template-and-doctrine-attributes
+ * @changelog https://symfony.com/blog/new-in-symfony-6-2-built-in-cache-security-template-and-doctrine-attributes
  *
  * @see \Rector\Symfony\Tests\Rector\ClassMethod\ParamConverterAttributeToMapEntityAttributeRector\ParamConverterAttributeToMapEntityAttributeRectorTest
  */
 final class ParamConverterAttributeToMapEntityAttributeRector extends AbstractRector implements MinPhpVersionInterface
 {
-    private const PARAM_CONVERTER_CLASS = 'Sensio\\Bundle\\FrameworkExtraBundle\\Configuration\\ParamConverter';
-    private const MAP_ENTITY_CLASS = 'Symfony\\Bridge\\Doctrine\\Attribute\\MapEntity';
-    /**
-     * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer
-     */
-    private $phpAttributeAnalyzer;
-    public function __construct(PhpAttributeAnalyzer $phpAttributeAnalyzer)
-    {
-        $this->phpAttributeAnalyzer = $phpAttributeAnalyzer;
-    }
     public function provideMinPhpVersion() : int
     {
         return PhpVersionFeature::ATTRIBUTES;
@@ -48,23 +38,27 @@ final class ParamConverterAttributeToMapEntityAttributeRector extends AbstractRe
         return new RuleDefinition('Replace ParamConverter attribute with mappings with the MapEntity attribute', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeController
 {
-    #[Route('/blog/{date}/{slug}/comments/{comment_slug}')]
     #[ParamConverter('post', options: ['mapping' => ['date' => 'date', 'slug' => 'slug']])]
     #[ParamConverter('comment', options: ['mapping' => ['comment_slug' => 'slug']])]
     public function showComment(
         Post $post,
+
         Comment $comment
     ) {
     }
 }
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
+
 class SomeController
 {
-    #[Route('/blog/{date}/{slug}/comments/{comment_slug}')]
     public function showComment(
-        #[\Symfony\Bridge\Doctrine\Attribute\MapEntity(mapping: ['date' => 'date', 'slug' => 'slug'])] Post $post,
-        #[\Symfony\Bridge\Doctrine\Attribute\MapEntity(mapping: ['comment_slug' => 'slug'])] Comment $comment
+        #[MapEntity(mapping: ['date' => 'date', 'slug' => 'slug'])]
+        Post $post,
+
+        #[MapEntity(mapping: ['comment_slug' => 'slug'])]
+        Comment $comment
     ) {
     }
 }
@@ -78,62 +72,92 @@ CODE_SAMPLE
     {
         return [ClassMethod::class];
     }
+    /**
+     * @param ClassMethod $node
+     */
     public function refactor(Node $node) : ?Node
     {
-        if (!$node instanceof ClassMethod || !$node->isPublic() || !$this->phpAttributeAnalyzer->hasPhpAttribute($node, self::PARAM_CONVERTER_CLASS)) {
+        if (!$node->isPublic()) {
             return null;
         }
-        $this->refactorParamConverter($node);
-        return $node;
-    }
-    private function refactorParamConverter(ClassMethod $classMethod) : Node
-    {
-        foreach ($classMethod->attrGroups as $attrGroup) {
+        $hasChanged = \false;
+        foreach ($node->attrGroups as $attrGroupKey => $attrGroup) {
             foreach ($attrGroup->attrs as $attr) {
-                if ($this->isName($attr, self::PARAM_CONVERTER_CLASS)) {
-                    $this->refactorAttribute($classMethod, $attr);
+                if (!$this->isNames($attr, [SensioAttribute::PARAM_CONVERTER, SensioAttribute::ENTITY])) {
+                    continue;
+                }
+                $attribute = $this->refactorAttribute($node, $attr, $attrGroup);
+                if ($attribute instanceof Attribute) {
+                    unset($node->attrGroups[$attrGroupKey]);
+                    $hasChanged = \true;
                 }
             }
         }
-        return $classMethod;
+        if ($hasChanged) {
+            return $node;
+        }
+        return null;
     }
-    private function refactorAttribute(ClassMethod $classMethod, Attribute $attribute) : void
+    private function refactorAttribute(ClassMethod $classMethod, Attribute $attribute, AttributeGroup $attributeGroup) : ?Attribute
     {
-        if ($attribute->args === [] || !$attribute->args[0]->value instanceof String_) {
-            return;
+        $firstArg = $attribute->args[0] ?? null;
+        if (!$firstArg instanceof Arg) {
+            return null;
+        }
+        if (!$firstArg->value instanceof String_) {
+            return null;
         }
         $optionsIndex = $this->getIndexForOptionsArg($attribute->args);
-        if (!$optionsIndex) {
-            return;
+        $exprIndex = $this->getIndexForExprArg($attribute->args);
+        if (!$optionsIndex && !$exprIndex) {
+            return null;
         }
-        $name = $attribute->args[0]->value->value;
-        $mapping = $attribute->args[$optionsIndex]->value;
-        if (!$mapping instanceof Array_) {
-            return;
+        $name = $firstArg->value->value;
+        $mappingArg = $attribute->args[$optionsIndex] ?? null;
+        $mappingExpr = $mappingArg instanceof Arg ? $mappingArg->value : null;
+        $exprArg = $attribute->args[$exprIndex] ?? null;
+        $exprValue = $exprArg instanceof Arg ? $exprArg->value : null;
+        $newArguments = $this->getNewArguments($mappingExpr, $exprValue);
+        if ($newArguments === []) {
+            return null;
         }
-        $newArguments = [];
-        $probablyEntity = \false;
-        foreach ($mapping->items as $item) {
-            if (!$item instanceof ArrayItem || !$item->key instanceof String_) {
-                continue;
-            }
-            if (\in_array($item->key->value, ['mapping', 'entity_manager'], \true)) {
-                $probablyEntity = \true;
-            }
-            $newArguments[] = new Arg($item->value, \false, \false, [], new Identifier($item->key->value));
+        unset($attribute->args[0]);
+        if ($optionsIndex) {
+            unset($attribute->args[$optionsIndex]);
         }
-        if (!$probablyEntity) {
-            return;
+        if ($exprIndex) {
+            unset($attribute->args[$exprIndex]);
         }
-        $this->removeNode($attribute->args[0]);
-        $this->removeNode($attribute->args[$optionsIndex]);
         $attribute->args = \array_merge($attribute->args, $newArguments);
-        $attribute->name = new FullyQualified(self::MAP_ENTITY_CLASS);
-        $node = $attribute->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$node instanceof AttributeGroup) {
-            return;
+        $attribute->name = new FullyQualified(SymfonyAnnotation::MAP_ENTITY);
+        $this->addMapEntityAttribute($classMethod, $name, $attributeGroup);
+        return $attribute;
+    }
+    /**
+     * @return Arg[]
+     */
+    private function getNewArguments(?Expr $mapping, ?Expr $exprValue) : array
+    {
+        $newArguments = [];
+        if ($mapping instanceof Array_) {
+            $probablyEntity = \false;
+            foreach ($mapping->items as $item) {
+                if (!$item instanceof ArrayItem || !$item->key instanceof String_) {
+                    continue;
+                }
+                if (\in_array($item->key->value, ['mapping', 'entity_manager'], \true)) {
+                    $probablyEntity = \true;
+                }
+                $newArguments[] = new Arg($item->value, \false, \false, [], new Identifier($item->key->value));
+            }
+            if (!$probablyEntity) {
+                return [];
+            }
         }
-        $this->addMapEntityAttribute($classMethod, $name, $node);
+        if ($exprValue instanceof String_) {
+            $newArguments[] = new Arg($exprValue, \false, \false, [], new Identifier('expr'));
+        }
+        return $newArguments;
     }
     private function addMapEntityAttribute(ClassMethod $classMethod, string $variableName, AttributeGroup $attributeGroup) : void
     {
@@ -141,10 +165,10 @@ CODE_SAMPLE
             if (!$param->var instanceof Variable) {
                 continue;
             }
-            if ($variableName === $param->var->name) {
-                $param->attrGroups = [$attributeGroup];
-                $this->removeNode($attributeGroup);
+            if (!$this->isName($param->var, $variableName)) {
+                continue;
             }
+            $param->attrGroups = [$attributeGroup];
         }
     }
     /**
@@ -154,6 +178,18 @@ CODE_SAMPLE
     {
         foreach ($args as $key => $arg) {
             if ($arg->name instanceof Identifier && $arg->name->name === 'options') {
+                return $key;
+            }
+        }
+        return null;
+    }
+    /**
+     * @param Arg[] $args
+     */
+    private function getIndexForExprArg(array $args) : ?int
+    {
+        foreach ($args as $key => $arg) {
+            if ($arg->name instanceof Identifier && $arg->name->name === 'expr') {
                 return $key;
             }
         }

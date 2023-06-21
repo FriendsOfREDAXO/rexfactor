@@ -8,13 +8,13 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\DependencyInjection\Compiler;
+namespace RectorPrefix202306\Symfony\Component\DependencyInjection\Compiler;
 
-use RectorPrefix202305\Symfony\Component\DependencyInjection\ChildDefinition;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\ContainerBuilder;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\Definition;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\Exception\RuntimeException;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\ChildDefinition;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\ContainerBuilder;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Definition;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Exception\RuntimeException;
 /**
  * Applies instanceof conditionals to definitions.
  *
@@ -94,8 +94,8 @@ class ResolveInstanceofConditionalsPass implements CompilerPassInterface
             $definition = \serialize($definition);
             if (Definition::class === \get_class($abstract)) {
                 // cast Definition to ChildDefinition
-                $definition = \substr_replace($definition, '53', 2, 2);
-                $definition = \substr_replace($definition, 'Child', 44, 0);
+                $definition = \substr_replace($definition, '72', 2, 2);
+                $definition = \substr_replace($definition, 'Child', 63,  0);
             }
             /** @var ChildDefinition $definition */
             $definition = \unserialize($definition);

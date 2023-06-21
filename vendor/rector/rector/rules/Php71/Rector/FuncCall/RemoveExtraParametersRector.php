@@ -107,6 +107,13 @@ final class RemoveExtraParametersRector extends AbstractRector implements MinPhp
                 return \true;
             }
         }
+        if ($reflection instanceof MethodReflection) {
+            $classReflection = $reflection->getDeclaringClass();
+            $fileName = (string) $classReflection->getFileName();
+            if (\strpos($fileName, 'phpstan.phar') !== \false) {
+                return \true;
+            }
+        }
         return \false;
     }
     /**

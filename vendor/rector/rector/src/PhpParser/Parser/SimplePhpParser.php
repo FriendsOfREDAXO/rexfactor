@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\PhpParser\Parser;
 
-use RectorPrefix202305\Nette\Utils\FileSystem;
+use RectorPrefix202306\Nette\Utils\FileSystem;
 use PhpParser\Node\Stmt;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
@@ -12,14 +12,14 @@ final class SimplePhpParser
 {
     /**
      * @readonly
-     * @var \PhpParser\Parser
-     */
-    private $phpParser;
-    /**
-     * @readonly
      * @var \Rector\Core\PhpParser\NodeTraverser\NodeConnectingTraverser
      */
     private $nodeConnectingTraverser;
+    /**
+     * @readonly
+     * @var \PhpParser\Parser
+     */
+    private $phpParser;
     public function __construct(NodeConnectingTraverser $nodeConnectingTraverser)
     {
         $this->nodeConnectingTraverser = $nodeConnectingTraverser;

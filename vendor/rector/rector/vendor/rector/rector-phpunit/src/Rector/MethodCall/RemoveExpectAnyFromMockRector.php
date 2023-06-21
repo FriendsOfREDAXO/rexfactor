@@ -74,10 +74,13 @@ CODE_SAMPLE
         if (!$this->isName($node->name, 'expects')) {
             return null;
         }
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         if (\count($node->args) !== 1) {
             return null;
         }
-        $onlyArgument = $node->args[0]->value;
+        $onlyArgument = $node->getArgs()[0]->value;
         if (!$this->isMethodCallOnVariableNamed($onlyArgument, 'this', 'any')) {
             return null;
         }

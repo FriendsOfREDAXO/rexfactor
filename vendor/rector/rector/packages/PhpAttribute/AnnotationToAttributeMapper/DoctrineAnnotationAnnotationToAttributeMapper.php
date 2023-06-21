@@ -13,16 +13,12 @@ use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\PhpAttribute\AnnotationToAttributeMapper;
 use Rector\PhpAttribute\AttributeArrayNameInliner;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @implements AnnotationToAttributeMapperInterface<DoctrineAnnotationTagValueNode>
  */
 final class DoctrineAnnotationAnnotationToAttributeMapper implements AnnotationToAttributeMapperInterface
 {
-    /**
-     * @var \Rector\PhpAttribute\AnnotationToAttributeMapper
-     */
-    private $annotationToAttributeMapper;
     /**
      * @readonly
      * @var \Rector\Core\Php\PhpVersionProvider
@@ -33,6 +29,10 @@ final class DoctrineAnnotationAnnotationToAttributeMapper implements AnnotationT
      * @var \Rector\PhpAttribute\AttributeArrayNameInliner
      */
     private $attributeArrayNameInliner;
+    /**
+     * @var \Rector\PhpAttribute\AnnotationToAttributeMapper
+     */
+    private $annotationToAttributeMapper;
     public function __construct(PhpVersionProvider $phpVersionProvider, AttributeArrayNameInliner $attributeArrayNameInliner)
     {
         $this->phpVersionProvider = $phpVersionProvider;

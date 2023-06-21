@@ -19,10 +19,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertNotOperatorRector extends AbstractRector
 {
     /**
-     * @var array<string, string>
-     */
-    private const RENAME_METHODS_MAP = ['assertTrue' => 'assertFalse', 'assertFalse' => 'assertTrue'];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
@@ -32,6 +28,10 @@ final class AssertNotOperatorRector extends AbstractRector
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const RENAME_METHODS_MAP = ['assertTrue' => 'assertFalse', 'assertFalse' => 'assertTrue'];
     public function __construct(IdentifierManipulator $identifierManipulator, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->identifierManipulator = $identifierManipulator;
@@ -57,12 +57,15 @@ final class AssertNotOperatorRector extends AbstractRector
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, $oldMethodNames)) {
             return null;
         }
-        $firstArgumentValue = $node->args[0]->value;
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $firstArgumentValue = $node->getArgs()[0]->value;
         if (!$firstArgumentValue instanceof BooleanNot) {
             return null;
         }
         $this->identifierManipulator->renameNodeWithMap($node, self::RENAME_METHODS_MAP);
-        $oldArguments = $node->args;
+        $oldArguments = $node->getArgs();
         /** @var BooleanNot $negation */
         $negation = $oldArguments[0]->value;
         $expression = $negation->expr;

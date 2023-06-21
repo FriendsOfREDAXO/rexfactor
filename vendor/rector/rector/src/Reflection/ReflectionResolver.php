@@ -25,29 +25,20 @@ use PHPStan\Type\TypeWithClassName;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeAnalyzer\ClassAnalyzer;
 use Rector\Core\PhpParser\AstResolver;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PHPStan\Reflection\TypeToCallReflectionResolver\TypeToCallReflectionResolverRegistry;
 use Rector\Core\ValueObject\MethodName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 final class ReflectionResolver
 {
-    /**
-     * @var \Rector\Core\PhpParser\AstResolver
-     */
-    private $astResolver;
     /**
      * @readonly
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
-    /**
-     * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
-     */
-    private $betterNodeFinder;
     /**
      * @readonly
      * @var \Rector\NodeTypeResolver\NodeTypeResolver
@@ -68,10 +59,13 @@ final class ReflectionResolver
      * @var \Rector\Core\NodeAnalyzer\ClassAnalyzer
      */
     private $classAnalyzer;
-    public function __construct(ReflectionProvider $reflectionProvider, BetterNodeFinder $betterNodeFinder, NodeTypeResolver $nodeTypeResolver, NodeNameResolver $nodeNameResolver, TypeToCallReflectionResolverRegistry $typeToCallReflectionResolverRegistry, ClassAnalyzer $classAnalyzer)
+    /**
+     * @var \Rector\Core\PhpParser\AstResolver
+     */
+    private $astResolver;
+    public function __construct(ReflectionProvider $reflectionProvider, NodeTypeResolver $nodeTypeResolver, NodeNameResolver $nodeNameResolver, TypeToCallReflectionResolverRegistry $typeToCallReflectionResolverRegistry, ClassAnalyzer $classAnalyzer)
     {
         $this->reflectionProvider = $reflectionProvider;
-        $this->betterNodeFinder = $betterNodeFinder;
         $this->nodeTypeResolver = $nodeTypeResolver;
         $this->nodeNameResolver = $nodeNameResolver;
         $this->typeToCallReflectionResolverRegistry = $typeToCallReflectionResolverRegistry;
@@ -151,8 +145,13 @@ final class ReflectionResolver
     public function resolveMethodReflectionFromStaticCall(StaticCall $staticCall) : ?MethodReflection
     {
         $objectType = $this->nodeTypeResolver->getType($staticCall->class);
-        /** @var array<class-string> $classNames */
-        $classNames = TypeUtils::getDirectClassNames($objectType);
+        if ($objectType instanceof ShortenedObjectType) {
+            /** @var array<class-string> $classNames */
+            $classNames = [$objectType->getFullyQualifiedName()];
+        } else {
+            /** @var array<class-string> $classNames */
+            $classNames = TypeUtils::getDirectClassNames($objectType);
+        }
         $methodName = $this->nodeNameResolver->getName($staticCall->name);
         if ($methodName === null) {
             return null;
@@ -195,14 +194,11 @@ final class ReflectionResolver
     }
     public function resolveMethodReflectionFromClassMethod(ClassMethod $classMethod) : ?MethodReflection
     {
-        $classLike = $this->betterNodeFinder->findParentType($classMethod, ClassLike::class);
-        if (!$classLike instanceof ClassLike) {
+        $classReflection = $this->resolveClassReflection($classMethod);
+        if (!$classReflection instanceof ClassReflection) {
             return null;
         }
-        $className = $this->nodeNameResolver->getName($classLike);
-        if (!\is_string($className)) {
-            return null;
-        }
+        $className = $classReflection->getName();
         $methodName = $this->nodeNameResolver->getName($classMethod);
         $scope = $classMethod->getAttribute(AttributeKey::SCOPE);
         return $this->resolveMethodReflection($className, $methodName, $scope);

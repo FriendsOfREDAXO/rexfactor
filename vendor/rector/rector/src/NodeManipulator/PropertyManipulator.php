@@ -3,11 +3,9 @@
 declare (strict_types=1);
 namespace Rector\Core\NodeManipulator;
 
-use RectorPrefix202305\Doctrine\ORM\Mapping\ManyToMany;
-use RectorPrefix202305\Doctrine\ORM\Mapping\Table;
+use RectorPrefix202306\Doctrine\ORM\Mapping\Table;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
-use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\PostDec;
@@ -19,7 +17,6 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Trait_;
@@ -51,14 +48,6 @@ use Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector;
  */
 final class PropertyManipulator
 {
-    /**
-     * @var string[]|class-string<Table>[]
-     */
-    private const ALLOWED_NOT_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES = ['Doctrine\\ORM\\Mapping\\Entity', 'Doctrine\\ORM\\Mapping\\Table', 'Doctrine\\ORM\\Mapping\\MappedSuperclass'];
-    /**
-     * @var string[]|class-string<ManyToMany>[]
-     */
-    private const ALLOWED_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES = ['Doctrine\\ORM\\Mapping\\Id', 'Doctrine\\ORM\\Mapping\\Column', 'Doctrine\\ORM\\Mapping\\OneToMany', 'Doctrine\\ORM\\Mapping\\ManyToMany', 'Doctrine\\ORM\\Mapping\\ManyToOne', 'Doctrine\\ORM\\Mapping\\OneToOne', 'JMS\\Serializer\\Annotation\\Type'];
     /**
      * @readonly
      * @var \Rector\Core\NodeManipulator\AssignManipulator
@@ -134,6 +123,10 @@ final class PropertyManipulator
      * @var \Rector\Core\Util\MultiInstanceofChecker
      */
     private $multiInstanceofChecker;
+    /**
+     * @var string[]|class-string<Table>[]
+     */
+    private const ALLOWED_NOT_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES = ['Doctrine\\ORM\\Mapping\\Entity', 'Doctrine\\ORM\\Mapping\\Table', 'Doctrine\\ORM\\Mapping\\MappedSuperclass'];
     public function __construct(\Rector\Core\NodeManipulator\AssignManipulator $assignManipulator, BetterNodeFinder $betterNodeFinder, VariableToConstantGuard $variableToConstantGuard, ReadWritePropertyAnalyzer $readWritePropertyAnalyzer, PhpDocInfoFactory $phpDocInfoFactory, PropertyFetchFinder $propertyFetchFinder, ReflectionResolver $reflectionResolver, NodeNameResolver $nodeNameResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, NodeTypeResolver $nodeTypeResolver, PromotedPropertyResolver $promotedPropertyResolver, ConstructorAssignDetector $constructorAssignDetector, AstResolver $astResolver, PropertyFetchAnalyzer $propertyFetchAnalyzer, MultiInstanceofChecker $multiInstanceofChecker)
     {
         $this->assignManipulator = $assignManipulator;
@@ -153,55 +146,17 @@ final class PropertyManipulator
         $this->multiInstanceofChecker = $multiInstanceofChecker;
     }
     /**
-     * @param \PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $propertyOrPromotedParam
-     */
-    public function isPropertyUsedInReadContext(Class_ $class, $propertyOrPromotedParam) : bool
-    {
-        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($propertyOrPromotedParam);
-        if ($this->isAllowedReadOnly($propertyOrPromotedParam, $phpDocInfo)) {
-            return \true;
-        }
-        $privatePropertyFetches = $this->propertyFetchFinder->findPrivatePropertyFetches($class, $propertyOrPromotedParam);
-        foreach ($privatePropertyFetches as $privatePropertyFetch) {
-            if ($this->readWritePropertyAnalyzer->isRead($privatePropertyFetch)) {
-                return \true;
-            }
-        }
-        // has classLike $this->$variable call?
-        $classLike = $this->betterNodeFinder->findParentType($propertyOrPromotedParam, ClassLike::class);
-        if (!$classLike instanceof ClassLike) {
-            return \false;
-        }
-        return (bool) $this->betterNodeFinder->findFirst($classLike->stmts, function (Node $node) : bool {
-            if (!$node instanceof PropertyFetch) {
-                return \false;
-            }
-            if (!$this->readWritePropertyAnalyzer->isRead($node)) {
-                return \false;
-            }
-            return $node->name instanceof Expr;
-        });
-    }
-    /**
      * @param \PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $propertyOrParam
      */
-    public function isPropertyChangeableExceptConstructor($propertyOrParam) : bool
+    public function isPropertyChangeableExceptConstructor(Class_ $class, $propertyOrParam, Scope $scope) : bool
     {
-        $class = $this->betterNodeFinder->findParentType($propertyOrParam, Class_::class);
-        // does not have parent type ClassLike? Possibly parent is changed by other rule
-        if (!$class instanceof Class_) {
-            return \true;
-        }
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($class);
-        if ($phpDocInfo->hasByAnnotationClasses(self::ALLOWED_NOT_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES)) {
-            return \true;
-        }
-        if ($this->phpAttributeAnalyzer->hasPhpAttributes($class, self::ALLOWED_NOT_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES)) {
+        if ($this->hasAllowedNotReadonlyAnnotationOrAttribute($phpDocInfo, $class)) {
             return \true;
         }
         $propertyFetches = $this->propertyFetchFinder->findPrivatePropertyFetches($class, $propertyOrParam);
         foreach ($propertyFetches as $propertyFetch) {
-            if ($this->isChangeableContext($propertyFetch)) {
+            if ($this->isChangeableContext($propertyFetch, $scope)) {
                 return \true;
             }
             // skip for constructor? it is allowed to set value in constructor method
@@ -220,19 +175,9 @@ final class PropertyManipulator
         }
         return \false;
     }
-    public function isPropertyChangeable(Class_ $class, Property $property) : bool
-    {
-        $propertyFetches = $this->propertyFetchFinder->findPrivatePropertyFetches($class, $property);
-        foreach ($propertyFetches as $propertyFetch) {
-            if ($this->isChangeableContext($propertyFetch)) {
-                return \true;
-            }
-            if ($this->assignManipulator->isLeftPartOfAssign($propertyFetch)) {
-                return \true;
-            }
-        }
-        return \false;
-    }
+    /**
+     * @api Used in rector-symfony
+     */
     public function resolveExistingClassPropertyNameByType(Class_ $class, ObjectType $objectType) : ?string
     {
         foreach ($class->getProperties() as $property) {
@@ -265,16 +210,6 @@ final class PropertyManipulator
         }
         return \false;
     }
-    /**
-     * @param \PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $propertyOrPromotedParam
-     */
-    private function isAllowedReadOnly($propertyOrPromotedParam, PhpDocInfo $phpDocInfo) : bool
-    {
-        if ($phpDocInfo->hasByAnnotationClasses(self::ALLOWED_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES)) {
-            return \true;
-        }
-        return $this->phpAttributeAnalyzer->hasPhpAttributes($propertyOrPromotedParam, self::ALLOWED_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES);
-    }
     private function isPropertyAssignedOnlyInConstructor(Class_ $class, string $propertyName, ?ClassMethod $classMethod) : bool
     {
         if (!$classMethod instanceof ClassMethod) {
@@ -289,7 +224,7 @@ final class PropertyManipulator
     /**
      * @param \PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\StaticPropertyFetch $propertyFetch
      */
-    private function isChangeableContext($propertyFetch) : bool
+    private function isChangeableContext($propertyFetch, Scope $scope) : bool
     {
         $parentNode = $propertyFetch->getAttribute(AttributeKey::PARENT_NODE);
         if (!$parentNode instanceof Node) {
@@ -306,27 +241,23 @@ final class PropertyManipulator
             if (!$readArg) {
                 return \true;
             }
-            $caller = $parentNode->getAttribute(AttributeKey::PARENT_NODE);
-            if ($caller instanceof MethodCall || $caller instanceof StaticCall) {
-                return $this->isFoundByRefParam($caller);
+            $callerNode = $parentNode->getAttribute(AttributeKey::PARENT_NODE);
+            if ($callerNode instanceof MethodCall || $callerNode instanceof StaticCall) {
+                return $this->isFoundByRefParam($callerNode, $scope);
             }
         }
         if ($parentNode instanceof ArrayDimFetch) {
-            return !$this->readWritePropertyAnalyzer->isRead($propertyFetch);
+            return !$this->readWritePropertyAnalyzer->isRead($propertyFetch, $scope);
         }
         return $parentNode instanceof Unset_;
     }
     /**
      * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $node
      */
-    private function isFoundByRefParam($node) : bool
+    private function isFoundByRefParam($node, Scope $scope) : bool
     {
         $functionLikeReflection = $this->reflectionResolver->resolveFunctionLikeReflectionFromCall($node);
         if ($functionLikeReflection === null) {
-            return \false;
-        }
-        $scope = $node->getAttribute(AttributeKey::SCOPE);
-        if (!$scope instanceof Scope) {
             return \false;
         }
         $parametersAcceptor = ParametersAcceptorSelectorVariantsWrapper::select($functionLikeReflection, $node, $scope);
@@ -336,5 +267,12 @@ final class PropertyManipulator
             }
         }
         return \false;
+    }
+    private function hasAllowedNotReadonlyAnnotationOrAttribute(PhpDocInfo $phpDocInfo, Class_ $class) : bool
+    {
+        if ($phpDocInfo->hasByAnnotationClasses(self::ALLOWED_NOT_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES)) {
+            return \true;
+        }
+        return $this->phpAttributeAnalyzer->hasPhpAttributes($class, self::ALLOWED_NOT_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES);
     }
 }

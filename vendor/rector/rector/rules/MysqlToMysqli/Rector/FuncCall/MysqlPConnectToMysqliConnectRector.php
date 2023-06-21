@@ -4,7 +4,6 @@ declare (strict_types=1);
 namespace Rector\MysqlToMysqli\Rector\FuncCall;
 
 use PhpParser\Node;
-use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\FuncCall;
@@ -56,14 +55,16 @@ CODE_SAMPLE
         if (!$this->isName($node, 'mysql_pconnect')) {
             return null;
         }
-        if (!isset($node->args[0])) {
+        if ($node->isFirstClassCallable()) {
             return null;
         }
-        if (!$node->args[0] instanceof Arg) {
+        if (!isset($node->getArgs()[0])) {
             return null;
         }
+        $args = $node->getArgs();
+        $firstArg = $args[0];
         $node->name = new Name('mysqli_connect');
-        $node->args[0]->value = $this->joinStringWithNode('p:', $node->args[0]->value);
+        $args[0]->value = $this->joinStringWithNode('p:', $firstArg->value);
         return $node;
     }
     /**

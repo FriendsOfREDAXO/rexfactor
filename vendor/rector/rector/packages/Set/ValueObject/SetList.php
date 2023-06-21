@@ -12,10 +12,6 @@ final class SetList implements SetListInterface
     /**
      * @var string
      */
-    public const ACTION_INJECTION_TO_CONSTRUCTOR_INJECTION = __DIR__ . '/../../../config/set/action-injection-to-constructor-injection.php';
-    /**
-     * @var string
-     */
     public const CODE_QUALITY = __DIR__ . '/../../../config/set/code-quality.php';
     /**
      * @var string
@@ -25,6 +21,10 @@ final class SetList implements SetListInterface
      * @var string
      */
     public const DEAD_CODE = __DIR__ . '/../../../config/set/dead-code.php';
+    /**
+     * @var string
+     */
+    public const STRICT_BOOLEANS = __DIR__ . '/../../../config/set/strict-booleans.php';
     /**
      * @var string
      */
@@ -93,10 +93,6 @@ final class SetList implements SetListInterface
      * @var string
      */
     public const PRIVATIZATION = __DIR__ . '/../../../config/set/privatization.php';
-    /**
-     * @var string
-     */
-    public const PSR_4 = __DIR__ . '/../../../config/set/psr-4.php';
     /**
      * @var string
      */

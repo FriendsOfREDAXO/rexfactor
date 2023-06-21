@@ -29,7 +29,10 @@ final class ExpectExceptionFactory
         if (!$this->testsNodeAnalyzer->isInPHPUnitMethodCallName($methodCall, 'assertInstanceOf')) {
             return null;
         }
-        $argumentVariableName = $this->nodeNameResolver->getName($methodCall->args[1]->value);
+        if ($methodCall->isFirstClassCallable()) {
+            return null;
+        }
+        $argumentVariableName = $this->nodeNameResolver->getName($methodCall->getArgs()[1]->value);
         if ($argumentVariableName === null) {
             return null;
         }
@@ -37,6 +40,6 @@ final class ExpectExceptionFactory
         if (!$this->nodeNameResolver->isName($variable, $argumentVariableName)) {
             return null;
         }
-        return new MethodCall($methodCall->var, 'expectException', [$methodCall->args[0]]);
+        return new MethodCall($methodCall->var, 'expectException', [$methodCall->getArgs()[0]]);
     }
 }

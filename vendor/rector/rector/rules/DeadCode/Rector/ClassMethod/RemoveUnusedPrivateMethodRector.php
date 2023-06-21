@@ -8,8 +8,9 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
+use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Core\ValueObject\MethodName;
 use Rector\DeadCode\NodeAnalyzer\IsClassMethodUsedAnalyzer;
@@ -18,7 +19,7 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector\RemoveUnusedPrivateMethodRectorTest
  */
-final class RemoveUnusedPrivateMethodRector extends AbstractRector
+final class RemoveUnusedPrivateMethodRector extends AbstractScopeAwareRector
 {
     /**
      * @readonly
@@ -67,28 +68,41 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [ClassMethod::class];
+        return [Class_::class];
     }
     /**
-     * @param ClassMethod $node
+     * @param Class_ $node
      */
-    public function refactor(Node $node) : ?Node
+    public function refactorWithScope(Node $node, Scope $scope) : ?Node
     {
-        if ($this->shouldSkip($node)) {
-            return null;
-        }
-        if ($this->isClassMethodUsedAnalyzer->isClassMethodUsed($node)) {
-            return null;
-        }
         if ($this->hasDynamicMethodCallOnFetchThis($node)) {
             return null;
         }
-        $this->removeNode($node);
+        if ($node->getMethods() === []) {
+            return null;
+        }
+        $hasChanged = \false;
+        $classReflection = $this->reflectionResolver->resolveClassReflection($node);
+        foreach ($node->stmts as $key => $stmt) {
+            if (!$stmt instanceof ClassMethod) {
+                continue;
+            }
+            if ($this->shouldSkip($stmt, $classReflection)) {
+                continue;
+            }
+            if ($this->isClassMethodUsedAnalyzer->isClassMethodUsed($node, $stmt, $scope)) {
+                continue;
+            }
+            unset($node->stmts[$key]);
+            $hasChanged = \true;
+        }
+        if ($hasChanged) {
+            return $node;
+        }
         return null;
     }
-    private function shouldSkip(ClassMethod $classMethod) : bool
+    private function shouldSkip(ClassMethod $classMethod, ?ClassReflection $classReflection) : bool
     {
-        $classReflection = $this->reflectionResolver->resolveClassReflection($classMethod);
         if (!$classReflection instanceof ClassReflection) {
             return \true;
         }
@@ -112,14 +126,10 @@ CODE_SAMPLE
         }
         return $classReflection->hasMethod(MethodName::CALL);
     }
-    private function hasDynamicMethodCallOnFetchThis(ClassMethod $classMethod) : bool
+    private function hasDynamicMethodCallOnFetchThis(Class_ $class) : bool
     {
-        $class = $this->betterNodeFinder->findParentType($classMethod, Class_::class);
-        if (!$class instanceof Class_) {
-            return \false;
-        }
-        foreach ($class->getMethods() as $method) {
-            $isFound = (bool) $this->betterNodeFinder->findFirst((array) $method->getStmts(), function (Node $subNode) : bool {
+        foreach ($class->getMethods() as $classMethod) {
+            $isFound = (bool) $this->betterNodeFinder->findFirst((array) $classMethod->getStmts(), function (Node $subNode) : bool {
                 if (!$subNode instanceof MethodCall) {
                     return \false;
                 }

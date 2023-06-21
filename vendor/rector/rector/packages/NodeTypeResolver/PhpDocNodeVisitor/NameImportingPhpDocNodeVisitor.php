@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PhpDocNodeVisitor;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node as PhpParserNode;
 use PHPStan\PhpDocParser\Ast\Node;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
@@ -25,10 +25,6 @@ use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
 {
-    /**
-     * @var PhpParserNode|null
-     */
-    private $currentPhpParserNode;
     /**
      * @readonly
      * @var \Rector\StaticTypeMapper\StaticTypeMapper
@@ -59,6 +55,10 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
+    /**
+     * @var PhpParserNode|null
+     */
+    private $currentPhpParserNode;
     public function __construct(StaticTypeMapper $staticTypeMapper, ParameterProvider $parameterProvider, ClassNameImportSkipper $classNameImportSkipper, UseNodesToAddCollector $useNodesToAddCollector, CurrentFileProvider $currentFileProvider, ReflectionProvider $reflectionProvider)
     {
         $this->staticTypeMapper = $staticTypeMapper;

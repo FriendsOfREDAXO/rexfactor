@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Naming\Naming;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\StaticType;
@@ -23,6 +23,16 @@ use Rector\StaticTypeMapper\ValueObject\Type\SelfObjectType;
  */
 final class PropertyNaming
 {
+    /**
+     * @readonly
+     * @var \Rector\Naming\RectorNamingInflector
+     */
+    private $rectorNamingInflector;
+    /**
+     * @readonly
+     * @var \Rector\NodeTypeResolver\NodeTypeResolver
+     */
+    private $nodeTypeResolver;
     /**
      * @var string[]
      */
@@ -45,16 +55,6 @@ final class PropertyNaming
      * @var string
      */
     private const GET_PREFIX_REGEX = '#^get(?<root_name>[A-Z].+)#';
-    /**
-     * @readonly
-     * @var \Rector\Naming\RectorNamingInflector
-     */
-    private $rectorNamingInflector;
-    /**
-     * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
-     */
-    private $nodeTypeResolver;
     public function __construct(RectorNamingInflector $rectorNamingInflector, NodeTypeResolver $nodeTypeResolver)
     {
         $this->rectorNamingInflector = $rectorNamingInflector;
@@ -184,11 +184,13 @@ final class PropertyNaming
     private function removeInterfaceSuffixPrefix(string $className, string $category) : string
     {
         // suffix
-        if (Strings::match($className, '#' . $category . '$#i')) {
+        $iSuffixMatch = Strings::match($className, '#' . $category . '$#i');
+        if ($iSuffixMatch !== null) {
             return Strings::substring($className, 0, -\strlen($category));
         }
         // prefix
-        if (Strings::match($className, '#^' . $category . '#i')) {
+        $iPrefixMatch = Strings::match($className, '#^' . $category . '#i');
+        if ($iPrefixMatch !== null) {
             return Strings::substring($className, \strlen($category));
         }
         // starts with "I\W+"?

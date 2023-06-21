@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Naming\Naming;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
@@ -19,10 +19,12 @@ use PHPStan\Analyser\MutatingScope;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\ThisType;
 use PHPStan\Type\Type;
+use Rector\Naming\AssignVariableNameResolver\NewAssignVariableNameResolver;
+use Rector\Naming\AssignVariableNameResolver\PropertyFetchAssignVariableNameResolver;
 use Rector\Naming\Contract\AssignVariableNameResolverInterface;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-use RectorPrefix202305\Symfony\Component\String\UnicodeString;
+use RectorPrefix202306\Symfony\Component\String\UnicodeString;
 final class VariableNaming
 {
     /**
@@ -37,17 +39,13 @@ final class VariableNaming
     private $nodeTypeResolver;
     /**
      * @var AssignVariableNameResolverInterface[]
-     * @readonly
      */
-    private $assignVariableNameResolvers;
-    /**
-     * @param AssignVariableNameResolverInterface[] $assignVariableNameResolvers
-     */
-    public function __construct(NodeNameResolver $nodeNameResolver, NodeTypeResolver $nodeTypeResolver, array $assignVariableNameResolvers)
+    private $assignVariableNameResolvers = [];
+    public function __construct(NodeNameResolver $nodeNameResolver, NodeTypeResolver $nodeTypeResolver, PropertyFetchAssignVariableNameResolver $propertyFetchAssignVariableNameResolver, NewAssignVariableNameResolver $newAssignVariableNameResolver)
     {
         $this->nodeNameResolver = $nodeNameResolver;
         $this->nodeTypeResolver = $nodeTypeResolver;
-        $this->assignVariableNameResolvers = $assignVariableNameResolvers;
+        $this->assignVariableNameResolvers = [$propertyFetchAssignVariableNameResolver, $newAssignVariableNameResolver];
     }
     /**
      * @api
@@ -163,13 +161,13 @@ final class VariableNaming
     }
     private function resolveBareFuncCallArgumentName(FuncCall $funcCall, string $fallbackName, string $suffix) : string
     {
-        if (!isset($funcCall->args[0])) {
+        if ($funcCall->isFirstClassCallable()) {
             return '';
         }
-        if (!$funcCall->args[0] instanceof Arg) {
+        if (!isset($funcCall->getArgs()[0])) {
             return '';
         }
-        $argumentValue = $funcCall->args[0]->value;
+        $argumentValue = $funcCall->getArgs()[0]->value;
         if ($argumentValue instanceof MethodCall || $argumentValue instanceof StaticCall) {
             $name = $this->nodeNameResolver->getName($argumentValue->name);
         } else {

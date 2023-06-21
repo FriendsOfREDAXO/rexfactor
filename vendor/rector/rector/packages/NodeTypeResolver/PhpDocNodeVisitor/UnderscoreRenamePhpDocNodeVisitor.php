@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PhpDocNodeVisitor;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PHPStan\PhpDocParser\Ast\Node;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\Type\ObjectType;
@@ -12,10 +12,6 @@ use Rector\Renaming\ValueObject\PseudoNamespaceToNamespace;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 final class UnderscoreRenamePhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
 {
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
     /**
      * @readonly
      * @var \Rector\StaticTypeMapper\StaticTypeMapper
@@ -31,6 +27,10 @@ final class UnderscoreRenamePhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
      * @var \PhpParser\Node
      */
     private $phpNode;
+    /**
+     * @var bool
+     */
+    private $hasChanged = \false;
     public function __construct(StaticTypeMapper $staticTypeMapper, PseudoNamespaceToNamespace $pseudoNamespaceToNamespace, \PhpParser\Node $phpNode)
     {
         $this->staticTypeMapper = $staticTypeMapper;

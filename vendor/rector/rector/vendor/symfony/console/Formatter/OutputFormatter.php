@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Console\Formatter;
+namespace RectorPrefix202306\Symfony\Component\Console\Formatter;
 
-use RectorPrefix202305\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202306\Symfony\Component\Console\Exception\InvalidArgumentException;
 /**
  * Formatter class for console output.
  *
@@ -78,6 +78,9 @@ class OutputFormatter implements WrappableOutputFormatterInterface
         }
         $this->styleStack = new OutputFormatterStyleStack();
     }
+    /**
+     * @return void
+     */
     public function setDecorated(bool $decorated)
     {
         $this->decorated = $decorated;
@@ -86,6 +89,9 @@ class OutputFormatter implements WrappableOutputFormatterInterface
     {
         return $this->decorated;
     }
+    /**
+     * @return void
+     */
     public function setStyle(string $name, OutputFormatterStyleInterface $style)
     {
         $this->styles[\strtolower($name)] = $style;
@@ -105,6 +111,9 @@ class OutputFormatter implements WrappableOutputFormatterInterface
     {
         return $this->formatAndWrap($message, 0);
     }
+    /**
+     * @return string
+     */
     public function formatAndWrap(?string $message, int $width)
     {
         if (null === $message) {

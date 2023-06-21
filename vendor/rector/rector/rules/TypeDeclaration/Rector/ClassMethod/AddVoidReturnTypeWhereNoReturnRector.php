@@ -6,7 +6,6 @@ namespace Rector\TypeDeclaration\Rector\ClassMethod;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PHPStan\Reflection\ClassReflection;
@@ -17,27 +16,17 @@ use Rector\Core\Contract\Rector\AllowEmptyConfigurableRectorInterface;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Core\ValueObject\PhpVersionFeature;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\TypeDeclaration\TypeInferer\SilentVoidResolver;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnVendorLockResolver;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector\AddVoidReturnTypeWhereNoReturnRectorTest
  */
 final class AddVoidReturnTypeWhereNoReturnRector extends AbstractRector implements MinPhpVersionInterface, AllowEmptyConfigurableRectorInterface
 {
-    /**
-     * @api
-     * @var string using phpdoc instead of a native void type can ease the migration path for consumers of code being processed.
-     */
-    public const USE_PHPDOC = 'use_phpdoc';
-    /**
-     * @var bool
-     */
-    private $usePhpdoc = \false;
     /**
      * @readonly
      * @var \Rector\TypeDeclaration\TypeInferer\SilentVoidResolver
@@ -58,6 +47,15 @@ final class AddVoidReturnTypeWhereNoReturnRector extends AbstractRector implemen
      * @var \Rector\Core\Reflection\ReflectionResolver
      */
     private $reflectionResolver;
+    /**
+     * @api
+     * @var string using phpdoc instead of a native void type can ease the migration path for consumers of code being processed.
+     */
+    public const USE_PHPDOC = 'use_phpdoc';
+    /**
+     * @var bool
+     */
+    private $usePhpdoc = \false;
     public function __construct(SilentVoidResolver $silentVoidResolver, ClassMethodReturnVendorLockResolver $classMethodReturnVendorLockResolver, PhpDocTypeChanger $phpDocTypeChanger, ReflectionResolver $reflectionResolver)
     {
         $this->silentVoidResolver = $silentVoidResolver;
@@ -137,7 +135,7 @@ CODE_SAMPLE
         $this->usePhpdoc = $usePhpdoc;
     }
     /**
-     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure|\PhpParser\Node $node
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $node
      */
     private function changePhpDocToVoidIfNotNever($node) : bool
     {
@@ -145,7 +143,7 @@ CODE_SAMPLE
         if ($phpDocInfo->getReturnType() instanceof NeverType) {
             return \false;
         }
-        return $this->phpDocTypeChanger->changeReturnType($phpDocInfo, new VoidType());
+        return $this->phpDocTypeChanger->changeReturnType($node, $phpDocInfo, new VoidType());
     }
     /**
      * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $functionLike
@@ -172,10 +170,6 @@ CODE_SAMPLE
         if (!$classReflection instanceof ClassReflection) {
             return \false;
         }
-        $node = $classMethod->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$node instanceof Class_) {
-            return \false;
-        }
-        return $node->isFinal();
+        return $classReflection->isFinalByKeyword();
     }
 }

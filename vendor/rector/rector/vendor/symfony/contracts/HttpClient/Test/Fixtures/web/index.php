@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202305;
+namespace RectorPrefix202306;
 
 if ('cli-server' !== \PHP_SAPI) {
     // safe guard against unwanted execution
@@ -73,6 +73,11 @@ switch ($vars['REQUEST_URI']) {
         break;
     case '/301/invalid':
         \header('Location: //?foo=bar', \true, 301);
+        break;
+    case '/301/proxy':
+    case 'http://localhost:8057/301/proxy':
+    case 'http://127.0.0.1:8057/301/proxy':
+        \header('Location: http://localhost:8057/', \true, 301);
         break;
     case '/302':
         if (!isset($vars['HTTP_AUTHORIZATION'])) {

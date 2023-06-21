@@ -13,21 +13,22 @@ use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
+ * @api used in rector-symfony
  * @see \Rector\Tests\Arguments\Rector\ClassMethod\ReplaceArgumentDefaultValueRector\ReplaceArgumentDefaultValueRectorTest
  */
 final class ReplaceArgumentDefaultValueRector extends AbstractRector implements ConfigurableRectorInterface
 {
     /**
-     * @var ReplaceArgumentDefaultValue[]
-     */
-    private $replacedArguments = [];
-    /**
      * @readonly
      * @var \Rector\Arguments\ArgumentDefaultValueReplacer
      */
     private $argumentDefaultValueReplacer;
+    /**
+     * @var ReplaceArgumentDefaultValue[]
+     */
+    private $replacedArguments = [];
     public function __construct(ArgumentDefaultValueReplacer $argumentDefaultValueReplacer)
     {
         $this->argumentDefaultValueReplacer = $argumentDefaultValueReplacer;

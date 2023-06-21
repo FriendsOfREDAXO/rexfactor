@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config\Resource;
+namespace RectorPrefix202306\Symfony\Component\Config\Resource;
 
 /**
  * DirectoryResource represents a resources stored in a subdirectory tree.
@@ -44,7 +44,7 @@ class DirectoryResource implements SelfCheckingResourceInterface
     }
     public function __toString() : string
     {
-        return \md5(\serialize([$this->resource, $this->pattern]));
+        return \hash('xxh128', \serialize([$this->resource, $this->pattern]));
     }
     public function getResource() : string
     {

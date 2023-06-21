@@ -6,19 +6,19 @@ namespace Rector\Symfony\Bridge\Symfony\Routing;
 use Rector\Symfony\Bridge\Symfony\ContainerServiceProvider;
 use Rector\Symfony\Contract\Bridge\Symfony\Routing\SymfonyRoutesProviderInterface;
 use Rector\Symfony\ValueObject\SymfonyRouteMetadata;
-use RectorPrefix202305\Symfony\Component\Routing\RouterInterface;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Symfony\Component\Routing\RouterInterface;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 final class SymfonyRoutesProvider implements SymfonyRoutesProviderInterface
 {
-    /**
-     * @var SymfonyRouteMetadata[]
-     */
-    private $symfonyRouteMetadatas = [];
     /**
      * @readonly
      * @var \Rector\Symfony\Bridge\Symfony\ContainerServiceProvider
      */
     private $containerServiceProvider;
+    /**
+     * @var SymfonyRouteMetadata[]
+     */
+    private $symfonyRouteMetadatas = [];
     public function __construct(ContainerServiceProvider $containerServiceProvider)
     {
         $this->containerServiceProvider = $containerServiceProvider;

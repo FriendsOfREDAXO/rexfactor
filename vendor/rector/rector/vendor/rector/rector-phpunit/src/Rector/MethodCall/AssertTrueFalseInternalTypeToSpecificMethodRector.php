@@ -20,14 +20,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertTrueFalseInternalTypeToSpecificMethodRector extends AbstractRector
 {
     /**
-     * @var array<string, string>
-     */
-    private const OLD_FUNCTIONS_TO_TYPES = ['is_array' => 'array', 'is_bool' => 'bool', 'is_callable' => 'callable', 'is_double' => 'double', 'is_float' => 'float', 'is_int' => 'int', 'is_integer' => 'integer', 'is_iterable' => 'iterable', 'is_numeric' => 'numeric', 'is_object' => 'object', 'is_real' => 'real', 'is_resource' => 'resource', 'is_scalar' => 'scalar', 'is_string' => 'string'];
-    /**
-     * @var array<string, string>
-     */
-    private const RENAME_METHODS_MAP = ['assertTrue' => 'assertInternalType', 'assertFalse' => 'assertNotInternalType'];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
@@ -37,6 +29,14 @@ final class AssertTrueFalseInternalTypeToSpecificMethodRector extends AbstractRe
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const OLD_FUNCTIONS_TO_TYPES = ['is_array' => 'array', 'is_bool' => 'bool', 'is_callable' => 'callable', 'is_double' => 'double', 'is_float' => 'float', 'is_int' => 'int', 'is_integer' => 'integer', 'is_iterable' => 'iterable', 'is_numeric' => 'numeric', 'is_object' => 'object', 'is_real' => 'real', 'is_resource' => 'resource', 'is_scalar' => 'scalar', 'is_string' => 'string'];
+    /**
+     * @var array<string, string>
+     */
+    private const RENAME_METHODS_MAP = ['assertTrue' => 'assertInternalType', 'assertFalse' => 'assertNotInternalType'];
     public function __construct(IdentifierManipulator $identifierManipulator, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->identifierManipulator = $identifierManipulator;
@@ -62,8 +62,10 @@ final class AssertTrueFalseInternalTypeToSpecificMethodRector extends AbstractRe
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, $oldMethods)) {
             return null;
         }
-        /** @var FuncCall|Node $firstArgumentValue */
-        $firstArgumentValue = $node->args[0]->value;
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $firstArgumentValue = $node->getArgs()[0]->value;
         if (!$firstArgumentValue instanceof FuncCall) {
             return null;
         }
@@ -80,11 +82,11 @@ final class AssertTrueFalseInternalTypeToSpecificMethodRector extends AbstractRe
     private function moveFunctionArgumentsUp($node) : Node
     {
         /** @var FuncCall $isFunctionNode */
-        $isFunctionNode = $node->args[0]->value;
-        $firstArgumentValue = $isFunctionNode->args[0]->value;
+        $isFunctionNode = $node->getArgs()[0]->value;
+        $firstArgumentValue = $isFunctionNode->getArgs()[0]->value;
         $isFunctionName = $this->getName($isFunctionNode);
         $newArgs = [new Arg(new String_(self::OLD_FUNCTIONS_TO_TYPES[$isFunctionName])), new Arg($firstArgumentValue)];
-        $oldArguments = $node->args;
+        $oldArguments = $node->getArgs();
         unset($oldArguments[0]);
         $node->args = $this->appendArgs($newArgs, $oldArguments);
         return $node;

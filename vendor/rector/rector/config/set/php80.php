@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202305;
+namespace RectorPrefix202306;
 
 use Rector\Arguments\Rector\ClassMethod\ArgumentAdderRector;
 use Rector\Arguments\Rector\FuncCall\FunctionArgumentDefaultValueReplacerRector;
@@ -19,9 +19,7 @@ use Rector\Php80\Rector\ClassMethod\FinalPrivateToPrivateVisibilityRector;
 use Rector\Php80\Rector\ClassMethod\SetStateToStaticRector;
 use Rector\Php80\Rector\FuncCall\ClassOnObjectRector;
 use Rector\Php80\Rector\FuncCall\Php8ResourceReturnToObjectRector;
-use Rector\Php80\Rector\FuncCall\TokenGetAllToObjectRector;
 use Rector\Php80\Rector\FunctionLike\MixedTypeRector;
-use Rector\Php80\Rector\FunctionLike\UnionTypesRector;
 use Rector\Php80\Rector\Identical\StrEndsWithRector;
 use Rector\Php80\Rector\Identical\StrStartsWithRector;
 use Rector\Php80\Rector\NotIdentical\StrContainsRector;
@@ -31,18 +29,11 @@ use Rector\Renaming\Rector\FuncCall\RenameFunctionRector;
 use Rector\Transform\Rector\StaticCall\StaticCallToFuncCallRector;
 use Rector\Transform\ValueObject\StaticCallToFuncCall;
 return static function (RectorConfig $rectorConfig) : void {
-    $rectorConfig->rule(UnionTypesRector::class);
     $rectorConfig->rule(StrContainsRector::class);
     $rectorConfig->rule(StrStartsWithRector::class);
     $rectorConfig->rule(StrEndsWithRector::class);
     $rectorConfig->ruleWithConfiguration(StaticCallToFuncCallRector::class, [new StaticCallToFuncCall('Nette\\Utils\\Strings', 'startsWith', 'str_starts_with'), new StaticCallToFuncCall('Nette\\Utils\\Strings', 'endsWith', 'str_ends_with'), new StaticCallToFuncCall('Nette\\Utils\\Strings', 'contains', 'str_contains')]);
-    $rectorConfig->rule(StringableForToStringRector::class);
-    $rectorConfig->rule(ClassOnObjectRector::class);
-    $rectorConfig->rule(GetDebugTypeRector::class);
-    $rectorConfig->rule(TokenGetAllToObjectRector::class);
-    $rectorConfig->rule(RemoveUnusedVariableInCatchRector::class);
-    $rectorConfig->rule(ClassPropertyAssignToConstructorPromotionRector::class);
-    $rectorConfig->rule(ChangeSwitchToMatchRector::class);
+    $rectorConfig->rules([StringableForToStringRector::class, ClassOnObjectRector::class, GetDebugTypeRector::class, RemoveUnusedVariableInCatchRector::class, ClassPropertyAssignToConstructorPromotionRector::class, ChangeSwitchToMatchRector::class]);
     // nette\utils and Strings::replace()
     $rectorConfig->ruleWithConfiguration(ArgumentAdderRector::class, [new ArgumentAdder('Nette\\Utils\\Strings', 'replace', 2, 'replacement', '')]);
     $rectorConfig->rule(RemoveParentCallWithoutParentRector::class);

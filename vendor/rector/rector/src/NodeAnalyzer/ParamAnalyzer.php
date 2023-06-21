@@ -8,6 +8,7 @@ use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
+use PhpParser\Node\Expr\Error;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\Variable;
@@ -22,7 +23,6 @@ use Rector\Core\PhpParser\Comparing\NodeComparator;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PhpParser\Node\Value\ValueResolver;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 final class ParamAnalyzer
 {
@@ -68,6 +68,9 @@ final class ParamAnalyzer
     public function isParamUsedInClassMethod(ClassMethod $classMethod, Param $param) : bool
     {
         $isParamUsed = \false;
+        if ($param->var instanceof Error) {
+            return \false;
+        }
         $this->simpleCallableNodeTraverser->traverseNodesWithCallable($classMethod->stmts, function (Node $node) use(&$isParamUsed, $param) : ?int {
             if ($isParamUsed) {
                 return NodeTraverser::STOP_TRAVERSAL;
@@ -118,12 +121,8 @@ final class ParamAnalyzer
     {
         return $param->default instanceof ConstFetch && $this->valueResolver->isNull($param->default);
     }
-    public function isParamReassign(Param $param) : bool
+    public function isParamReassign(ClassMethod $classMethod, Param $param) : bool
     {
-        $classMethod = $param->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$classMethod instanceof ClassMethod) {
-            return \false;
-        }
         $paramName = (string) $this->nodeNameResolver->getName($param->var);
         return (bool) $this->betterNodeFinder->findFirstInFunctionLikeScoped($classMethod, function (Node $node) use($paramName) : bool {
             if (!$node instanceof Assign) {

@@ -22,10 +22,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class ExplicitPhpErrorApiRector extends AbstractRector
 {
     /**
-     * @var array<string, string>
-     */
-    private const REPLACEMENTS = ['PHPUnit\\Framework\\TestCase\\Notice' => 'expectNotice', 'PHPUnit\\Framework\\TestCase\\Deprecated' => 'expectDeprecation', 'PHPUnit\\Framework\\TestCase\\Error' => 'expectError', 'PHPUnit\\Framework\\TestCase\\Warning' => 'expectWarning'];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeFactory\AssertCallFactory
      */
@@ -35,6 +31,10 @@ final class ExplicitPhpErrorApiRector extends AbstractRector
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const REPLACEMENTS = ['PHPUnit\\Framework\\TestCase\\Notice' => 'expectNotice', 'PHPUnit\\Framework\\TestCase\\Deprecated' => 'expectDeprecation', 'PHPUnit\\Framework\\TestCase\\Error' => 'expectError', 'PHPUnit\\Framework\\TestCase\\Warning' => 'expectWarning'];
     public function __construct(AssertCallFactory $assertCallFactory, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->assertCallFactory = $assertCallFactory;
@@ -96,10 +96,14 @@ CODE_SAMPLE
      */
     private function replaceExceptionWith($node, string $exceptionClass, string $explicitMethod) : ?Node
     {
-        if (!isset($node->args[0])) {
+        if ($node->isFirstClassCallable()) {
             return null;
         }
-        if (!$this->isClassConstReference($node->args[0]->value, $exceptionClass)) {
+        if (!isset($node->getArgs()[0])) {
+            return null;
+        }
+        $firstArg = $node->getArgs()[0];
+        if (!$this->isClassConstReference($firstArg->value, $exceptionClass)) {
             return null;
         }
         return $this->assertCallFactory->createCallWithName($node, $explicitMethod);

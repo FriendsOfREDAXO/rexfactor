@@ -7,6 +7,7 @@ use LogicException;
 use PHPStan\PhpDocParser\Ast;
 use PHPStan\PhpDocParser\Lexer\Lexer;
 use function in_array;
+use function str_replace;
 use function strpos;
 use function trim;
 class TypeParser
@@ -54,20 +55,13 @@ class TypeParser
      */
     public function enrichWithAttributes(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens, Ast\Node $type, int $startLine, int $startIndex) : Ast\Node
     {
-        $endLine = $tokens->currentTokenLine();
-        $endIndex = $tokens->currentTokenIndex();
         if ($this->useLinesAttributes) {
             $type->setAttribute(Ast\Attribute::START_LINE, $startLine);
-            $type->setAttribute(Ast\Attribute::END_LINE, $endLine);
+            $type->setAttribute(Ast\Attribute::END_LINE, $tokens->currentTokenLine());
         }
         if ($this->useIndexAttributes) {
-            $tokensArray = $tokens->getTokens();
-            $endIndex--;
-            if ($tokensArray[$endIndex][Lexer::TYPE_OFFSET] === Lexer::TOKEN_HORIZONTAL_WS) {
-                $endIndex--;
-            }
             $type->setAttribute(Ast\Attribute::START_INDEX, $startIndex);
-            $type->setAttribute(Ast\Attribute::END_INDEX, $endIndex);
+            $type->setAttribute(Ast\Attribute::END_INDEX, $tokens->endIndexOfLastRelevantToken());
         }
         return $type;
     }
@@ -549,7 +543,7 @@ class TypeParser
         $startIndex = $tokens->currentTokenIndex();
         $startLine = $tokens->currentTokenLine();
         if ($tokens->isCurrentTokenType(Lexer::TOKEN_INTEGER)) {
-            $key = new Ast\ConstExpr\ConstExprIntegerNode($tokens->currentTokenValue());
+            $key = new Ast\ConstExpr\ConstExprIntegerNode(str_replace('_', '', $tokens->currentTokenValue()));
             $tokens->next();
         } elseif ($tokens->isCurrentTokenType(Lexer::TOKEN_SINGLE_QUOTED_STRING)) {
             if ($this->quoteAwareConstExprString) {

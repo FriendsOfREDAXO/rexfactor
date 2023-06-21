@@ -3,30 +3,33 @@
 declare (strict_types=1);
 namespace Rector\Renaming\Rector\FileWithoutNamespace;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Property;
 use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\Core\Rector\AbstractRector;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\PhpDoc\PhpDocTypeRenamer;
 use Rector\Renaming\ValueObject\PseudoNamespaceToNamespace;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\FileWithoutNamespace\PseudoNamespaceToNamespaceRector\PseudoNamespaceToNamespaceRectorTest
  */
 final class PseudoNamespaceToNamespaceRector extends AbstractRector implements ConfigurableRectorInterface
 {
+    /**
+     * @readonly
+     * @var \Rector\NodeTypeResolver\PhpDoc\PhpDocTypeRenamer
+     */
+    private $phpDocTypeRenamer;
     /**
      * @see https://regex101.com/r/chvLgs/1/
      * @var string
@@ -40,11 +43,6 @@ final class PseudoNamespaceToNamespaceRector extends AbstractRector implements C
      * @var string|null
      */
     private $newNamespace;
-    /**
-     * @readonly
-     * @var \Rector\NodeTypeResolver\PhpDoc\PhpDocTypeRenamer
-     */
-    private $phpDocTypeRenamer;
     public function __construct(PhpDocTypeRenamer $phpDocTypeRenamer)
     {
         $this->phpDocTypeRenamer = $phpDocTypeRenamer;
@@ -78,20 +76,9 @@ CODE_SAMPLE
     {
         $this->newNamespace = null;
         if ($node instanceof FileWithoutNamespace) {
-            $changedStmts = $this->refactorStmts($node->stmts);
-            if ($changedStmts === null) {
-                return null;
-            }
-            $node->stmts = $changedStmts;
-            // add a new namespace?
-            if ($this->newNamespace !== null) {
-                return new Namespace_(new Name($this->newNamespace), $changedStmts);
-            }
+            return $this->refactorFileWithoutNamespace($node);
         }
-        if ($node instanceof Namespace_) {
-            return $this->refactorNamespace($node);
-        }
-        return null;
+        return $this->refactorNamespace($node);
     }
     /**
      * @param mixed[] $configuration
@@ -163,10 +150,6 @@ CODE_SAMPLE
     }
     private function processIdentifier(Identifier $identifier) : ?Identifier
     {
-        $parentNode = $identifier->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$parentNode instanceof ClassLike) {
-            return null;
-        }
         $name = $this->getName($identifier);
         if ($name === null) {
             return null;
@@ -206,5 +189,18 @@ CODE_SAMPLE
             }
         }
         return $hasChanged;
+    }
+    private function refactorFileWithoutNamespace(FileWithoutNamespace $fileWithoutNamespace) : ?Namespace_
+    {
+        $changedStmts = $this->refactorStmts($fileWithoutNamespace->stmts);
+        if ($changedStmts === null) {
+            return null;
+        }
+        $fileWithoutNamespace->stmts = $changedStmts;
+        // add a new namespace?
+        if ($this->newNamespace !== null) {
+            return new Namespace_(new Name($this->newNamespace), $changedStmts);
+        }
+        return null;
     }
 }

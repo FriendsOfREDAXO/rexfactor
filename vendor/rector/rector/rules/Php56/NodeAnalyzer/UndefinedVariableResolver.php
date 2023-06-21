@@ -5,8 +5,8 @@ namespace Rector\Php56\NodeAnalyzer;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\ArrowFunction;
-use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\AssignOp\Coalesce as AssignOpCoalesce;
 use PhpParser\Node\Expr\AssignRef;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
@@ -22,13 +22,11 @@ use PhpParser\Node\Stmt\Case_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\Function_;
-use PhpParser\Node\Stmt\Switch_;
 use PhpParser\Node\Stmt\Unset_;
 use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
 use Rector\Core\NodeAnalyzer\VariableAnalyzer;
 use Rector\Core\PhpParser\Comparing\NodeComparator;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
@@ -51,20 +49,14 @@ final class UndefinedVariableResolver
     private $nodeComparator;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
-     */
-    private $betterNodeFinder;
-    /**
-     * @readonly
      * @var \Rector\Core\NodeAnalyzer\VariableAnalyzer
      */
     private $variableAnalyzer;
-    public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeNameResolver $nodeNameResolver, NodeComparator $nodeComparator, BetterNodeFinder $betterNodeFinder, VariableAnalyzer $variableAnalyzer)
+    public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeNameResolver $nodeNameResolver, NodeComparator $nodeComparator, VariableAnalyzer $variableAnalyzer)
     {
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
         $this->nodeNameResolver = $nodeNameResolver;
         $this->nodeComparator = $nodeComparator;
-        $this->betterNodeFinder = $betterNodeFinder;
         $this->variableAnalyzer = $variableAnalyzer;
     }
     /**
@@ -74,34 +66,39 @@ final class UndefinedVariableResolver
     public function resolve($node) : array
     {
         $undefinedVariables = [];
-        $this->simpleCallableNodeTraverser->traverseNodesWithCallable((array) $node->stmts, function (Node $node) use(&$undefinedVariables) : ?int {
+        $checkedVariables = [];
+        $currentStmt = null;
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable((array) $node->stmts, function (Node $node) use(&$undefinedVariables, &$checkedVariables, &$currentStmt) : ?int {
             // entering new scope - break!
             if ($node instanceof FunctionLike && !$node instanceof ArrowFunction) {
-                return NodeTraverser::STOP_TRAVERSAL;
+                return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
             if ($node instanceof Foreach_) {
                 // handled above
                 return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
-            /**
-             * The Node that doesn't have origNode attribute yet
-             * means the Node is a replacement below other changed node
-             */
-            if (!$node->hasAttribute(AttributeKey::ORIGINAL_NODE)) {
+            if ($node instanceof Case_) {
                 return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
+            if ($node instanceof Stmt) {
+                $currentStmt = $node;
+            }
             if (!$node instanceof Variable) {
+                $checkedVariables = $this->resolveCheckedVariables($node, $checkedVariables);
                 return null;
             }
-            $parentNode = $node->getAttribute(AttributeKey::PARENT_NODE);
-            if (!$parentNode instanceof Node) {
+            // after variable variable, the variable name got unpredictable, just stop
+            if ($node->name instanceof Variable) {
+                return NodeTraverser::STOP_TRAVERSAL;
+            }
+            if ($node->getAttribute(AttributeKey::IS_BEING_ASSIGNED) === \true) {
                 return null;
             }
-            if ($this->shouldSkipVariable($node, $parentNode)) {
+            $variableName = (string) $this->nodeNameResolver->getName($node);
+            if ($this->shouldSkipVariable($node, $variableName, $checkedVariables)) {
                 return null;
             }
-            $variableName = $this->nodeNameResolver->getName($node);
-            if ($this->hasVariableTypeOrCurrentStmtUnreachable($node, $variableName)) {
+            if ($this->hasVariableTypeOrCurrentStmtUnreachable($node, $variableName, $currentStmt)) {
                 return null;
             }
             /** @var string $variableName */
@@ -110,7 +107,71 @@ final class UndefinedVariableResolver
         });
         return \array_unique($undefinedVariables);
     }
-    private function hasVariableTypeOrCurrentStmtUnreachable(Variable $variable, ?string $variableName) : bool
+    /**
+     * @param string[] $checkedVariables
+     * @return string[]
+     */
+    private function resolveCheckedVariables(Node $node, array $checkedVariables) : array
+    {
+        if ($node instanceof Empty_ && $node->expr instanceof Variable) {
+            $checkedVariables[] = (string) $this->nodeNameResolver->getName($node->expr);
+            return $checkedVariables;
+        }
+        if ($node instanceof Isset_ || $node instanceof Unset_) {
+            return $this->resolveCheckedVariablesFromIssetOrUnset($node, $checkedVariables);
+        }
+        if ($node instanceof UnsetCast && $node->expr instanceof Variable) {
+            $checkedVariables[] = (string) $this->nodeNameResolver->getName($node->expr);
+            return $checkedVariables;
+        }
+        if ($node instanceof Coalesce && $node->left instanceof Variable) {
+            $checkedVariables[] = (string) $this->nodeNameResolver->getName($node->left);
+            return $checkedVariables;
+        }
+        if ($node instanceof AssignOpCoalesce && $node->var instanceof Variable) {
+            $checkedVariables[] = (string) $this->nodeNameResolver->getName($node->var);
+            return $checkedVariables;
+        }
+        if ($node instanceof AssignRef && $node->var instanceof Variable) {
+            $checkedVariables[] = (string) $this->nodeNameResolver->getName($node->var);
+        }
+        return $this->resolveCheckedVariablesFromArrayOrList($node, $checkedVariables);
+    }
+    /**
+     * @param string[] $checkedVariables
+     * @return string[]
+     * @param \PhpParser\Node\Expr\Isset_|\PhpParser\Node\Stmt\Unset_ $node
+     */
+    private function resolveCheckedVariablesFromIssetOrUnset($node, array $checkedVariables) : array
+    {
+        foreach ($node->vars as $expr) {
+            if ($expr instanceof Variable) {
+                $checkedVariables[] = (string) $this->nodeNameResolver->getName($expr);
+            }
+        }
+        return $checkedVariables;
+    }
+    /**
+     * @param string[] $checkedVariables
+     * @return string[]
+     */
+    private function resolveCheckedVariablesFromArrayOrList(Node $node, array $checkedVariables) : array
+    {
+        if (!$node instanceof Array_ && !$node instanceof List_) {
+            return $checkedVariables;
+        }
+        foreach ($node->items as $item) {
+            if (!$item instanceof ArrayItem) {
+                continue;
+            }
+            if (!$item->value instanceof Variable) {
+                continue;
+            }
+            $checkedVariables[] = (string) $this->nodeNameResolver->getName($item->value);
+        }
+        return $checkedVariables;
+    }
+    private function hasVariableTypeOrCurrentStmtUnreachable(Variable $variable, ?string $variableName, ?Stmt $currentStmt) : bool
     {
         if (!\is_string($variableName)) {
             return \true;
@@ -121,42 +182,13 @@ final class UndefinedVariableResolver
         if ($scope->hasVariableType($variableName)->yes()) {
             return \true;
         }
-        $currentStmt = $this->betterNodeFinder->resolveCurrentStatement($variable);
         return $currentStmt instanceof Stmt && $currentStmt->getAttribute(AttributeKey::IS_UNREACHABLE) === \true;
     }
-    private function issetOrUnsetOrEmptyParent(Node $parentNode) : bool
+    /**
+     * @param string[] $checkedVariables
+     */
+    private function shouldSkipVariable(Variable $variable, string $variableName, array &$checkedVariables) : bool
     {
-        return \in_array(\get_class($parentNode), [Unset_::class, UnsetCast::class, Isset_::class, Empty_::class], \true);
-    }
-    private function isAsCoalesceLeftOrAssignOpCoalesceVar(Node $parentNode, Variable $variable) : bool
-    {
-        if ($parentNode instanceof Coalesce && $parentNode->left === $variable) {
-            return \true;
-        }
-        if (!$parentNode instanceof AssignOpCoalesce) {
-            return \false;
-        }
-        return $parentNode->var === $variable;
-    }
-    private function isAssign(Node $parentNode) : bool
-    {
-        return \in_array(\get_class($parentNode), [Assign::class, AssignRef::class], \true);
-    }
-    private function shouldSkipVariable(Variable $variable, Node $parentNode) : bool
-    {
-        if ($this->isAsCoalesceLeftOrAssignOpCoalesceVar($parentNode, $variable)) {
-            return \true;
-        }
-        if ($this->isAssign($parentNode)) {
-            return \true;
-        }
-        if ($this->issetOrUnsetOrEmptyParent($parentNode)) {
-            return \true;
-        }
-        // list() = | [$values] = defines variables as null
-        if ($this->isListAssign($parentNode)) {
-            return \true;
-        }
         $variableName = $this->nodeNameResolver->getName($variable);
         // skip $this, as probably in outer scope
         if ($variableName === 'this') {
@@ -171,24 +203,7 @@ final class UndefinedVariableResolver
         if ($this->variableAnalyzer->isStaticOrGlobal($variable)) {
             return \true;
         }
-        if ($this->hasPreviousCheckedWithIsset($variable)) {
-            return \true;
-        }
-        if ($this->hasPreviousCheckedWithEmpty($variable)) {
-            return \true;
-        }
-        return $this->isAfterSwitchCaseWithParentCase($variable);
-    }
-    private function isAfterSwitchCaseWithParentCase(Variable $variable) : bool
-    {
-        $previousSwitch = $this->betterNodeFinder->findFirstPrevious($variable, static function (Node $subNode) : bool {
-            return $subNode instanceof Switch_;
-        });
-        if (!$previousSwitch instanceof Switch_) {
-            return \false;
-        }
-        $parentNode = $previousSwitch->getAttribute(AttributeKey::PARENT_NODE);
-        return $parentNode instanceof Case_;
+        return \in_array($variableName, $checkedVariables, \true);
     }
     private function isDifferentWithOriginalNodeOrNoScope(Variable $variable) : bool
     {
@@ -198,38 +213,5 @@ final class UndefinedVariableResolver
         }
         $nodeScope = $variable->getAttribute(AttributeKey::SCOPE);
         return !$nodeScope instanceof Scope;
-    }
-    private function hasPreviousCheckedWithIsset(Variable $variable) : bool
-    {
-        return (bool) $this->betterNodeFinder->findFirstPrevious($variable, function (Node $subNode) use($variable) : bool {
-            if (!$subNode instanceof Isset_) {
-                return \false;
-            }
-            $vars = $subNode->vars;
-            foreach ($vars as $var) {
-                if ($this->nodeComparator->areNodesEqual($variable, $var)) {
-                    return \true;
-                }
-            }
-            return \false;
-        });
-    }
-    private function hasPreviousCheckedWithEmpty(Variable $variable) : bool
-    {
-        return (bool) $this->betterNodeFinder->findFirstPrevious($variable, function (Node $subNode) use($variable) : bool {
-            if (!$subNode instanceof Empty_) {
-                return \false;
-            }
-            $subNodeExpr = $subNode->expr;
-            return $this->nodeComparator->areNodesEqual($subNodeExpr, $variable);
-        });
-    }
-    private function isListAssign(Node $node) : bool
-    {
-        $parentNode = $node->getAttribute(AttributeKey::PARENT_NODE);
-        if ($parentNode instanceof List_) {
-            return \true;
-        }
-        return $parentNode instanceof Array_;
     }
 }

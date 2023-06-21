@@ -42,7 +42,10 @@ final class ExpectExceptionMessageFactory
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($methodCall, ['assertSame', 'assertEquals'])) {
             return null;
         }
-        $secondArgument = $methodCall->args[1]->value;
+        if ($methodCall->isFirstClassCallable()) {
+            return null;
+        }
+        $secondArgument = $methodCall->getArgs()[1]->value;
         if (!$secondArgument instanceof MethodCall) {
             return null;
         }

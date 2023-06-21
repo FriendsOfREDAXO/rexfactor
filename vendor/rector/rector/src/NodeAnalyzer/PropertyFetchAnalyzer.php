@@ -12,28 +12,24 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Trait_;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\ThisType;
 use Rector\Core\Enum\ObjectReference;
 use Rector\Core\PhpParser\AstResolver;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
+use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Core\ValueObject\MethodName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 final class PropertyFetchAnalyzer
 {
-    /**
-     * @var string
-     */
-    private const THIS = 'this';
     /**
      * @readonly
      * @var \Rector\NodeNameResolver\NodeNameResolver
@@ -51,21 +47,25 @@ final class PropertyFetchAnalyzer
     private $astResolver;
     /**
      * @readonly
-     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
-     */
-    private $simpleCallableNodeTraverser;
-    /**
-     * @readonly
      * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
     private $nodeTypeResolver;
-    public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, AstResolver $astResolver, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeTypeResolver $nodeTypeResolver)
+    /**
+     * @readonly
+     * @var \Rector\Core\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
+     * @var string
+     */
+    private const THIS = 'this';
+    public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, AstResolver $astResolver, NodeTypeResolver $nodeTypeResolver, ReflectionResolver $reflectionResolver)
     {
         $this->nodeNameResolver = $nodeNameResolver;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->astResolver = $astResolver;
-        $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
         $this->nodeTypeResolver = $nodeTypeResolver;
+        $this->reflectionResolver = $reflectionResolver;
     }
     public function isLocalPropertyFetch(Node $node) : bool
     {
@@ -74,9 +74,9 @@ final class PropertyFetchAnalyzer
         }
         $variableType = $node instanceof PropertyFetch ? $this->nodeTypeResolver->getType($node->var) : $this->nodeTypeResolver->getType($node->class);
         if ($variableType instanceof FullyQualifiedObjectType) {
-            $currentClassLike = $this->betterNodeFinder->findParentType($node, ClassLike::class);
-            if ($currentClassLike instanceof ClassLike) {
-                return $this->nodeNameResolver->isName($currentClassLike, $variableType->getClassName());
+            $classReflection = $this->reflectionResolver->resolveClassReflection($node);
+            if ($classReflection instanceof ClassReflection) {
+                return $classReflection->getName() === $variableType->getClassName();
             }
             return \false;
         }
@@ -95,25 +95,6 @@ final class PropertyFetchAnalyzer
         }
         return $this->isLocalPropertyFetch($node);
     }
-    public function countLocalPropertyFetchName(Class_ $class, string $propertyName) : int
-    {
-        $total = 0;
-        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($class->stmts, function (Node $subNode) use($class, $propertyName, &$total) : ?Node {
-            if (!$this->isLocalPropertyFetchName($subNode, $propertyName)) {
-                return null;
-            }
-            $parentClassLike = $this->betterNodeFinder->findParentType($subNode, ClassLike::class);
-            // property fetch in Trait cannot get parent ClassLike
-            if (!$parentClassLike instanceof ClassLike) {
-                ++$total;
-            }
-            if ($parentClassLike === $class) {
-                ++$total;
-            }
-            return $subNode;
-        });
-        return $total;
-    }
     public function containsLocalPropertyFetchName(Trait_ $trait, string $propertyName) : bool
     {
         if ($trait->getProperty($propertyName) instanceof Property) {
@@ -122,23 +103,6 @@ final class PropertyFetchAnalyzer
         return (bool) $this->betterNodeFinder->findFirst($trait, function (Node $node) use($propertyName) : bool {
             return $this->isLocalPropertyFetchName($node, $propertyName);
         });
-    }
-    public function isPropertyToSelf(PropertyFetch $propertyFetch) : bool
-    {
-        if (!$this->nodeNameResolver->isName($propertyFetch->var, self::THIS)) {
-            return \false;
-        }
-        $class = $this->betterNodeFinder->findParentType($propertyFetch, Class_::class);
-        if (!$class instanceof Class_) {
-            return \false;
-        }
-        foreach ($class->getProperties() as $property) {
-            if (!$this->nodeNameResolver->areNamesEqual($property->props[0], $propertyFetch)) {
-                continue;
-            }
-            return \true;
-        }
-        return \false;
     }
     public function isPropertyFetch(Node $node) : bool
     {
@@ -180,11 +144,14 @@ final class PropertyFetchAnalyzer
             if (!$callerClassMethod instanceof ClassMethod) {
                 continue;
             }
-            $callerClass = $this->betterNodeFinder->findParentType($callerClassMethod, Class_::class);
-            if (!$callerClass instanceof Class_) {
+            $callerClassReflection = $this->reflectionResolver->resolveClassReflection($callerClassMethod);
+            if (!$callerClassReflection instanceof ClassReflection) {
                 continue;
             }
-            $callerClassName = (string) $this->nodeNameResolver->getName($callerClass);
+            if (!$callerClassReflection->isClass()) {
+                continue;
+            }
+            $callerClassName = $callerClassReflection->getName();
             $isFound = $this->isPropertyAssignFoundInClassMethod($classLike, $className, $callerClassName, $callerClassMethod, $propertyName);
             if ($isFound) {
                 return \true;

@@ -13,7 +13,7 @@ use Rector\Core\Rector\AbstractRector;
 use Rector\Transform\ValueObject\MethodCallToFuncCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\MethodCall\MethodCallToFuncCallRector\MethodCallToFuncCallRectorTest
  */
@@ -57,6 +57,9 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         foreach ($this->methodCallsToFuncCalls as $methodCallToFuncCall) {
             if (!$this->isName($node->name, $methodCallToFuncCall->getMethodName())) {
                 continue;

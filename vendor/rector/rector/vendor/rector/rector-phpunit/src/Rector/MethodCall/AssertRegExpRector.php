@@ -22,6 +22,11 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertRegExpRector extends AbstractRector
 {
     /**
+     * @readonly
+     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
+     */
+    private $testsNodeAnalyzer;
+    /**
      * @var string
      */
     private const ASSERT_SAME = 'assertSame';
@@ -37,11 +42,6 @@ final class AssertRegExpRector extends AbstractRector
      * @var string
      */
     private const ASSERT_NOT_EQUALS = 'assertNotEquals';
-    /**
-     * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
-     */
-    private $testsNodeAnalyzer;
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;
@@ -65,8 +65,11 @@ final class AssertRegExpRector extends AbstractRector
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, [self::ASSERT_SAME, self::ASSERT_EQUALS, self::ASSERT_NOT_SAME, self::ASSERT_NOT_EQUALS])) {
             return null;
         }
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         /** @var FuncCall|Node $secondArgumentValue */
-        $secondArgumentValue = $node->args[1]->value;
+        $secondArgumentValue = $node->getArgs()[1]->value;
         if (!$secondArgumentValue instanceof FuncCall) {
             return null;
         }
@@ -77,7 +80,7 @@ final class AssertRegExpRector extends AbstractRector
         if ($oldMethodName === null) {
             return null;
         }
-        $oldFirstArgument = $node->args[0]->value;
+        $oldFirstArgument = $node->getArgs()[0]->value;
         $oldCondition = $this->resolveOldCondition($oldFirstArgument);
         $this->renameMethod($node, $oldMethodName, $oldCondition);
         $this->moveFunctionArgumentsUp($node);
@@ -110,11 +113,11 @@ final class AssertRegExpRector extends AbstractRector
      */
     private function moveFunctionArgumentsUp($node) : void
     {
-        $oldArguments = $node->args;
+        $oldArguments = $node->getArgs();
         /** @var FuncCall $pregMatchFunction */
         $pregMatchFunction = $oldArguments[1]->value;
-        $regex = $pregMatchFunction->args[0];
-        $variable = $pregMatchFunction->args[1];
+        $regex = $pregMatchFunction->getArgs()[0];
+        $variable = $pregMatchFunction->getArgs()[1];
         unset($oldArguments[0], $oldArguments[1]);
         $node->args = \array_merge([$regex, $variable], $oldArguments);
     }

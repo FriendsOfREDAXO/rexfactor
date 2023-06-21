@@ -4,10 +4,14 @@ declare (strict_types=1);
 namespace Rector\DowngradePhp71\Rector\ConstFetch;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\BitwiseOr;
 use PhpParser\Node\Expr\ConstFetch;
+use PhpParser\Node\Stmt\If_;
 use Rector\Core\Rector\AbstractRector;
 use Rector\DowngradePhp72\NodeManipulator\JsonConstCleaner;
+use Rector\Enum\JsonConstant;
+use Rector\NodeAnalyzer\DefineFuncCallAnalyzer;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -18,17 +22,23 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class DowngradePhp71JsonConstRector extends AbstractRector
 {
     /**
-     * @var string[]
-     */
-    private const CONSTANTS = ['JSON_UNESCAPED_LINE_TERMINATORS'];
-    /**
      * @readonly
      * @var \Rector\DowngradePhp72\NodeManipulator\JsonConstCleaner
      */
     private $jsonConstCleaner;
-    public function __construct(JsonConstCleaner $jsonConstCleaner)
+    /**
+     * @readonly
+     * @var \Rector\NodeAnalyzer\DefineFuncCallAnalyzer
+     */
+    private $defineFuncCallAnalyzer;
+    /**
+     * @var string
+     */
+    private const PHP71_JSON_CONSTANT_IS_KNOWN = 'php71_json_constant_is_known';
+    public function __construct(JsonConstCleaner $jsonConstCleaner, DefineFuncCallAnalyzer $defineFuncCallAnalyzer)
     {
         $this->jsonConstCleaner = $jsonConstCleaner;
+        $this->defineFuncCallAnalyzer = $defineFuncCallAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -45,13 +55,32 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [ConstFetch::class, BitwiseOr::class];
+        return [ConstFetch::class, BitwiseOr::class, If_::class];
     }
     /**
-     * @param ConstFetch|BitwiseOr $node
+     * @param ConstFetch|BitwiseOr|If_ $node
+     * @return \PhpParser\Node\Expr|\PhpParser\Node\Stmt\If_|null|int
      */
-    public function refactor(Node $node) : ?Node
+    public function refactor(Node $node)
     {
-        return $this->jsonConstCleaner->clean($node, self::CONSTANTS);
+        if ($node instanceof If_) {
+            return $this->refactorIf($node);
+        }
+        // skip as known
+        if ((bool) $node->getAttribute(self::PHP71_JSON_CONSTANT_IS_KNOWN)) {
+            return null;
+        }
+        return $this->jsonConstCleaner->clean($node, [JsonConstant::UNESCAPED_LINE_TERMINATORS]);
+    }
+    private function refactorIf(If_ $if) : ?If_
+    {
+        if (!$this->defineFuncCallAnalyzer->isDefinedWithConstants($if->cond, [JsonConstant::UNESCAPED_LINE_TERMINATORS])) {
+            return null;
+        }
+        $this->traverseNodesWithCallable($if, static function (Node $node) {
+            $node->setAttribute(self::PHP71_JSON_CONSTANT_IS_KNOWN, \true);
+            return null;
+        });
+        return $if;
     }
 }

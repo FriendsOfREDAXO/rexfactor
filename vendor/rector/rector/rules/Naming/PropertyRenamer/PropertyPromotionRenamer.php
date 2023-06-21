@@ -3,6 +3,8 @@
 declare (strict_types=1);
 namespace Rector\Naming\PropertyRenamer;
 
+use PhpParser\Node\Expr\Error;
+use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
@@ -111,22 +113,25 @@ final class PropertyPromotionRenamer
     }
     private function renameParamVarNameAndVariableUsage(ClassLike $classLike, ClassMethod $classMethod, string $desiredPropertyName, Param $param) : void
     {
+        if ($param->var instanceof Error) {
+            return;
+        }
         $classMethodPhpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($classMethod);
         $currentParamName = $this->nodeNameResolver->getName($param);
         $this->propertyFetchRenamer->renamePropertyFetchesInClass($classLike, $currentParamName, $desiredPropertyName);
         /** @var string $paramVarName */
         $paramVarName = $param->var->name;
-        $this->renameParamDoc($classMethodPhpDocInfo, $param, $paramVarName, $desiredPropertyName);
-        $param->var->name = $desiredPropertyName;
+        $this->renameParamDoc($classMethodPhpDocInfo, $classMethod, $param, $paramVarName, $desiredPropertyName);
+        $param->var = new Variable($desiredPropertyName);
         $this->variableRenamer->renameVariableInFunctionLike($classMethod, $paramVarName, $desiredPropertyName);
     }
-    private function renameParamDoc(PhpDocInfo $phpDocInfo, Param $param, string $paramVarName, string $desiredPropertyName) : void
+    private function renameParamDoc(PhpDocInfo $phpDocInfo, ClassMethod $classMethod, Param $param, string $paramVarName, string $desiredPropertyName) : void
     {
         $paramTagValueNode = $phpDocInfo->getParamTagValueByName($paramVarName);
         if (!$paramTagValueNode instanceof ParamTagValueNode) {
             return;
         }
-        $paramRename = $this->paramRenameFactory->createFromResolvedExpectedName($param, $desiredPropertyName);
+        $paramRename = $this->paramRenameFactory->createFromResolvedExpectedName($classMethod, $param, $desiredPropertyName);
         if (!$paramRename instanceof ParamRename) {
             return;
         }

@@ -18,10 +18,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertFalseStrposToContainsRector extends AbstractRector
 {
     /**
-     * @var array<string, string>
-     */
-    private const RENAME_METHODS_MAP = ['assertFalse' => 'assertNotContains', 'assertNotFalse' => 'assertContains'];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
@@ -31,6 +27,10 @@ final class AssertFalseStrposToContainsRector extends AbstractRector
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const RENAME_METHODS_MAP = ['assertFalse' => 'assertStringNotContainsString', 'assertNotFalse' => 'assertStringContainsString'];
     public function __construct(IdentifierManipulator $identifierManipulator, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->identifierManipulator = $identifierManipulator;
@@ -56,7 +56,10 @@ final class AssertFalseStrposToContainsRector extends AbstractRector
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, $oldMethodName)) {
             return null;
         }
-        $firstArgumentValue = $node->args[0]->value;
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $firstArgumentValue = $node->getArgs()[0]->value;
         if ($firstArgumentValue instanceof StaticCall) {
             return null;
         }
@@ -80,8 +83,8 @@ final class AssertFalseStrposToContainsRector extends AbstractRector
         if (!$strposFuncCallNode instanceof FuncCall) {
             return null;
         }
-        $firstArgument = $strposFuncCallNode->args[1];
-        $secondArgument = $strposFuncCallNode->args[0];
+        $firstArgument = $strposFuncCallNode->getArgs()[1];
+        $secondArgument = $strposFuncCallNode->getArgs()[0];
         unset($oldArguments[0]);
         $newArgs = [$firstArgument, $secondArgument];
         $node->args = $this->appendArgs($newArgs, $oldArguments);

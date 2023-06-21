@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Rector\MethodCall;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\MethodCall;
@@ -14,9 +14,9 @@ use Rector\Core\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @see https://github.com/symfony/symfony/pull/21035
- * @see https://github.com/symfony/symfony/blob/4.4/src/Symfony/Bundle/FrameworkBundle/Templating/TemplateNameParser.php
- * @see https://symfony.com/doc/4.4/templates.html#bundle-templates
+ * @changelog https://github.com/symfony/symfony/pull/21035
+ * @changelog https://github.com/symfony/symfony/blob/4.4/src/Symfony/Bundle/FrameworkBundle/Templating/TemplateNameParser.php
+ * @changelog https://symfony.com/doc/4.4/templates.html#bundle-templates
  *
  * @see \Rector\Symfony\Tests\Rector\ClassMethod\TemplateAnnotationToThisRenderRector\TemplateAnnotationToThisRenderRectorTest
  */

@@ -12,21 +12,21 @@ use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\NodeCollector\ScopeResolver\ParentClassScopeResolver;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Removing\Rector\Class_\RemoveParentRector\RemoveParentRectorTest
  */
 final class RemoveParentRector extends AbstractScopeAwareRector implements ConfigurableRectorInterface
 {
     /**
-     * @var string[]
-     */
-    private $parentClassesToRemove = [];
-    /**
      * @readonly
      * @var \Rector\NodeCollector\ScopeResolver\ParentClassScopeResolver
      */
     private $parentClassScopeResolver;
+    /**
+     * @var string[]
+     */
+    private $parentClassesToRemove = [];
     public function __construct(ParentClassScopeResolver $parentClassScopeResolver)
     {
         $this->parentClassScopeResolver = $parentClassScopeResolver;

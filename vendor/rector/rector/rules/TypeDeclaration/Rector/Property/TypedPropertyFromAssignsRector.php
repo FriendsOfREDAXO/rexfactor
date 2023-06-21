@@ -11,7 +11,6 @@ use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\UnionType;
 use Rector\Core\Contract\Rector\AllowEmptyConfigurableRectorInterface;
-use Rector\Core\Php\PhpVersionProvider;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\DeadCode\PhpDoc\TagRemover\VarTagRemover;
@@ -19,28 +18,14 @@ use Rector\Php74\Guard\MakePropertyTypedGuard;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\TypeDeclaration\NodeTypeAnalyzer\PropertyTypeDecorator;
 use Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\AllAssignNodePropertyTypeInferer;
+use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\Property\TypedPropertyFromAssignsRector\TypedPropertyFromAssignsRectorTest
  */
-final class TypedPropertyFromAssignsRector extends AbstractRector implements AllowEmptyConfigurableRectorInterface
+final class TypedPropertyFromAssignsRector extends AbstractRector implements AllowEmptyConfigurableRectorInterface, MinPhpVersionInterface
 {
-    /**
-     * @api
-     * @var string
-     */
-    public const INLINE_PUBLIC = 'inline_public';
-    /**
-     * Default to false, which only apply changes:
-     *
-     *  – private modifier property
-     *  - protected modifier property on final class without extends or has extends but property and/or its usage only in current class
-     *
-     * Set to true will allow change other modifiers as well as far as not forbidden, eg: callable type, null type, etc.
-     * @var bool
-     */
-    private $inlinePublic = \false;
     /**
      * @readonly
      * @var \Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\AllAssignNodePropertyTypeInferer
@@ -62,17 +47,26 @@ final class TypedPropertyFromAssignsRector extends AbstractRector implements All
      */
     private $makePropertyTypedGuard;
     /**
-     * @readonly
-     * @var \Rector\Core\Php\PhpVersionProvider
+     * @api
+     * @var string
      */
-    private $phpVersionProvider;
-    public function __construct(AllAssignNodePropertyTypeInferer $allAssignNodePropertyTypeInferer, PropertyTypeDecorator $propertyTypeDecorator, VarTagRemover $varTagRemover, MakePropertyTypedGuard $makePropertyTypedGuard, PhpVersionProvider $phpVersionProvider)
+    public const INLINE_PUBLIC = 'inline_public';
+    /**
+     * Default to false, which only apply changes:
+     *
+     *  – private modifier property
+     *  - protected modifier property on final class without extends or has extends but property and/or its usage only in current class
+     *
+     * Set to true will allow change other modifiers as well as far as not forbidden, eg: callable type, null type, etc.
+     * @var bool
+     */
+    private $inlinePublic = \false;
+    public function __construct(AllAssignNodePropertyTypeInferer $allAssignNodePropertyTypeInferer, PropertyTypeDecorator $propertyTypeDecorator, VarTagRemover $varTagRemover, MakePropertyTypedGuard $makePropertyTypedGuard)
     {
         $this->allAssignNodePropertyTypeInferer = $allAssignNodePropertyTypeInferer;
         $this->propertyTypeDecorator = $propertyTypeDecorator;
         $this->varTagRemover = $varTagRemover;
         $this->makePropertyTypedGuard = $makePropertyTypedGuard;
-        $this->phpVersionProvider = $phpVersionProvider;
     }
     public function configure(array $configuration) : void
     {
@@ -111,12 +105,20 @@ CODE_SAMPLE
     {
         return [Property::class];
     }
+    public function provideMinPhpVersion() : int
+    {
+        return PhpVersionFeature::TYPED_PROPERTIES;
+    }
     /**
      * @param Property $node
      */
     public function refactor(Node $node) : ?Node
     {
         if (!$this->makePropertyTypedGuard->isLegal($node, $this->inlinePublic)) {
+            return null;
+        }
+        // non-private property can be anything with not inline public configured
+        if (!$node->isPrivate() && !$this->inlinePublic) {
             return null;
         }
         $inferredType = $this->allAssignNodePropertyTypeInferer->inferProperty($node);
@@ -127,18 +129,11 @@ CODE_SAMPLE
             return null;
         }
         $inferredType = $this->decorateTypeWithNullableIfDefaultPropertyNull($node, $inferredType);
-        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         $typeNode = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($inferredType, TypeKind::PROPERTY);
         if ($typeNode === null) {
             return null;
         }
-        if (!$this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::TYPED_PROPERTIES)) {
-            return null;
-        }
-        // non-private property can be anything with not inline public configured
-        if (!$node->isPrivate() && !$this->inlinePublic) {
-            return null;
-        }
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         if ($inferredType instanceof UnionType) {
             $this->propertyTypeDecorator->decoratePropertyUnionType($inferredType, $typeNode, $node, $phpDocInfo, \false);
         } else {

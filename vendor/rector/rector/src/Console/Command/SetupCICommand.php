@@ -3,27 +3,27 @@
 declare (strict_types=1);
 namespace Rector\Core\Console\Command;
 
-use RectorPrefix202305\Nette\Utils\FileSystem;
-use RectorPrefix202305\Nette\Utils\Strings;
-use RectorPrefix202305\OndraM\CiDetector\CiDetector;
+use RectorPrefix202306\Nette\Utils\FileSystem;
+use RectorPrefix202306\Nette\Utils\Strings;
+use RectorPrefix202306\OndraM\CiDetector\CiDetector;
 use function sprintf;
-use RectorPrefix202305\Symfony\Component\Console\Command\Command;
-use RectorPrefix202305\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202305\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202305\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202305\Symfony\Component\Process\Process;
+use RectorPrefix202306\Symfony\Component\Console\Command\Command;
+use RectorPrefix202306\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202306\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202306\Symfony\Component\Process\Process;
 final class SetupCICommand extends Command
 {
-    /**
-     * @var string
-     * @see https://regex101.com/r/etcmog/1
-     */
-    private const GITHUB_REPOSITORY_REGEX = '#github\\.com:(?<repository_name>.*?)\\.git#';
     /**
      * @readonly
      * @var \Symfony\Component\Console\Style\SymfonyStyle
      */
     private $symfonyStyle;
+    /**
+     * @var string
+     * @see https://regex101.com/r/etcmog/2
+     */
+    private const GITHUB_REPOSITORY_REGEX = '#github\\.com[:\\/](?<repository_name>.*?)\\.git#';
     public function __construct(SymfonyStyle $symfonyStyle)
     {
         $this->symfonyStyle = $symfonyStyle;

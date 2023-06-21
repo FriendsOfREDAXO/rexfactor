@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Process\Pipes;
+namespace RectorPrefix202306\Symfony\Component\Process\Pipes;
 
-use RectorPrefix202305\Symfony\Component\Process\Exception\InvalidArgumentException;
+use RectorPrefix202306\Symfony\Component\Process\Exception\InvalidArgumentException;
 /**
  * @author Romain Neutron <imprec@gmail.com>
  *
@@ -39,7 +39,7 @@ abstract class AbstractPipes implements PipesInterface
             $this->inputBuffer = (string) $input;
         }
     }
-    public function close()
+    public function close() : void
     {
         foreach ($this->pipes as $pipe) {
             if (\is_resource($pipe)) {
@@ -61,7 +61,7 @@ abstract class AbstractPipes implements PipesInterface
     /**
      * Unblocks streams.
      */
-    protected function unblock()
+    protected function unblock() : void
     {
         if (!$this->blocked) {
             return;
@@ -153,7 +153,7 @@ abstract class AbstractPipes implements PipesInterface
     /**
      * @internal
      */
-    public function handleError(int $type, string $msg)
+    public function handleError(int $type, string $msg) : void
     {
         $this->lastError = $msg;
     }

@@ -18,14 +18,14 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class UseSpecificWillMethodRector extends AbstractRector
 {
     /**
-     * @var array<string, string>
-     */
-    private const NESTED_METHOD_TO_RENAME_MAP = ['returnArgument' => 'willReturnArgument', 'returnCallback' => 'willReturnCallback', 'returnSelf' => 'willReturnSelf', 'returnValue' => 'willReturn', 'returnValueMap' => 'willReturnMap', 'onConsecutiveCalls' => 'willReturnOnConsecutiveCalls', 'throwException' => 'willThrowException'];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const NESTED_METHOD_TO_RENAME_MAP = ['returnArgument' => 'willReturnArgument', 'returnCallback' => 'willReturnCallback', 'returnSelf' => 'willReturnSelf', 'returnValue' => 'willReturn', 'returnValueMap' => 'willReturnMap', 'onConsecutiveCalls' => 'willReturnOnConsecutiveCalls', 'throwException' => 'willThrowException'];
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;
@@ -75,6 +75,9 @@ CODE_SAMPLE
         }
         // we cannot check caller types, as on old PHPUnit version, this the magic ->method() call result to a mixed type
         if (!$this->isName($node->name, 'will')) {
+            return null;
+        }
+        if ($node->isFirstClassCallable()) {
             return null;
         }
         $callArgs = $node->getArgs();

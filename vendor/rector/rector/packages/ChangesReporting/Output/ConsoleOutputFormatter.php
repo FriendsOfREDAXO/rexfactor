@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\ChangesReporting\Output;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use Rector\ChangesReporting\Annotation\RectorsChangelogResolver;
 use Rector\ChangesReporting\Contract\Output\OutputFormatterInterface;
 use Rector\Core\Contract\Console\OutputStyleInterface;
@@ -14,15 +14,6 @@ use Rector\Core\ValueObject\Reporting\FileDiff;
 final class ConsoleOutputFormatter implements OutputFormatterInterface
 {
     /**
-     * @var string
-     */
-    public const NAME = 'console';
-    /**
-     * @var string
-     * @see https://regex101.com/r/q8I66g/1
-     */
-    private const ON_LINE_REGEX = '# on line #';
-    /**
      * @readonly
      * @var \Rector\Core\Contract\Console\OutputStyleInterface
      */
@@ -32,6 +23,15 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
      * @var \Rector\ChangesReporting\Annotation\RectorsChangelogResolver
      */
     private $rectorsChangelogResolver;
+    /**
+     * @var string
+     */
+    public const NAME = 'console';
+    /**
+     * @var string
+     * @see https://regex101.com/r/q8I66g/1
+     */
+    private const ON_LINE_REGEX = '# on line #';
     public function __construct(OutputStyleInterface $rectorOutputStyle, RectorsChangelogResolver $rectorsChangelogResolver)
     {
         $this->rectorOutputStyle = $rectorOutputStyle;
@@ -43,7 +43,6 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
             $this->reportFileDiffs($processResult->getFileDiffs());
         }
         $this->reportErrors($processResult->getErrors());
-        $this->reportRemovedFilesAndNodes($processResult);
         if ($processResult->getErrors() !== []) {
             return;
         }
@@ -105,35 +104,15 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
             $this->rectorOutputStyle->error($message);
         }
     }
-    private function reportRemovedFilesAndNodes(ProcessResult $processResult) : void
-    {
-        if ($processResult->getAddedFilesCount() !== 0) {
-            $message = \sprintf('%d files were added', $processResult->getAddedFilesCount());
-            $this->rectorOutputStyle->note($message);
-        }
-        if ($processResult->getRemovedFilesCount() !== 0) {
-            $message = \sprintf('%d files were removed', $processResult->getRemovedFilesCount());
-            $this->rectorOutputStyle->note($message);
-        }
-        $this->reportRemovedNodes($processResult);
-    }
     private function normalizePathsToRelativeWithLine(string $errorMessage) : string
     {
         $regex = '#' . \preg_quote(\getcwd(), '#') . '/#';
         $errorMessage = Strings::replace($errorMessage, $regex);
         return Strings::replace($errorMessage, self::ON_LINE_REGEX);
     }
-    private function reportRemovedNodes(ProcessResult $processResult) : void
-    {
-        if ($processResult->getRemovedNodeCount() === 0) {
-            return;
-        }
-        $message = \sprintf('%d nodes were removed', $processResult->getRemovedNodeCount());
-        $this->rectorOutputStyle->warning($message);
-    }
     private function createSuccessMessage(ProcessResult $processResult, Configuration $configuration) : string
     {
-        $changeCount = \count($processResult->getFileDiffs()) + $processResult->getRemovedAndAddedFilesCount();
+        $changeCount = \count($processResult->getFileDiffs());
         if ($changeCount === 0) {
             return 'Rector is done!';
         }

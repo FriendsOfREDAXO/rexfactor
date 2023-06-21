@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config;
+namespace RectorPrefix202306\Symfony\Component\Config;
 
-use RectorPrefix202305\Symfony\Component\Config\Resource\ResourceInterface;
+use RectorPrefix202306\Symfony\Component\Config\Resource\ResourceInterface;
 /**
  * Interface for ConfigCache.
  *
@@ -34,6 +34,8 @@ interface ConfigCacheInterface
      *
      * @param string                   $content  The content to write into the cache
      * @param ResourceInterface[]|null $metadata An array of ResourceInterface instances
+     *
+     * @return void
      *
      * @throws \RuntimeException When the cache file cannot be written
      */

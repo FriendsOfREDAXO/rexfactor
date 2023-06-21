@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Console\Helper;
+namespace RectorPrefix202306\Symfony\Component\Console\Helper;
 
-use RectorPrefix202305\Symfony\Component\Console\Formatter\OutputFormatterInterface;
-use RectorPrefix202305\Symfony\Component\String\UnicodeString;
+use RectorPrefix202306\Symfony\Component\Console\Formatter\OutputFormatterInterface;
+use RectorPrefix202306\Symfony\Component\String\UnicodeString;
 /**
  * Helper is the base class for all helper classes.
  *
@@ -19,11 +19,14 @@ use RectorPrefix202305\Symfony\Component\String\UnicodeString;
  */
 abstract class Helper implements HelperInterface
 {
-    protected $helperSet = null;
+    protected $helperSet;
+    /**
+     * @return void
+     */
     public function setHelperSet(HelperSet $helperSet = null)
     {
         if (1 > \func_num_args()) {
-            \RectorPrefix202305\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+            \RectorPrefix202306\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
         }
         $this->helperSet = $helperSet;
     }
@@ -73,6 +76,7 @@ abstract class Helper implements HelperInterface
         return \mb_substr($string, $from, $length, $encoding);
     }
     /**
+     * @return string
      * @param int|float $secs
      */
     public static function formatTime($secs)
@@ -89,6 +93,9 @@ abstract class Helper implements HelperInterface
             }
         }
     }
+    /**
+     * @return string
+     */
     public static function formatMemory(int $memory)
     {
         if ($memory >= 1024 * 1024 * 1024) {
@@ -102,6 +109,9 @@ abstract class Helper implements HelperInterface
         }
         return \sprintf('%d B', $memory);
     }
+    /**
+     * @return string
+     */
     public static function removeDecoration(OutputFormatterInterface $formatter, ?string $string)
     {
         $isDecorated = $formatter->isDecorated();

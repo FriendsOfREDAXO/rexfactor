@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Renaming\NodeManipulator;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr\New_;
@@ -24,12 +24,10 @@ use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocClassRenamer;
 use Rector\BetterPhpDocParser\ValueObject\NodeTypes;
 use Rector\CodingStyle\Naming\ClassNaming;
-use Rector\Core\Configuration\Option;
-use Rector\Core\Configuration\Parameter\ParameterProvider;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
+use Rector\Core\Util\FileHasher;
 use Rector\Naming\Naming\UseImportsResolver;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\NodeRemoval\NodeRemover;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockClassRenamer;
 use Rector\NodeTypeResolver\ValueObject\OldToNewType;
@@ -38,14 +36,6 @@ use Rector\Renaming\Helper\RenameClassCallbackHandler;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 final class ClassRenamer
 {
-    /**
-     * @var string[]
-     */
-    private $alreadyProcessedClasses = [];
-    /**
-     * @var array<string, OldToNewType[]>
-     */
-    private $oldToNewTypesByCacheKey = [];
     /**
      * @readonly
      * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
@@ -88,16 +78,6 @@ final class ClassRenamer
     private $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\NodeRemoval\NodeRemover
-     */
-    private $nodeRemover;
-    /**
-     * @readonly
-     * @var \Rector\Core\Configuration\Parameter\ParameterProvider
-     */
-    private $parameterProvider;
-    /**
-     * @readonly
      * @var \Rector\Naming\Naming\UseImportsResolver
      */
     private $useImportsResolver;
@@ -106,7 +86,20 @@ final class ClassRenamer
      * @var \Rector\Renaming\Helper\RenameClassCallbackHandler
      */
     private $renameClassCallbackHandler;
-    public function __construct(BetterNodeFinder $betterNodeFinder, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, ClassNaming $classNaming, NodeNameResolver $nodeNameResolver, PhpDocClassRenamer $phpDocClassRenamer, PhpDocInfoFactory $phpDocInfoFactory, DocBlockClassRenamer $docBlockClassRenamer, ReflectionProvider $reflectionProvider, NodeRemover $nodeRemover, ParameterProvider $parameterProvider, UseImportsResolver $useImportsResolver, RenameClassCallbackHandler $renameClassCallbackHandler)
+    /**
+     * @readonly
+     * @var \Rector\Core\Util\FileHasher
+     */
+    private $fileHasher;
+    /**
+     * @var string[]
+     */
+    private $alreadyProcessedClasses = [];
+    /**
+     * @var array<string, OldToNewType[]>
+     */
+    private $oldToNewTypesByCacheKey = [];
+    public function __construct(BetterNodeFinder $betterNodeFinder, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, ClassNaming $classNaming, NodeNameResolver $nodeNameResolver, PhpDocClassRenamer $phpDocClassRenamer, PhpDocInfoFactory $phpDocInfoFactory, DocBlockClassRenamer $docBlockClassRenamer, ReflectionProvider $reflectionProvider, UseImportsResolver $useImportsResolver, RenameClassCallbackHandler $renameClassCallbackHandler, FileHasher $fileHasher)
     {
         $this->betterNodeFinder = $betterNodeFinder;
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
@@ -116,15 +109,14 @@ final class ClassRenamer
         $this->phpDocInfoFactory = $phpDocInfoFactory;
         $this->docBlockClassRenamer = $docBlockClassRenamer;
         $this->reflectionProvider = $reflectionProvider;
-        $this->nodeRemover = $nodeRemover;
-        $this->parameterProvider = $parameterProvider;
         $this->useImportsResolver = $useImportsResolver;
         $this->renameClassCallbackHandler = $renameClassCallbackHandler;
+        $this->fileHasher = $fileHasher;
     }
     /**
      * @param array<string, string> $oldToNewClasses
      */
-    public function renameNode(Node $node, array $oldToNewClasses) : ?Node
+    public function renameNode(Node $node, array $oldToNewClasses, ?Scope $scope) : ?Node
     {
         $oldToNewTypes = $this->createOldToNewTypes($node, $oldToNewClasses);
         $this->refactorPhpDoc($node, $oldToNewTypes, $oldToNewClasses);
@@ -135,7 +127,7 @@ final class ClassRenamer
             return $this->refactorNamespace($node, $oldToNewClasses);
         }
         if ($node instanceof ClassLike) {
-            return $this->refactorClassLike($node, $oldToNewClasses);
+            return $this->refactorClassLike($node, $oldToNewClasses, $scope);
         }
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         if ($phpDocInfo->hasChanged()) {
@@ -187,8 +179,8 @@ final class ClassRenamer
      */
     private function refactorName(Name $name, array $oldToNewClasses) : ?Name
     {
-        $parent = $name->getAttribute(AttributeKey::PARENT_NODE);
-        if ($parent instanceof Namespace_ && $parent->name === $name) {
+        $parentNode = $name->getAttribute(AttributeKey::PARENT_NODE);
+        if ($parentNode instanceof Namespace_ && $parentNode->name === $name) {
             return null;
         }
         $stringName = $this->nodeNameResolver->getName($name);
@@ -199,7 +191,6 @@ final class ClassRenamer
         if (!$this->isClassToInterfaceValidChange($name, $newName)) {
             return null;
         }
-        $parentNode = $name->getAttribute(AttributeKey::PARENT_NODE);
         if ($this->shouldSkip($newName, $name, $parentNode)) {
             return null;
         }
@@ -209,33 +200,7 @@ final class ClassRenamer
             // also they might cause some rename
             return null;
         }
-        $last = $name->getLast();
-        $newFullyQualified = new FullyQualified($newName);
-        $newNameLastName = $newFullyQualified->getLast();
-        $importNames = $this->parameterProvider->provideBoolParameter(Option::AUTO_IMPORT_NAMES);
-        if ($this->shouldRemoveUseName($last, $newNameLastName, $importNames)) {
-            $this->removeUseName($name);
-        }
         return new FullyQualified($newName);
-    }
-    private function removeUseName(Name $oldName) : void
-    {
-        $uses = $this->betterNodeFinder->findFirstPrevious($oldName, function (Node $node) use($oldName) : bool {
-            return $node instanceof UseUse && $this->nodeNameResolver->areNamesEqual($node, $oldName);
-        });
-        if (!$uses instanceof UseUse) {
-            return;
-        }
-        if ($uses->alias instanceof Identifier) {
-            return;
-        }
-        // ios the only one? Remove whole use instead to avoid "use ;" constructions
-        $parentUse = $uses->getAttribute(AttributeKey::PARENT_NODE);
-        if ($parentUse instanceof Use_ && \count($parentUse->uses) === 1) {
-            $this->nodeRemover->removeNode($parentUse);
-        } else {
-            $this->nodeRemover->removeNode($uses);
-        }
     }
     /**
      * @param array<string, string> $oldToNewClasses
@@ -267,10 +232,10 @@ final class ClassRenamer
     /**
      * @param array<string, string> $oldToNewClasses
      */
-    private function refactorClassLike(ClassLike $classLike, array $oldToNewClasses) : ?Node
+    private function refactorClassLike(ClassLike $classLike, array $oldToNewClasses, ?Scope $scope) : ?Node
     {
         // rename interfaces
-        $this->renameClassImplements($classLike, $oldToNewClasses);
+        $this->renameClassImplements($classLike, $oldToNewClasses, $scope);
         $className = (string) $this->nodeNameResolver->getName($classLike);
         $newName = $oldToNewClasses[$className] ?? null;
         if ($newName === null) {
@@ -346,13 +311,11 @@ final class ClassRenamer
     /**
      * @param string[] $oldToNewClasses
      */
-    private function renameClassImplements(ClassLike $classLike, array $oldToNewClasses) : void
+    private function renameClassImplements(ClassLike $classLike, array $oldToNewClasses, ?Scope $scope) : void
     {
         if (!$classLike instanceof Class_) {
             return;
         }
-        /** @var Scope|null $scope */
-        $scope = $classLike->getAttribute(AttributeKey::SCOPE);
         $classLike->implements = \array_unique($classLike->implements);
         foreach ($classLike->implements as $key => $implementName) {
             $virtualNode = (bool) $implementName->getAttribute(AttributeKey::VIRTUAL_NODE);
@@ -413,10 +376,6 @@ final class ClassRenamer
         }
         return \true;
     }
-    private function shouldRemoveUseName(string $last, string $newNameLastName, bool $importNames) : bool
-    {
-        return $last === $newNameLastName && $importNames;
-    }
     /**
      * @param array<string, string> $oldToNewClasses
      * @return OldToNewType[]
@@ -424,13 +383,8 @@ final class ClassRenamer
     private function createOldToNewTypes(Node $node, array $oldToNewClasses) : array
     {
         $oldToNewClasses = $this->resolveOldToNewClassCallbacks($node, $oldToNewClasses);
-        // md4 is faster then md5 https://php.watch/articles/php-hash-benchmark
-        $hashingAlgorithm = 'md4';
-        if (\PHP_VERSION_ID >= 80100) {
-            // if xxh128 is available use it, as it is way faster then md4 https://php.watch/articles/php-hash-benchmark
-            $hashingAlgorithm = 'xxh128';
-        }
-        $cacheKey = \hash($hashingAlgorithm, \serialize($oldToNewClasses));
+        $serialized = \serialize($oldToNewClasses);
+        $cacheKey = $this->fileHasher->hash($serialized);
         if (isset($this->oldToNewTypesByCacheKey[$cacheKey])) {
             return $this->oldToNewTypesByCacheKey[$cacheKey];
         }
@@ -449,7 +403,6 @@ final class ClassRenamer
      */
     private function resolveOldToNewClassCallbacks(Node $node, array $oldToNewClasses) : array
     {
-        $item1Unpacked = $this->renameClassCallbackHandler->getOldToNewClassesFromNode($node);
-        return \array_merge($oldToNewClasses, $item1Unpacked);
+        return \array_merge($oldToNewClasses, $this->renameClassCallbackHandler->getOldToNewClassesFromNode($node));
     }
 }

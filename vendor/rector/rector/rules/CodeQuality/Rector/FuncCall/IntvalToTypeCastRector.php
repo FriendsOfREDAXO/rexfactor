@@ -61,12 +61,12 @@ CODE_SAMPLE
                 return null;
             }
         }
-        if (!isset($node->args[0])) {
+        if ($node->isFirstClassCallable()) {
             return null;
         }
-        if (!$node->args[0] instanceof Arg) {
+        if (!isset($node->getArgs()[0])) {
             return null;
         }
-        return new Int_($node->args[0]->value);
+        return new Int_($node->getArgs()[0]->value);
     }
 }

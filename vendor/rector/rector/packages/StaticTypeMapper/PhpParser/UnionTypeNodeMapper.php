@@ -9,21 +9,21 @@ use PHPStan\Type\Type;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface;
 use Rector\StaticTypeMapper\Mapper\PhpParserNodeMapper;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @implements PhpParserNodeMapperInterface<UnionType>
  */
 final class UnionTypeNodeMapper implements PhpParserNodeMapperInterface
 {
     /**
-     * @var \Rector\StaticTypeMapper\Mapper\PhpParserNodeMapper
-     */
-    private $phpParserNodeMapper;
-    /**
      * @readonly
      * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
     private $typeFactory;
+    /**
+     * @var \Rector\StaticTypeMapper\Mapper\PhpParserNodeMapper
+     */
+    private $phpParserNodeMapper;
     public function __construct(TypeFactory $typeFactory)
     {
         $this->typeFactory = $typeFactory;

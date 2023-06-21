@@ -7,12 +7,14 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
-use Rector\Core\NodeManipulator\PropertyManipulator;
+use PhpParser\Node\Stmt\TraitUse;
+use PHPStan\Analyser\Scope;
 use Rector\Core\PhpParser\NodeFinder\PropertyFetchFinder;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\Core\ValueObject\MethodName;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\Core\ValueObject\Visibility;
+use Rector\DeadCode\NodeAnalyzer\PropertyWriteonlyAnalyzer;
 use Rector\Privatization\NodeManipulator\VisibilityManipulator;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -20,7 +22,7 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector\RemoveUnusedPromotedPropertyRectorTest
  */
-final class RemoveUnusedPromotedPropertyRector extends AbstractRector implements MinPhpVersionInterface
+final class RemoveUnusedPromotedPropertyRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
@@ -29,19 +31,19 @@ final class RemoveUnusedPromotedPropertyRector extends AbstractRector implements
     private $propertyFetchFinder;
     /**
      * @readonly
-     * @var \Rector\Core\NodeManipulator\PropertyManipulator
-     */
-    private $propertyManipulator;
-    /**
-     * @readonly
      * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
     private $visibilityManipulator;
-    public function __construct(PropertyFetchFinder $propertyFetchFinder, PropertyManipulator $propertyManipulator, VisibilityManipulator $visibilityManipulator)
+    /**
+     * @readonly
+     * @var \Rector\DeadCode\NodeAnalyzer\PropertyWriteonlyAnalyzer
+     */
+    private $propertyWriteonlyAnalyzer;
+    public function __construct(PropertyFetchFinder $propertyFetchFinder, VisibilityManipulator $visibilityManipulator, PropertyWriteonlyAnalyzer $propertyWriteonlyAnalyzer)
     {
         $this->propertyFetchFinder = $propertyFetchFinder;
-        $this->propertyManipulator = $propertyManipulator;
         $this->visibilityManipulator = $visibilityManipulator;
+        $this->propertyWriteonlyAnalyzer = $propertyWriteonlyAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -86,28 +88,27 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactor(Node $node) : ?Node
+    public function refactorWithScope(Node $node, Scope $scope) : ?Node
     {
         $constructClassMethod = $node->getMethod(MethodName::CONSTRUCT);
         if (!$constructClassMethod instanceof ClassMethod) {
             return null;
         }
-        // is attribute? skip it
-        if ($node->attrGroups !== []) {
+        if ($this->shouldSkipClass($node)) {
             return null;
         }
-        $hasRemovedProperty = \false;
-        foreach ($constructClassMethod->getParams() as $param) {
+        $hasChanged = \false;
+        foreach ($constructClassMethod->params as $key => $param) {
             // only private local scope; removing public property might be dangerous
             if (!$this->visibilityManipulator->hasVisibility($param, Visibility::PRIVATE)) {
-                continue;
-            }
-            if ($this->propertyManipulator->isPropertyUsedInReadContext($node, $param)) {
                 continue;
             }
             $paramName = $this->getName($param);
             $propertyFetches = $this->propertyFetchFinder->findLocalPropertyFetchesByName($node, $paramName);
             if ($propertyFetches !== []) {
+                continue;
+            }
+            if (!$this->propertyWriteonlyAnalyzer->arePropertyFetchesExclusivelyBeingAssignedTo($propertyFetches)) {
                 continue;
             }
             // is variable used? only remove property, keep param
@@ -117,10 +118,10 @@ CODE_SAMPLE
                 continue;
             }
             // remove param
-            $this->removeNode($param);
-            $hasRemovedProperty = \true;
+            unset($constructClassMethod->params[$key]);
+            $hasChanged = \true;
         }
-        if ($hasRemovedProperty) {
+        if ($hasChanged) {
             return $node;
         }
         return null;
@@ -128,5 +129,17 @@ CODE_SAMPLE
     public function provideMinPhpVersion() : int
     {
         return PhpVersionFeature::PROPERTY_PROMOTION;
+    }
+    private function shouldSkipClass(Class_ $class) : bool
+    {
+        if ($class->attrGroups !== []) {
+            return \true;
+        }
+        foreach ($class->stmts as $stmt) {
+            if ($stmt instanceof TraitUse) {
+                return \true;
+            }
+        }
+        return \false;
     }
 }

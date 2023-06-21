@@ -16,16 +16,12 @@ use Rector\Symfony\NodeAnalyzer\FormOptionsArrayMatcher;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @see https://github.com/symfony/symfony/blob/2.8/UPGRADE-2.8.md#form
+ * @changelog https://github.com/symfony/symfony/blob/2.8/UPGRADE-2.8.md#form
  *
  * @see \Rector\Symfony\Tests\Rector\MethodCall\ChangeCollectionTypeOptionNameFromTypeToEntryTypeRector\ChangeCollectionTypeOptionNameFromTypeToEntryTypeRectorTest
  */
 final class ChangeCollectionTypeOptionNameFromTypeToEntryTypeRector extends AbstractRector
 {
-    /**
-     * @var array<string, string>
-     */
-    private const OLD_TO_NEW_OPTION_NAME = ['type' => 'entry_type', 'options' => 'entry_options'];
     /**
      * @readonly
      * @var \Rector\Symfony\NodeAnalyzer\FormAddMethodCallAnalyzer
@@ -41,6 +37,10 @@ final class ChangeCollectionTypeOptionNameFromTypeToEntryTypeRector extends Abst
      * @var \Rector\Symfony\NodeAnalyzer\FormCollectionAnalyzer
      */
     private $formCollectionAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const OLD_TO_NEW_OPTION_NAME = ['type' => 'entry_type', 'options' => 'entry_options'];
     public function __construct(FormAddMethodCallAnalyzer $formAddMethodCallAnalyzer, FormOptionsArrayMatcher $formOptionsArrayMatcher, FormCollectionAnalyzer $formCollectionAnalyzer)
     {
         $this->formAddMethodCallAnalyzer = $formAddMethodCallAnalyzer;

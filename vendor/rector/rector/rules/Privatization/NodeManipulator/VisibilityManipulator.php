@@ -9,7 +9,7 @@ use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use Rector\Core\ValueObject\Visibility;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Privatization\NodeManipulator\VisibilityManipulatorTest
  */
@@ -101,6 +101,7 @@ final class VisibilityManipulator
         $this->replaceVisibilityFlag($node, Visibility::PRIVATE);
     }
     /**
+     * @api
      * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\ClassConst $node
      */
     public function removeFinal($node) : void

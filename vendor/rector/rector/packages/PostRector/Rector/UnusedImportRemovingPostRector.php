@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PostRector\Rector;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -73,14 +73,6 @@ final class UnusedImportRemovingPostRector extends \Rector\PostRector\Rector\Abs
         }
         $node->stmts = \array_values($node->stmts);
         return $node;
-    }
-    /**
-     * The higher, the later
-     */
-    public function getPriority() : int
-    {
-        // run this last
-        return 100;
     }
     public function getRuleDefinition() : RuleDefinition
     {

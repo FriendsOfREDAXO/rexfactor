@@ -4,49 +4,45 @@ declare (strict_types=1);
 namespace Rector\Php55\Rector\String_;
 
 use PhpParser\Node;
-use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassConst;
+use PhpParser\NodeTraverser;
+use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
 use Rector\Core\Contract\Rector\AllowEmptyConfigurableRectorInterface;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
-use Rector\Naming\Naming\AliasNameResolver;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @changelog https://wiki.php.net/rfc/class_name_scalars https://github.com/symfony/symfony/blob/2.8/UPGRADE-2.8.md#form
  *
  * @see \Rector\Tests\Php55\Rector\String_\StringClassNameToClassConstantRector\StringClassNameToClassConstantRectorTest
  */
-final class StringClassNameToClassConstantRector extends AbstractRector implements AllowEmptyConfigurableRectorInterface, MinPhpVersionInterface
+final class StringClassNameToClassConstantRector extends AbstractScopeAwareRector implements AllowEmptyConfigurableRectorInterface, MinPhpVersionInterface
 {
-    /**
-     * @var string[]
-     */
-    private $classesToSkip = [];
     /**
      * @readonly
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
     /**
-     * @readonly
-     * @var \Rector\Naming\Naming\AliasNameResolver
+     * @var string
      */
-    private $aliasNameResolver;
-    public function __construct(ReflectionProvider $reflectionProvider, AliasNameResolver $aliasNameResolver)
+    private const IS_UNDER_CLASS_CONST = 'is_under_class_const';
+    /**
+     * @var string[]
+     */
+    private $classesToSkip = [];
+    public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->reflectionProvider = $reflectionProvider;
-        $this->aliasNameResolver = $aliasNameResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -83,27 +79,45 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [String_::class];
+        return [String_::class, FuncCall::class, ClassConst::class];
     }
     /**
-     * @param String_ $node
+     * @param String_|FuncCall|ClassConst $node
+     * @return \PhpParser\Node\Expr\BinaryOp\Concat|\PhpParser\Node\Expr\ClassConstFetch|null|int
      */
-    public function refactor(Node $node) : ?Node
+    public function refactorWithScope(Node $node, Scope $scope)
     {
+        // allow class strings to be part of class const arrays, as probably on purpose
+        if ($node instanceof ClassConst) {
+            $this->traverseNodesWithCallable($node->consts, static function (Node $subNode) {
+                if ($subNode instanceof String_) {
+                    $subNode->setAttribute(self::IS_UNDER_CLASS_CONST, \true);
+                }
+                return null;
+            });
+            return null;
+        }
+        // keep allowed string as condition
+        if ($node instanceof FuncCall) {
+            if ($this->isName($node, 'is_a')) {
+                return NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            }
+            return null;
+        }
+        if ($node->getAttribute(self::IS_UNDER_CLASS_CONST) === \true) {
+            return null;
+        }
         $classLikeName = $node->value;
         // remove leading slash
         $classLikeName = \ltrim($classLikeName, '\\');
         if ($classLikeName === '') {
             return null;
         }
-        if ($this->shouldSkip($classLikeName, $node)) {
+        if ($this->shouldSkip($classLikeName)) {
             return null;
         }
         $fullyQualified = new FullyQualified($classLikeName);
-        $name = clone $fullyQualified;
-        $name->setAttribute(AttributeKey::PARENT_NODE, $node->getAttribute(AttributeKey::PARENT_NODE));
-        $aliasName = $this->aliasNameResolver->resolveByName($name);
-        $fullyQualifiedOrAliasName = \is_string($aliasName) ? new Name($aliasName) : $fullyQualified;
+        $fullyQualifiedOrAliasName = new FullyQualified($scope->resolveName($fullyQualified));
         if ($classLikeName !== $node->value) {
             $preSlashCount = \strlen($node->value) - \strlen($classLikeName);
             $preSlash = \str_repeat('\\', $preSlashCount);
@@ -124,27 +138,8 @@ CODE_SAMPLE
     {
         return PhpVersionFeature::CLASSNAME_CONSTANT;
     }
-    private function isPartOfIsAFuncCall(String_ $string) : bool
+    private function shouldSkip(string $classLikeName) : bool
     {
-        $parentNode = $string->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$parentNode instanceof Arg) {
-            return \false;
-        }
-        $parentParentNode = $parentNode->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$parentParentNode instanceof FuncCall) {
-            return \false;
-        }
-        return $this->nodeNameResolver->isName($parentParentNode, 'is_a');
-    }
-    private function shouldSkip(string $classLikeName, String_ $string) : bool
-    {
-        if (!$this->reflectionProvider->hasClass($classLikeName)) {
-            return \true;
-        }
-        $classReflection = $this->reflectionProvider->getClass($classLikeName);
-        if ($classReflection->getName() !== $classLikeName) {
-            return \true;
-        }
         // skip short class names, mostly invalid use of strings
         if (\strpos($classLikeName, '\\') === \false) {
             return \true;
@@ -153,16 +148,14 @@ CODE_SAMPLE
         if (\ctype_lower($classLikeName[0])) {
             return \true;
         }
+        if (!$this->reflectionProvider->hasClass($classLikeName)) {
+            return \true;
+        }
         foreach ($this->classesToSkip as $classToSkip) {
             if ($this->nodeNameResolver->isStringName($classLikeName, $classToSkip)) {
                 return \true;
             }
         }
-        if ($this->isPartOfIsAFuncCall($string)) {
-            return \true;
-        }
-        // allow class strings to be part of class const arrays, as probably on purpose
-        $parentClassConst = $this->betterNodeFinder->findParentType($string, ClassConst::class);
-        return $parentClassConst instanceof ClassConst;
+        return \false;
     }
 }

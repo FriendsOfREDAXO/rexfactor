@@ -3,20 +3,40 @@
 declare (strict_types=1);
 namespace Rector\Core\PhpParser\Parser;
 
-use RectorPrefix202305\Nette\Utils\FileSystem;
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\FileSystem;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
-use Rector\Core\Contract\PhpParser\NodePrinterInterface;
+use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PhpParser\Node\Value\ValueResolver;
+use Rector\Core\PhpParser\Printer\BetterStandardPrinter;
 use Rector\Core\Util\StringUtils;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 final class InlineCodeParser
 {
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Printer\BetterStandardPrinter
+     */
+    private $betterStandardPrinter;
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Parser\SimplePhpParser
+     */
+    private $simplePhpParser;
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Node\Value\ValueResolver
+     */
+    private $valueResolver;
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
     /**
      * @var string
      * @see https://regex101.com/r/dwe4OW/1
@@ -52,26 +72,12 @@ final class InlineCodeParser
      * @see https://regex101.com/r/nSO3Eq/1
      */
     private const BACKREFERENCE_NO_DOUBLE_QUOTE_START_REGEX = '#(?<!")(?<backreference>\\$\\d+)#';
-    /**
-     * @readonly
-     * @var \Rector\Core\Contract\PhpParser\NodePrinterInterface
-     */
-    private $nodePrinter;
-    /**
-     * @readonly
-     * @var \Rector\Core\PhpParser\Parser\SimplePhpParser
-     */
-    private $simplePhpParser;
-    /**
-     * @readonly
-     * @var \Rector\Core\PhpParser\Node\Value\ValueResolver
-     */
-    private $valueResolver;
-    public function __construct(NodePrinterInterface $nodePrinter, \Rector\Core\PhpParser\Parser\SimplePhpParser $simplePhpParser, ValueResolver $valueResolver)
+    public function __construct(BetterStandardPrinter $betterStandardPrinter, \Rector\Core\PhpParser\Parser\SimplePhpParser $simplePhpParser, ValueResolver $valueResolver, BetterNodeFinder $betterNodeFinder)
     {
-        $this->nodePrinter = $nodePrinter;
+        $this->betterStandardPrinter = $betterStandardPrinter;
         $this->simplePhpParser = $simplePhpParser;
         $this->valueResolver = $valueResolver;
+        $this->betterNodeFinder = $betterNodeFinder;
     }
     /**
      * @return Stmt[]
@@ -105,7 +111,7 @@ final class InlineCodeParser
         if ($expr instanceof Concat) {
             return $this->resolveConcatValue($expr);
         }
-        return $this->nodePrinter->print($expr);
+        return $this->betterStandardPrinter->print($expr);
     }
     private function resolveEncapsedValue(Encapsed $encapsed) : string
     {
@@ -119,7 +125,7 @@ final class InlineCodeParser
             }
             $value .= $partValue;
         }
-        $printedExpr = $isRequirePrint ? $this->nodePrinter->print($encapsed) : $value;
+        $printedExpr = $isRequirePrint ? $this->betterStandardPrinter->print($encapsed) : $value;
         // remove "
         $printedExpr = \trim($printedExpr, '""');
         // use \$ → $
@@ -133,7 +139,7 @@ final class InlineCodeParser
             $concat->right->value = '.' . $concat->right->value;
         }
         if ($concat->right instanceof String_ && \strncmp($concat->right->value, '($', \strlen('($')) === 0) {
-            $node = $concat->getAttribute(AttributeKey::NEXT_NODE);
+            $node = $this->betterNodeFinder->resolveNextNode($concat);
             if ($node instanceof Variable) {
                 $concat->right->value .= '.';
             }

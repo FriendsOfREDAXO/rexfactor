@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PhpAttribute\NodeFactory;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
@@ -23,11 +23,6 @@ use Rector\PhpAttribute\AttributeArrayNameInliner;
 use Rector\PhpAttribute\NodeAnalyzer\ExprParameterReflectionTypeCorrector;
 final class PhpNestedAttributeGroupFactory
 {
-    /**
-     * @var string
-     * @see https://regex101.com/r/g3d9jy/1
-     */
-    private const SHORT_ORM_ALIAS_REGEX = '#^@ORM#';
     /**
      * @readonly
      * @var \Rector\PhpAttribute\AnnotationToAttributeMapper
@@ -53,6 +48,11 @@ final class PhpNestedAttributeGroupFactory
      * @var \Rector\PhpAttribute\AttributeArrayNameInliner
      */
     private $attributeArrayNameInliner;
+    /**
+     * @var string
+     * @see https://regex101.com/r/g3d9jy/1
+     */
+    private const SHORT_ORM_ALIAS_REGEX = '#^@ORM#';
     public function __construct(AnnotationToAttributeMapper $annotationToAttributeMapper, \Rector\PhpAttribute\NodeFactory\AttributeNameFactory $attributeNameFactory, \Rector\PhpAttribute\NodeFactory\NamedArgsFactory $namedArgsFactory, ExprParameterReflectionTypeCorrector $exprParameterReflectionTypeCorrector, AttributeArrayNameInliner $attributeArrayNameInliner)
     {
         $this->annotationToAttributeMapper = $annotationToAttributeMapper;

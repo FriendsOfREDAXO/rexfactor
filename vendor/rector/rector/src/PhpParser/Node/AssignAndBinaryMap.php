@@ -42,7 +42,6 @@ use PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\Cast\Bool_;
 use PHPStan\Analyser\Scope;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 final class AssignAndBinaryMap
 {
     /**
@@ -83,17 +82,13 @@ final class AssignAndBinaryMap
         $nodeClass = \get_class($binaryOp);
         return self::BINARY_OP_TO_INVERSE_CLASSES[$nodeClass] ?? null;
     }
-    public function getTruthyExpr(Expr $expr) : Expr
+    public function getTruthyExpr(Expr $expr, Scope $scope) : Expr
     {
         if ($expr instanceof Bool_) {
             return $expr;
         }
         if ($expr instanceof BooleanNot) {
             return $expr;
-        }
-        $scope = $expr->getAttribute(AttributeKey::SCOPE);
-        if (!$scope instanceof Scope) {
-            return new Bool_($expr);
         }
         $type = $scope->getType($expr);
         if ($type->isBoolean()->yes()) {

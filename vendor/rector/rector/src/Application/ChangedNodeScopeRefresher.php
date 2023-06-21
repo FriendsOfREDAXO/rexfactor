@@ -16,7 +16,6 @@ use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Function_;
@@ -25,7 +24,6 @@ use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Switch_;
 use PhpParser\Node\Stmt\TryCatch;
 use PHPStan\Analyser\MutatingScope;
-use Rector\Core\Contract\PhpParser\Node\StmtsAwareInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeAnalyzer\ScopeAnalyzer;
 use Rector\Core\Provider\CurrentFileProvider;
@@ -96,9 +94,6 @@ final class ChangedNodeScopeRefresher
     }
     public function reIndexNodeAttributes(Node $node) : void
     {
-        if (($node instanceof ClassLike || $node instanceof StmtsAwareInterface) && $node->stmts !== null) {
-            $node->stmts = \array_values($node->stmts);
-        }
         if ($node instanceof FunctionLike) {
             /** @var ClassMethod|Function_|Closure $node */
             $node->params = \array_values($node->params);

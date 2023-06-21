@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config\Definition;
+namespace RectorPrefix202306\Symfony\Component\Config\Definition;
 
 /**
  * This interface must be implemented by nodes which can be used as prototypes.
@@ -19,6 +19,8 @@ interface PrototypeNodeInterface extends NodeInterface
 {
     /**
      * Sets the name of the node.
+     *
+     * @return void
      */
     public function setName(string $name);
 }

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Helper;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
@@ -16,6 +16,16 @@ use Rector\Symfony\BundleClassResolver;
  */
 final class TemplateGuesser
 {
+    /**
+     * @readonly
+     * @var \Rector\Symfony\BundleClassResolver
+     */
+    private $bundleClassResolver;
+    /**
+     * @readonly
+     * @var \Rector\NodeNameResolver\NodeNameResolver
+     */
+    private $nodeNameResolver;
     /**
      * @var string
      * @see https://regex101.com/r/yZAUAC/1
@@ -41,16 +51,6 @@ final class TemplateGuesser
      * @see https://regex101.com/r/nj8Ojf/1
      */
     private const ACTION_MATCH_REGEX = '#Action$#';
-    /**
-     * @readonly
-     * @var \Rector\Symfony\BundleClassResolver
-     */
-    private $bundleClassResolver;
-    /**
-     * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
-     */
-    private $nodeNameResolver;
     public function __construct(BundleClassResolver $bundleClassResolver, NodeNameResolver $nodeNameResolver)
     {
         $this->bundleClassResolver = $bundleClassResolver;

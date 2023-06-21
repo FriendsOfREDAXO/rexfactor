@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\Autoloading;
 
-use RectorPrefix202305\Nette\Neon\Neon;
+use RectorPrefix202306\Nette\Neon\Neon;
 use PHPStan\DependencyInjection\Container;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\ParameterProvider;
@@ -13,7 +13,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Throwable;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Core\Tests\Autoloading\BootstrapFilesIncluderTest
  */
@@ -29,6 +29,10 @@ final class BootstrapFilesIncluder
      * @var \Rector\NodeTypeResolver\DependencyInjection\PHPStanExtensionsConfigResolver
      */
     private $phpStanExtensionsConfigResolver;
+    /**
+     * @var array<string, mixed>
+     */
+    private $configCache = [];
     public function __construct(ParameterProvider $parameterProvider, PHPStanExtensionsConfigResolver $phpStanExtensionsConfigResolver)
     {
         $this->parameterProvider = $parameterProvider;
@@ -67,7 +71,12 @@ final class BootstrapFilesIncluder
     {
         $absoluteBootstrapFilePaths = [];
         foreach ($extensionConfigFiles as $extensionConfigFile) {
-            $extensionConfigContents = Neon::decodeFile($extensionConfigFile);
+            if (!\array_key_exists($extensionConfigFile, $this->configCache)) {
+                $extensionConfigContents = Neon::decodeFile($extensionConfigFile);
+                $this->configCache[$extensionConfigFile] = $extensionConfigContents;
+            } else {
+                $extensionConfigContents = $this->configCache[$extensionConfigFile];
+            }
             $configDirectory = \dirname($extensionConfigFile);
             $bootstrapFiles = $extensionConfigContents['parameters']['bootstrapFiles'] ?? [];
             foreach ($bootstrapFiles as $bootstrapFile) {

@@ -19,7 +19,7 @@ use Rector\DowngradePhp80\ValueObject\DowngradeAttributeToAnnotation;
 use Rector\NodeFactory\DoctrineAnnotationFactory;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @changelog https://php.watch/articles/php-attributes#syntax
  *
@@ -27,6 +27,11 @@ use RectorPrefix202305\Webmozart\Assert\Assert;
  */
 final class DowngradeAttributeToAnnotationRector extends AbstractRector implements ConfigurableRectorInterface
 {
+    /**
+     * @readonly
+     * @var \Rector\NodeFactory\DoctrineAnnotationFactory
+     */
+    private $doctrineAnnotationFactory;
     /**
      * @var string[]
      */
@@ -39,11 +44,6 @@ final class DowngradeAttributeToAnnotationRector extends AbstractRector implemen
      * @var bool
      */
     private $isDowngraded = \false;
-    /**
-     * @readonly
-     * @var \Rector\NodeFactory\DoctrineAnnotationFactory
-     */
-    private $doctrineAnnotationFactory;
     public function __construct(DoctrineAnnotationFactory $doctrineAnnotationFactory)
     {
         $this->doctrineAnnotationFactory = $doctrineAnnotationFactory;

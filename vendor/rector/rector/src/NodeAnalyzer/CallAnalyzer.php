@@ -16,9 +16,14 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Stmt\If_;
 use Rector\Core\PhpParser\Comparing\NodeComparator;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 final class CallAnalyzer
 {
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Comparing\NodeComparator
+     */
+    private $nodeComparator;
     /**
      * @var array<class-string<Expr>>
      */
@@ -27,11 +32,6 @@ final class CallAnalyzer
      * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
-    /**
-     * @readonly
-     * @var \Rector\Core\PhpParser\Comparing\NodeComparator
-     */
-    private $nodeComparator;
     public function __construct(NodeComparator $nodeComparator)
     {
         $this->nodeComparator = $nodeComparator;

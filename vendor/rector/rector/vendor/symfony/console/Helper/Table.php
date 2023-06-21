@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Console\Helper;
+namespace RectorPrefix202306\Symfony\Component\Console\Helper;
 
-use RectorPrefix202305\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202305\Symfony\Component\Console\Exception\RuntimeException;
-use RectorPrefix202305\Symfony\Component\Console\Formatter\OutputFormatter;
-use RectorPrefix202305\Symfony\Component\Console\Formatter\WrappableOutputFormatterInterface;
-use RectorPrefix202305\Symfony\Component\Console\Output\ConsoleSectionOutput;
-use RectorPrefix202305\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202306\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202306\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202306\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202306\Symfony\Component\Console\Formatter\WrappableOutputFormatterInterface;
+use RectorPrefix202306\Symfony\Component\Console\Output\ConsoleSectionOutput;
+use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
 /**
  * Provides helpers to display a table.
  *
@@ -100,6 +100,8 @@ class Table
     }
     /**
      * Sets a style definition.
+     *
+     * @return void
      */
     public static function setStyleDefinition(string $name, TableStyle $style)
     {
@@ -309,6 +311,8 @@ class Table
      *     | 9971-5-0210-0 | A Tale of Two Cities  | Charles Dickens  |
      *     | 960-425-059-0 | The Lord of the Rings | J. R. R. Tolkien |
      *     +---------------+-----------------------+------------------+
+     *
+     * @return void
      */
     public function render()
     {
@@ -420,7 +424,7 @@ class Table
      *
      *     +-----+-----------+-------+
      */
-    private function renderRowSeparator(int $type = self::SEPARATOR_MID, string $title = null, string $titleFormat = null)
+    private function renderRowSeparator(int $type = self::SEPARATOR_MID, string $title = null, string $titleFormat = null) : void
     {
         if (!($count = $this->numberOfColumns)) {
             return;
@@ -476,7 +480,7 @@ class Table
      *
      *     | 9971-5-0210-0 | A Tale of Two Cities  | Charles Dickens  |
      */
-    private function renderRow(array $row, string $cellFormat, string $firstCellFormat = null)
+    private function renderRow(array $row, string $cellFormat, string $firstCellFormat = null) : void
     {
         $rowContent = $this->renderColumnSeparator(self::BORDER_OUTSIDE);
         $columns = $this->getRowColumns($row);
@@ -539,7 +543,7 @@ class Table
     /**
      * Calculate number of columns for this table.
      */
-    private function calculateNumberOfColumns(array $rows)
+    private function calculateNumberOfColumns(array $rows) : void
     {
         $columns = [0];
         foreach ($rows as $row) {
@@ -663,7 +667,7 @@ class Table
     /**
      * fill cells for a row that contains colspan > 1.
      */
-    private function fillCells(iterable $row)
+    private function fillCells(iterable $row) : iterable
     {
         $newRow = [];
         foreach ($row as $column => $cell) {
@@ -716,7 +720,7 @@ class Table
     /**
      * Calculates columns widths.
      */
-    private function calculateColumnsWidth(iterable $groups)
+    private function calculateColumnsWidth(iterable $groups) : void
     {
         for ($column = 0; $column < $this->numberOfColumns; ++$column) {
             $lengths = [];
@@ -761,7 +765,7 @@ class Table
     /**
      * Called after rendering to cleanup cache data.
      */
-    private function cleanup()
+    private function cleanup() : void
     {
         $this->effectiveColumnWidths = [];
         unset($this->numberOfColumns);

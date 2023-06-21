@@ -7,10 +7,11 @@ use PhpParser\Node;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\ConditionalTypeForParameter;
 use PHPStan\Type\Type;
+use PHPStan\Type\TypeCombinator;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @implements TypeMapperInterface<ConditionalTypeForParameter>
  */
@@ -40,7 +41,8 @@ final class ConditionalTypeForParameterMapper implements TypeMapperInterface
      */
     public function mapToPHPStanPhpDocTypeNode(Type $type, string $typeKind) : TypeNode
     {
-        return $this->phpStanStaticTypeMapper->mapToPHPStanPhpDocTypeNode($type->getTarget(), $typeKind);
+        $type = TypeCombinator::union($type->getIf(), $type->getElse());
+        return $this->phpStanStaticTypeMapper->mapToPHPStanPhpDocTypeNode($type, $typeKind);
     }
     /**
      * @param ConditionalTypeForParameter $type
@@ -48,6 +50,7 @@ final class ConditionalTypeForParameterMapper implements TypeMapperInterface
      */
     public function mapToPhpParserNode(Type $type, string $typeKind) : ?Node
     {
-        return $this->phpStanStaticTypeMapper->mapToPhpParserNode($type->getTarget(), $typeKind);
+        $type = TypeCombinator::union($type->getIf(), $type->getElse());
+        return $this->phpStanStaticTypeMapper->mapToPhpParserNode($type, $typeKind);
     }
 }

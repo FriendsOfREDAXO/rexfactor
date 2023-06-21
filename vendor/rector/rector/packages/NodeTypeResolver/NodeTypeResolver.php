@@ -12,12 +12,11 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Ternary;
-use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
-use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Property;
+use PhpParser\Node\UnionType as NodeUnionType;
 use PHPStan\Analyser\Scope;
 use PHPStan\Broker\ClassAutoloadingException;
 use PHPStan\Reflection\ClassReflection;
@@ -38,16 +37,11 @@ use Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeCorrector\AccessoryNonEmptyStringTypeCorrector;
 use Rector\NodeTypeResolver\NodeTypeCorrector\GenericClassStringTypeCorrector;
-use Rector\NodeTypeResolver\NodeTypeCorrector\HasOffsetTypeCorrector;
 use Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Rector\TypeDeclaration\PHPStan\ObjectTypeSpecifier;
 final class NodeTypeResolver
 {
-    /**
-     * @var array<class-string<Node>, NodeTypeResolverInterface>
-     */
-    private $nodeTypeResolvers = [];
     /**
      * @readonly
      * @var \Rector\TypeDeclaration\PHPStan\ObjectTypeSpecifier
@@ -70,11 +64,6 @@ final class NodeTypeResolver
     private $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeCorrector\HasOffsetTypeCorrector
-     */
-    private $hasOffsetTypeCorrector;
-    /**
-     * @readonly
      * @var \Rector\NodeTypeResolver\NodeTypeCorrector\AccessoryNonEmptyStringTypeCorrector
      */
     private $accessoryNonEmptyStringTypeCorrector;
@@ -84,15 +73,18 @@ final class NodeTypeResolver
      */
     private $renamedClassesDataCollector;
     /**
+     * @var array<class-string<Node>, NodeTypeResolverInterface>
+     */
+    private $nodeTypeResolvers = [];
+    /**
      * @param NodeTypeResolverInterface[] $nodeTypeResolvers
      */
-    public function __construct(ObjectTypeSpecifier $objectTypeSpecifier, ClassAnalyzer $classAnalyzer, GenericClassStringTypeCorrector $genericClassStringTypeCorrector, ReflectionProvider $reflectionProvider, HasOffsetTypeCorrector $hasOffsetTypeCorrector, AccessoryNonEmptyStringTypeCorrector $accessoryNonEmptyStringTypeCorrector, RenamedClassesDataCollector $renamedClassesDataCollector, array $nodeTypeResolvers)
+    public function __construct(ObjectTypeSpecifier $objectTypeSpecifier, ClassAnalyzer $classAnalyzer, GenericClassStringTypeCorrector $genericClassStringTypeCorrector, ReflectionProvider $reflectionProvider, AccessoryNonEmptyStringTypeCorrector $accessoryNonEmptyStringTypeCorrector, RenamedClassesDataCollector $renamedClassesDataCollector, iterable $nodeTypeResolvers)
     {
         $this->objectTypeSpecifier = $objectTypeSpecifier;
         $this->classAnalyzer = $classAnalyzer;
         $this->genericClassStringTypeCorrector = $genericClassStringTypeCorrector;
         $this->reflectionProvider = $reflectionProvider;
-        $this->hasOffsetTypeCorrector = $hasOffsetTypeCorrector;
         $this->accessoryNonEmptyStringTypeCorrector = $accessoryNonEmptyStringTypeCorrector;
         $this->renamedClassesDataCollector = $renamedClassesDataCollector;
         foreach ($nodeTypeResolvers as $nodeTypeResolver) {
@@ -138,7 +130,7 @@ final class NodeTypeResolver
     }
     public function getType(Node $node) : Type
     {
-        if ($node instanceof Property && $node->type instanceof NullableType) {
+        if ($node instanceof Property && $node->type instanceof Node) {
             return $this->getType($node->type);
         }
         if ($node instanceof NullableType) {
@@ -171,7 +163,7 @@ final class NodeTypeResolver
                 $scope = $node->getAttribute(AttributeKey::SCOPE);
                 $type = $this->objectTypeSpecifier->narrowToFullyQualifiedOrAliasedObjectType($node, $type, $scope);
             }
-            return $this->hasOffsetTypeCorrector->correct($type);
+            return $type;
         }
         $scope = $node->getAttribute(AttributeKey::SCOPE);
         if (!$scope instanceof Scope) {
@@ -182,6 +174,13 @@ final class NodeTypeResolver
                 }
             }
             return new MixedType();
+        }
+        if ($node instanceof NodeUnionType) {
+            $types = [];
+            foreach ($node->types as $type) {
+                $types[] = $this->getType($type);
+            }
+            return new UnionType($types);
         }
         if (!$node instanceof Expr) {
             return new MixedType();

@@ -51,13 +51,14 @@ CODE_SAMPLE
         if (!$this->isName($node, 'is_a')) {
             return null;
         }
-        if (isset($node->args[2])) {
+        if ($node->isFirstClassCallable()) {
             return null;
         }
-        if (!$node->args[0] instanceof Arg) {
+        if (isset($node->getArgs()[2])) {
             return null;
         }
-        $firstArgumentStaticType = $this->getType($node->args[0]->value);
+        $firstArg = $node->getArgs()[0];
+        $firstArgumentStaticType = $this->getType($firstArg->value);
         if (!$firstArgumentStaticType->isString()->yes()) {
             return null;
         }
