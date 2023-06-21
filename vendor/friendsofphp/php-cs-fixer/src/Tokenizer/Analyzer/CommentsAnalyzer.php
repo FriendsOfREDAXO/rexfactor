@@ -169,6 +169,7 @@ final class CommentsAnalyzer
                 T_PUBLIC,
                 T_VAR,
                 T_FUNCTION,
+                T_FN,
                 T_ABSTRACT,
                 T_CONST,
                 T_NAMESPACE,
@@ -191,6 +192,12 @@ final class CommentsAnalyzer
 
         if ($token->isClassy() || $token->isGivenKind($skip)) {
             return true;
+        }
+
+        if ($token->isGivenKind(T_CASE) && \defined('T_ENUM')) {
+            $caseParent = $tokens->getPrevTokenOfKind($index, [[T_ENUM], [T_SWITCH]]);
+
+            return $tokens[$caseParent]->isGivenKind([T_ENUM]);
         }
 
         if ($token->isGivenKind(T_STATIC)) {
