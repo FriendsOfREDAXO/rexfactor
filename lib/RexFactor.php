@@ -54,7 +54,6 @@ final class RexFactor
             'PHPUNIT_EXCEPTION' => 'Refactor exception expectations',
             'REMOVE_MOCKS' => 'Reduce mock usage',
             'PHPUNIT_SPECIFIC_METHOD' => 'Use specific assert*() methods',
-            'PHPUNIT_YIELD_DATA_PROVIDER' => 'Use yield over array return in data providers',
             'ANNOTATIONS_TO_ATTRIBUTES' => 'Annotations to Attributes',
         ],
         self::MISC_MIGRATIONS => [
