@@ -67,7 +67,7 @@ CODE_SAMPLE
         }
         /** @var FuncCall|ClassConstFetch $getClassFuncCallOrClassConstFetchClass */
         $getClassFuncCallOrClassConstFetchClass = $node->if;
-        $firstExpr = $getClassFuncCallOrClassConstFetchClass instanceof FuncCall ? $getClassFuncCallOrClassConstFetchClass->args[0]->value : $getClassFuncCallOrClassConstFetchClass->class;
+        $firstExpr = $getClassFuncCallOrClassConstFetchClass instanceof FuncCall ? $getClassFuncCallOrClassConstFetchClass->getArgs()[0]->value : $getClassFuncCallOrClassConstFetchClass->class;
         return $this->nodeFactory->createFuncCall('get_debug_type', [$firstExpr]);
     }
     private function shouldSkip(Ternary $ternary) : bool
@@ -78,7 +78,7 @@ CODE_SAMPLE
         if ($ternary->cond->isFirstClassCallable()) {
             return \true;
         }
-        if (!isset($ternary->cond->args[0])) {
+        if (!isset($ternary->cond->getArgs()[0])) {
             return \true;
         }
         if (!$this->nodeNameResolver->isName($ternary->cond, 'is_object')) {
@@ -112,13 +112,16 @@ CODE_SAMPLE
     {
         /** @var FuncCall $isObjectFuncCall */
         $isObjectFuncCall = $ternary->cond;
-        $firstExpr = $isObjectFuncCall->args[0]->value;
+        if ($isObjectFuncCall->isFirstClassCallable()) {
+            return \false;
+        }
+        $firstExpr = $isObjectFuncCall->getArgs()[0]->value;
         /** @var FuncCall|ClassConstFetch $getClassFuncCallOrClassConstFetchClass */
         $getClassFuncCallOrClassConstFetchClass = $ternary->if;
         if ($getClassFuncCallOrClassConstFetchClass instanceof FuncCall && !$getClassFuncCallOrClassConstFetchClass->args[0] instanceof Arg) {
             return \false;
         }
-        $secondExpr = $getClassFuncCallOrClassConstFetchClass instanceof FuncCall ? $getClassFuncCallOrClassConstFetchClass->args[0]->value : $getClassFuncCallOrClassConstFetchClass->class;
+        $secondExpr = $getClassFuncCallOrClassConstFetchClass instanceof FuncCall ? $getClassFuncCallOrClassConstFetchClass->getArgs()[0]->value : $getClassFuncCallOrClassConstFetchClass->class;
         /** @var FuncCall $gettypeFuncCall */
         $gettypeFuncCall = $ternary->else;
         if (!$gettypeFuncCall->args[0] instanceof Arg) {

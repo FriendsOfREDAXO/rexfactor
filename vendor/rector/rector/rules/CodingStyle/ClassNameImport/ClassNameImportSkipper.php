@@ -33,7 +33,7 @@ final class ClassNameImportSkipper
     /**
      * @param ClassNameImportSkipVoterInterface[] $classNameImportSkipVoters
      */
-    public function __construct(array $classNameImportSkipVoters, RenamedClassesDataCollector $renamedClassesDataCollector, UseImportsResolver $useImportsResolver)
+    public function __construct(iterable $classNameImportSkipVoters, RenamedClassesDataCollector $renamedClassesDataCollector, UseImportsResolver $useImportsResolver)
     {
         $this->classNameImportSkipVoters = $classNameImportSkipVoters;
         $this->renamedClassesDataCollector = $renamedClassesDataCollector;

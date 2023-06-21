@@ -28,14 +28,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertIssetToSpecificMethodRector extends AbstractRector
 {
     /**
-     * @var string
-     */
-    private const ASSERT_TRUE = 'assertTrue';
-    /**
-     * @var string
-     */
-    private const ASSERT_FALSE = 'assertFalse';
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
@@ -55,6 +47,14 @@ final class AssertIssetToSpecificMethodRector extends AbstractRector
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
+    /**
+     * @var string
+     */
+    private const ASSERT_TRUE = 'assertTrue';
+    /**
+     * @var string
+     */
+    private const ASSERT_FALSE = 'assertFalse';
     public function __construct(IdentifierManipulator $identifierManipulator, TestsNodeAnalyzer $testsNodeAnalyzer, AstResolver $astResolver, ReflectionProvider $reflectionProvider)
     {
         $this->identifierManipulator = $identifierManipulator;
@@ -81,7 +81,10 @@ final class AssertIssetToSpecificMethodRector extends AbstractRector
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, [self::ASSERT_TRUE, self::ASSERT_FALSE])) {
             return null;
         }
-        $firstArgumentValue = $node->args[0]->value;
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $firstArgumentValue = $node->getArgs()[0]->value;
         // is property access
         if (!$firstArgumentValue instanceof Isset_) {
             return null;
@@ -91,7 +94,7 @@ final class AssertIssetToSpecificMethodRector extends AbstractRector
             return null;
         }
         /** @var Isset_ $issetNode */
-        $issetNode = $node->args[0]->value;
+        $issetNode = $node->getArgs()[0]->value;
         $issetNodeArg = $issetNode->vars[0];
         if ($issetNodeArg instanceof PropertyFetch) {
             if ($this->hasMagicIsset($issetNodeArg->var)) {
@@ -141,7 +144,7 @@ final class AssertIssetToSpecificMethodRector extends AbstractRector
             return null;
         }
         $this->identifierManipulator->renameNodeWithMap($node, [self::ASSERT_TRUE => 'assertObjectHasAttribute', self::ASSERT_FALSE => 'assertObjectNotHasAttribute']);
-        $oldArgs = $node->args;
+        $oldArgs = $node->getArgs();
         unset($oldArgs[0]);
         $newArgs = $this->nodeFactory->createArgs([new String_($name), $propertyFetch->var]);
         $node->args = $this->appendArgs($newArgs, $oldArgs);
@@ -153,7 +156,7 @@ final class AssertIssetToSpecificMethodRector extends AbstractRector
     private function refactorArrayDimFetchNode($node, ArrayDimFetch $arrayDimFetch) : Node
     {
         $this->identifierManipulator->renameNodeWithMap($node, [self::ASSERT_TRUE => 'assertArrayHasKey', self::ASSERT_FALSE => 'assertArrayNotHasKey']);
-        $oldArgs = $node->args;
+        $oldArgs = $node->getArgs();
         unset($oldArgs[0]);
         $node->args = \array_merge($this->nodeFactory->createArgs([$arrayDimFetch->dim, $arrayDimFetch->var]), $oldArgs);
         return $node;

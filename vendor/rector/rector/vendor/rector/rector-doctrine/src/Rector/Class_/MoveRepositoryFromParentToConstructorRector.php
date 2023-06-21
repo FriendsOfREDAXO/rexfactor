@@ -6,10 +6,10 @@ namespace Rector\Doctrine\Rector\Class_;
 use PhpParser\Node;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\Property;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\ObjectType;
 use Rector\Core\NodeManipulator\ClassDependencyManipulator;
-use Rector\Core\NodeManipulator\ClassInsertManipulator;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Doctrine\NodeAnalyzer\EntityObjectTypeResolver;
 use Rector\Doctrine\NodeFactory\RepositoryAssignFactory;
@@ -27,11 +27,6 @@ final class MoveRepositoryFromParentToConstructorRector extends AbstractRector
     private $classDependencyManipulator;
     /**
      * @readonly
-     * @var \Rector\Core\NodeManipulator\ClassInsertManipulator
-     */
-    private $classInsertManipulator;
-    /**
-     * @readonly
      * @var \Rector\Doctrine\NodeFactory\RepositoryAssignFactory
      */
     private $repositoryAssignFactory;
@@ -40,10 +35,9 @@ final class MoveRepositoryFromParentToConstructorRector extends AbstractRector
      * @var \Rector\Doctrine\NodeAnalyzer\EntityObjectTypeResolver
      */
     private $entityObjectTypeResolver;
-    public function __construct(ClassDependencyManipulator $classDependencyManipulator, ClassInsertManipulator $classInsertManipulator, RepositoryAssignFactory $repositoryAssignFactory, EntityObjectTypeResolver $entityObjectTypeResolver)
+    public function __construct(ClassDependencyManipulator $classDependencyManipulator, RepositoryAssignFactory $repositoryAssignFactory, EntityObjectTypeResolver $entityObjectTypeResolver)
     {
         $this->classDependencyManipulator = $classDependencyManipulator;
-        $this->classInsertManipulator = $classInsertManipulator;
         $this->repositoryAssignFactory = $repositoryAssignFactory;
         $this->entityObjectTypeResolver = $entityObjectTypeResolver;
     }
@@ -103,7 +97,10 @@ CODE_SAMPLE
         $subtractableType = $this->entityObjectTypeResolver->resolveFromRepositoryClass($node);
         $genericObjectType = new GenericObjectType('Doctrine\\ORM\\EntityRepository', [$subtractableType]);
         // add $repository property
-        $this->classInsertManipulator->addPropertyToClass($node, 'repository', $genericObjectType);
+        if (!$node->getProperty('repository') instanceof Property) {
+            $repositoryProperty = $this->nodeFactory->createPrivatePropertyFromNameAndType('repository', $genericObjectType);
+            $node->stmts = \array_merge([$repositoryProperty], $node->stmts);
+        }
         // add $entityManager and assign to constuctor
         $repositoryAssign = $this->repositoryAssignFactory->create($node);
         $this->classDependencyManipulator->addConstructorDependencyWithCustomAssign($node, 'entityManager', new ObjectType('Doctrine\\ORM\\EntityManagerInterface'), $repositoryAssign);

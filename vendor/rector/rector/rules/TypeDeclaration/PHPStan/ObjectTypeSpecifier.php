@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\TypeDeclaration\PHPStan;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
@@ -26,6 +26,8 @@ use Rector\StaticTypeMapper\ValueObject\Type\NonExistingObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\ShortenedGenericObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Rector\TypeDeclaration\Contract\PHPStan\TypeWithClassTypeSpecifierInterface;
+use Rector\TypeDeclaration\PHPStan\TypeSpecifier\SameNamespacedTypeSpecifier;
+use Rector\TypeDeclaration\PHPStan\TypeSpecifier\SelfStaticParentTypeSpecifier;
 final class ObjectTypeSpecifier
 {
     /**
@@ -40,25 +42,19 @@ final class ObjectTypeSpecifier
     private $useImportsResolver;
     /**
      * @var TypeWithClassTypeSpecifierInterface[]
-     * @readonly
      */
-    private $typeWithClassTypeSpecifiers;
-    /**
-     * @param TypeWithClassTypeSpecifierInterface[] $typeWithClassTypeSpecifiers
-     */
-    public function __construct(ReflectionProvider $reflectionProvider, UseImportsResolver $useImportsResolver, array $typeWithClassTypeSpecifiers)
+    private $typeWithClassTypeSpecifiers = [];
+    public function __construct(ReflectionProvider $reflectionProvider, UseImportsResolver $useImportsResolver, SelfStaticParentTypeSpecifier $selfStaticParentTypeSpecifier, SameNamespacedTypeSpecifier $sameNamespacedTypeSpecifier)
     {
         $this->reflectionProvider = $reflectionProvider;
         $this->useImportsResolver = $useImportsResolver;
-        $this->typeWithClassTypeSpecifiers = $typeWithClassTypeSpecifiers;
+        $this->typeWithClassTypeSpecifiers = [$selfStaticParentTypeSpecifier, $sameNamespacedTypeSpecifier];
     }
     /**
      * @return \PHPStan\Type\TypeWithClassName|\Rector\StaticTypeMapper\ValueObject\Type\NonExistingObjectType|\PHPStan\Type\UnionType|\PHPStan\Type\MixedType
      */
     public function narrowToFullyQualifiedOrAliasedObjectType(Node $node, ObjectType $objectType, ?\PHPStan\Analyser\Scope $scope)
     {
-        //        $nameScope = $this->nameScopeFactory->createNameScopeFromNodeWithoutTemplateTypes($node);
-        // @todo reuse name scope
         if ($scope instanceof Scope) {
             foreach ($this->typeWithClassTypeSpecifiers as $typeWithClassTypeSpecifier) {
                 if ($typeWithClassTypeSpecifier->match($objectType, $scope)) {

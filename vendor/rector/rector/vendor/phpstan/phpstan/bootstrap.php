@@ -3,14 +3,14 @@
 declare (strict_types=1);
 namespace PHPStan;
 
-use RectorPrefix202305\Composer\Autoload\ClassLoader;
+use RectorPrefix202306\Composer\Autoload\ClassLoader;
 final class PharAutoloader
 {
     /** @var ClassLoader */
     private static $composerAutoloader;
     public static final function loadClass(string $class) : void
     {
-        if (!\extension_loaded('phar') || \defined('RectorPrefix202305\\__PHPSTAN_RUNNING__')) {
+        if (!\extension_loaded('phar') || \defined('RectorPrefix202306\\__PHPSTAN_RUNNING__')) {
             return;
         }
         if (\strpos($class, '_PHPStan_') === 0) {
@@ -21,7 +21,6 @@ final class PharAutoloader
                 self::$composerAutoloader = (require 'phar://' . __DIR__ . '/phpstan.phar/vendor/autoload.php');
                 require_once 'phar://' . __DIR__ . '/phpstan.phar/vendor/jetbrains/phpstorm-stubs/PhpStormStubsMap.php';
                 require_once 'phar://' . __DIR__ . '/phpstan.phar/vendor/react/async/src/functions_include.php';
-                require_once 'phar://' . __DIR__ . '/phpstan.phar/vendor/react/promise-stream/src/functions_include.php';
                 require_once 'phar://' . __DIR__ . '/phpstan.phar/vendor/react/promise-timer/src/functions_include.php';
                 require_once 'phar://' . __DIR__ . '/phpstan.phar/vendor/react/promise/src/functions_include.php';
                 require_once 'phar://' . __DIR__ . '/phpstan.phar/vendor/ringcentral/psr7/src/functions_include.php';

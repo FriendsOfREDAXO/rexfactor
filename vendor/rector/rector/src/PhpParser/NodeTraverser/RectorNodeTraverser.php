@@ -7,29 +7,30 @@ use PhpParser\Node;
 use PhpParser\NodeTraverser;
 use Rector\Core\Contract\Rector\PhpRectorInterface;
 use Rector\VersionBonding\PhpVersionedFilter;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
 final class RectorNodeTraverser extends NodeTraverser
 {
-    /**
-     * @var bool
-     */
-    private $areNodeVisitorsPrepared = \false;
-    /**
-     * @var PhpRectorInterface[]
-     * @readonly
-     */
-    private $phpRectors;
     /**
      * @readonly
      * @var \Rector\VersionBonding\PhpVersionedFilter
      */
     private $phpVersionedFilter;
     /**
-     * @param PhpRectorInterface[] $phpRectors
+     * @var bool
      */
-    public function __construct(array $phpRectors, PhpVersionedFilter $phpVersionedFilter)
+    private $areNodeVisitorsPrepared = \false;
+    /**
+     * @var PhpRectorInterface[]
+     */
+    private $phpRectors = [];
+    /**
+     * @param RewindableGenerator<PhpRectorInterface> $phpRectors
+     */
+    public function __construct(RewindableGenerator $phpRectors, PhpVersionedFilter $phpVersionedFilter)
     {
-        $this->phpRectors = $phpRectors;
         $this->phpVersionedFilter = $phpVersionedFilter;
+        $this->phpRectors = \iterator_to_array($phpRectors);
+        parent::__construct();
     }
     /**
      * @template TNode as Node

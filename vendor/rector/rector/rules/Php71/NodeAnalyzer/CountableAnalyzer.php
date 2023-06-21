@@ -10,9 +10,7 @@ use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\ClassLike;
 use PHPStan\Analyser\Scope;
-use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\Php\PhpPropertyReflection;
-use PHPStan\Reflection\PropertyReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
@@ -22,7 +20,6 @@ use PHPStan\Type\UnionType;
 use Rector\Core\NodeAnalyzer\PropertyFetchAnalyzer;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector;
 final class CountableAnalyzer
@@ -66,7 +63,7 @@ final class CountableAnalyzer
         $this->propertyFetchAnalyzer = $propertyFetchAnalyzer;
         $this->constructorAssignDetector = $constructorAssignDetector;
     }
-    public function isCastableArrayType(Expr $expr, ArrayType $arrayType) : bool
+    public function isCastableArrayType(Expr $expr, ArrayType $arrayType, Scope $scope) : bool
     {
         if (!$this->propertyFetchAnalyzer->isPropertyFetch($expr)) {
             return \false;
@@ -96,7 +93,7 @@ final class CountableAnalyzer
         if (!\array_key_exists($propertyName, $propertiesDefaults)) {
             return \false;
         }
-        $phpPropertyReflection = $this->resolveProperty($expr, $classReflection, $propertyName);
+        $phpPropertyReflection = $classReflection->getProperty($propertyName, $scope);
         if (!$phpPropertyReflection instanceof PhpPropertyReflection) {
             return \false;
         }
@@ -131,16 +128,5 @@ final class CountableAnalyzer
         }
         $propertyName = (string) $this->nodeNameResolver->getName($propertyFetch->name);
         return $this->constructorAssignDetector->isPropertyAssigned($classLike, $propertyName);
-    }
-    /**
-     * @param \PhpParser\Node\Expr\StaticPropertyFetch|\PhpParser\Node\Expr\PropertyFetch $propertyFetch
-     */
-    private function resolveProperty($propertyFetch, ClassReflection $classReflection, string $propertyName) : ?PropertyReflection
-    {
-        $scope = $propertyFetch->getAttribute(AttributeKey::SCOPE);
-        if (!$scope instanceof Scope) {
-            return null;
-        }
-        return $classReflection->getProperty($propertyName, $scope);
     }
 }

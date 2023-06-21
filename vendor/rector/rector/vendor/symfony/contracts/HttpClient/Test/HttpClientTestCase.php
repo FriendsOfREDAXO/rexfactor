@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Contracts\HttpClient\Test;
+namespace RectorPrefix202306\Symfony\Contracts\HttpClient\Test;
 
 use PHPUnit\Framework\TestCase;
-use RectorPrefix202305\Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use RectorPrefix202305\Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use RectorPrefix202305\Symfony\Contracts\HttpClient\Exception\TimeoutExceptionInterface;
-use RectorPrefix202305\Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use RectorPrefix202305\Symfony\Contracts\HttpClient\HttpClientInterface;
+use RectorPrefix202306\Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use RectorPrefix202306\Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use RectorPrefix202306\Symfony\Contracts\HttpClient\Exception\TimeoutExceptionInterface;
+use RectorPrefix202306\Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use RectorPrefix202306\Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * A reference test suite for HttpClientInterface implementations.
  */
@@ -684,6 +684,10 @@ abstract class HttpClientTestCase extends TestCase
         } finally {
             unset($_SERVER['http_proxy']);
         }
+        $response = $client->request('GET', 'http://localhost:8057/301/proxy', ['proxy' => 'http://localhost:8057']);
+        $body = $response->toArray();
+        $this->assertSame('localhost:8057', $body['HTTP_HOST']);
+        $this->assertMatchesRegularExpression('#^http://(localhost|127\\.0\\.0\\.1):8057/$#', $body['REQUEST_URI']);
     }
     public function testNoProxy()
     {

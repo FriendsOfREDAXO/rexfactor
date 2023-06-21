@@ -26,6 +26,11 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class ArrayKeyFirstLastRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
+     * @readonly
+     * @var \PHPStan\Reflection\ReflectionProvider
+     */
+    private $reflectionProvider;
+    /**
      * @var string
      */
     private const ARRAY_KEY_FIRST = 'array_key_first';
@@ -37,11 +42,6 @@ final class ArrayKeyFirstLastRector extends AbstractRector implements MinPhpVers
      * @var array<string, string>
      */
     private const PREVIOUS_TO_NEW_FUNCTIONS = ['reset' => self::ARRAY_KEY_FIRST, 'end' => self::ARRAY_KEY_LAST];
-    /**
-     * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
-     */
-    private $reflectionProvider;
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->reflectionProvider = $reflectionProvider;
@@ -87,6 +87,7 @@ CODE_SAMPLE
         if ($stmtsAware->stmts === null) {
             return null;
         }
+        /** @var int $totalKeys */
         \end($stmtsAware->stmts);
         /** @var int $totalKeys */
         $totalKeys = \key($stmtsAware->stmts);
@@ -125,6 +126,9 @@ CODE_SAMPLE
     }
     private function resolveKeyFuncCall(Stmt $nextStmt, FuncCall $resetOrEndFuncCall) : ?FuncCall
     {
+        if ($resetOrEndFuncCall->isFirstClassCallable()) {
+            return null;
+        }
         /** @var FuncCall|null */
         return $this->betterNodeFinder->findFirst($nextStmt, function (Node $subNode) use($resetOrEndFuncCall) : bool {
             if (!$subNode instanceof FuncCall) {
@@ -133,7 +137,10 @@ CODE_SAMPLE
             if (!$this->isName($subNode, 'key')) {
                 return \false;
             }
-            return $this->nodeComparator->areNodesEqual($resetOrEndFuncCall->args[0], $subNode->args[0]);
+            if ($subNode->isFirstClassCallable()) {
+                return \false;
+            }
+            return $this->nodeComparator->areNodesEqual($resetOrEndFuncCall->getArgs()[0], $subNode->getArgs()[0]);
         });
     }
     private function hasPrevCallNext(StmtsAwareInterface $stmtsAware, int $nextKey, int $totalKeys, FuncCall $funcCall) : bool
@@ -152,7 +159,7 @@ CODE_SAMPLE
                 if ($subNode->isFirstClassCallable()) {
                     return \true;
                 }
-                return $this->nodeComparator->areNodesEqual($subNode->args[0]->value, $funcCall->args[0]->value);
+                return $this->nodeComparator->areNodesEqual($subNode->getArgs()[0]->value, $funcCall->getArgs()[0]->value);
             });
             if ($hasPrevCallNext) {
                 return \true;

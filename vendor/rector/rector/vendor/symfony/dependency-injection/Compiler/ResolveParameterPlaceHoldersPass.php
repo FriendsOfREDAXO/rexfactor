@@ -8,12 +8,12 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\DependencyInjection\Compiler;
+namespace RectorPrefix202306\Symfony\Component\DependencyInjection\Compiler;
 
-use RectorPrefix202305\Symfony\Component\DependencyInjection\ContainerBuilder;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\Definition;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\ContainerBuilder;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Definition;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 /**
  * Resolves all parameter placeholders "%somevalue%" to their real values.
  *
@@ -22,10 +22,6 @@ use RectorPrefix202305\Symfony\Component\DependencyInjection\ParameterBag\Parame
 class ResolveParameterPlaceHoldersPass extends AbstractRecursivePass
 {
     /**
-     * @var \Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface
-     */
-    private $bag;
-    /**
      * @var bool
      */
     private $resolveArrays = \true;
@@ -33,6 +29,10 @@ class ResolveParameterPlaceHoldersPass extends AbstractRecursivePass
      * @var bool
      */
     private $throwOnResolveException = \true;
+    /**
+     * @var \Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface
+     */
+    private $bag;
     public function __construct(bool $resolveArrays = \true, bool $throwOnResolveException = \true)
     {
         $this->resolveArrays = $resolveArrays;

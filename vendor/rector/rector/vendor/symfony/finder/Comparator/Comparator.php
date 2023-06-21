@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Finder\Comparator;
+namespace RectorPrefix202306\Symfony\Component\Finder\Comparator;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -51,19 +51,6 @@ class Comparator
      */
     public function test($test) : bool
     {
-        switch ($this->operator) {
-            case '>':
-                return $test > $this->target;
-            case '>=':
-                return $test >= $this->target;
-            case '<':
-                return $test < $this->target;
-            case '<=':
-                return $test <= $this->target;
-            case '!=':
-                return $test != $this->target;
-            default:
-                return $test == $this->target;
-        }
+        return $this->operator === '>' ? $test > $this->target : ($this->operator === '>=' ? $test >= $this->target : ($this->operator === '<' ? $test < $this->target : ($this->operator === '<=' ? $test <= $this->target : ($this->operator === '!=' ? $test != $this->target : $test == $this->target))));
     }
 }

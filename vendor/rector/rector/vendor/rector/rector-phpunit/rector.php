@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202305;
+namespace RectorPrefix202306;
 
 use Rector\Config\RectorConfig;
 use Rector\Php55\Rector\String_\StringClassNameToClassConstantRector;
@@ -16,6 +16,8 @@ return static function (RectorConfig $rectorConfig) : void {
         '*/Source/*',
         '*/Fixture/*',
         '*/Expected/*',
+        // buggy here
+        \Rector\CodeQuality\Rector\If_\ConsecutiveNullCompareReturnsToNullCoalesceQueueRector::class,
         // object types
         StringClassNameToClassConstantRector::class => [__DIR__ . '/src/Rector/MethodCall/UseSpecificWillMethodRector.php', __DIR__ . '/src/Rector/Class_/TestListenerToHooksRector.php', __DIR__ . '/src/NodeFactory/ConsecutiveAssertionFactory.php', __DIR__ . '/src/NodeAnalyzer/TestsNodeAnalyzer.php', __DIR__ . '/src/NodeFactory/DataProviderClassMethodFactory.php', __DIR__ . '/config'],
     ]);
@@ -25,6 +27,7 @@ return static function (RectorConfig $rectorConfig) : void {
         LevelSetList::UP_TO_PHP_81,
         SetList::DEAD_CODE,
         PHPUnitSetList::PHPUNIT_100,
+        PHPUnitSetList::PHPUNIT_CODE_QUALITY,
         SetList::CODE_QUALITY,
         SetList::CODING_STYLE,
         SetList::EARLY_RETURN,

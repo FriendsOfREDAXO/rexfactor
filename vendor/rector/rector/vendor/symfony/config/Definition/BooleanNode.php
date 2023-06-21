@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config\Definition;
+namespace RectorPrefix202306\Symfony\Component\Config\Definition;
 
-use RectorPrefix202305\Symfony\Component\Config\Definition\Exception\InvalidTypeException;
+use RectorPrefix202306\Symfony\Component\Config\Definition\Exception\InvalidTypeException;
 /**
  * This node represents a Boolean value in the config tree.
  *
@@ -19,6 +19,7 @@ use RectorPrefix202305\Symfony\Component\Config\Definition\Exception\InvalidType
 class BooleanNode extends ScalarNode
 {
     /**
+     * @return void
      * @param mixed $value
      */
     protected function validateType($value)

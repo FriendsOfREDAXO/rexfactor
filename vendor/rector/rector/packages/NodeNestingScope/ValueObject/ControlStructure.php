@@ -5,7 +5,7 @@ namespace Rector\NodeNestingScope\ValueObject;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\Match_;
-use PhpParser\Node\FunctionLike;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Case_;
 use PhpParser\Node\Stmt\Catch_;
 use PhpParser\Node\Stmt\Do_;
@@ -19,16 +19,12 @@ use PhpParser\Node\Stmt\While_;
 final class ControlStructure
 {
     /**
-     * @var array<class-string<Node>>
-     */
-    public const BREAKING_SCOPE_NODE_TYPES = [For_::class, Foreach_::class, If_::class, While_::class, Do_::class, Else_::class, ElseIf_::class, Catch_::class, Case_::class, FunctionLike::class];
-    /**
      * These situations happens only if condition is met
      * @var array<class-string<Node>>
      */
     public const CONDITIONAL_NODE_SCOPE_TYPES = [If_::class, While_::class, Do_::class, Else_::class, ElseIf_::class, Catch_::class, Case_::class, Match_::class, Switch_::class, Foreach_::class];
     /**
-     * @var array<class-string<Node>>
+     * @var array<class-string<Stmt>>
      */
     public const LOOP_NODES = [For_::class, Foreach_::class, While_::class, Do_::class];
 }

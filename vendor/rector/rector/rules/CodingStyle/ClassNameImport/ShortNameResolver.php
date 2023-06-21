@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\ClassNameImport;
 
-use RectorPrefix202305\Nette\Utils\Reflection;
+use RectorPrefix202306\Nette\Utils\Reflection;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -25,25 +25,12 @@ use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\PhpDocParser\PhpDocParser\PhpDocNodeTraverser;
 use ReflectionClass;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @see \Rector\Tests\CodingStyle\ClassNameImport\ShortNameResolver\ShortNameResolverTest
  */
 final class ShortNameResolver
 {
-    /**
-     * @var string
-     * @see https://regex101.com/r/KphLd2/1
-     */
-    private const BIG_LETTER_START_REGEX = '#^[A-Z]#';
-    /**
-     * @var array<string, string[]>
-     */
-    private $shortNamesByFilePath = [];
-    /**
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
-     */
-    private $phpDocInfoFactory;
     /**
      * @readonly
      * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
@@ -69,6 +56,19 @@ final class ShortNameResolver
      * @var \Rector\CodingStyle\NodeAnalyzer\UseImportNameMatcher
      */
     private $useImportNameMatcher;
+    /**
+     * @var string
+     * @see https://regex101.com/r/KphLd2/1
+     */
+    private const BIG_LETTER_START_REGEX = '#^[A-Z]#';
+    /**
+     * @var array<string, string[]>
+     */
+    private $shortNamesByFilePath = [];
+    /**
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
     public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeNameResolver $nodeNameResolver, ReflectionProvider $reflectionProvider, BetterNodeFinder $betterNodeFinder, UseImportNameMatcher $useImportNameMatcher)
     {
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;

@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace Rector\NodeTypeResolver\Node;
 
+use PHPStan\Analyser\Scope;
 /**
  * @enum
  */
@@ -18,6 +19,7 @@ final class AttributeKey
      */
     public const VIRTUAL_NODE = 'virtual_node';
     /**
+     * Contains @see Scope
      * @var string
      */
     public const SCOPE = 'scope';
@@ -53,30 +55,14 @@ final class AttributeKey
      */
     public const ORIGINAL_NAME = 'originalName';
     /**
-     * Internal php-parser name. @see \PhpParser\NodeVisitor\NameResolver
-     * Do not change this even if you want!
+     * @deprecated Refactor to a custom visitors/parent node instead,
+     * @see https://phpstan.org/blog/preprocessing-ast-for-custom-rules
      *
-     * @var string
-     */
-    public const RESOLVED_NAME = 'resolvedName';
-    /**
      * @internal of php-parser, do not change
      * @see https://github.com/nikic/PHP-Parser/pull/681/files
      * @var string
      */
     public const PARENT_NODE = 'parent';
-    /**
-     * @internal of php-parser, do not change
-     * @see https://github.com/nikic/PHP-Parser/pull/681/files
-     * @var string
-     */
-    public const PREVIOUS_NODE = 'previous';
-    /**
-     * @internal of php-parser, do not change
-     * @see https://github.com/nikic/PHP-Parser/pull/681/files
-     * @var string
-     */
-    public const NEXT_NODE = 'next';
     /**
      * Internal php-parser name.
      * Do not change this even if you want!
@@ -165,5 +151,37 @@ final class AttributeKey
     /**
      * @var string
      */
-    public const ASSIGNED_TO = 'assigned_to';
+    public const IS_ASSIGNED_TO = 'is_assigned_to';
+    /**
+     * @var string
+     */
+    public const IS_GLOBAL_VAR = 'is_global_var';
+    /**
+     * @var string
+     */
+    public const IS_STATIC_VAR = 'is_static_var';
+    /**
+     * @var string
+     */
+    public const IS_BYREF_VAR = 'is_byref_var';
+    /**
+     * @var string
+     */
+    public const IS_BYREF_RETURN = 'is_byref_return';
+    /**
+     * @var string
+     */
+    public const STMT_KEY = 'stmt_key';
+    /**
+     * @var string
+     */
+    public const IS_BEING_ASSIGNED = 'is_being_assigned';
+    /**
+     * @var string
+     */
+    public const IS_MULTI_ASSIGN = 'is_multi_assign';
+    /**
+     * @var string
+     */
+    public const STATEMENT_DEPTH = 'statementDepth';
 }

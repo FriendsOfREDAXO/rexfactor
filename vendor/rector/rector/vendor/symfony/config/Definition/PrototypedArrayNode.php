@@ -8,12 +8,12 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config\Definition;
+namespace RectorPrefix202306\Symfony\Component\Config\Definition;
 
-use RectorPrefix202305\Symfony\Component\Config\Definition\Exception\DuplicateKeyException;
-use RectorPrefix202305\Symfony\Component\Config\Definition\Exception\Exception;
-use RectorPrefix202305\Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
-use RectorPrefix202305\Symfony\Component\Config\Definition\Exception\UnsetKeyException;
+use RectorPrefix202306\Symfony\Component\Config\Definition\Exception\DuplicateKeyException;
+use RectorPrefix202306\Symfony\Component\Config\Definition\Exception\Exception;
+use RectorPrefix202306\Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
+use RectorPrefix202306\Symfony\Component\Config\Definition\Exception\UnsetKeyException;
 /**
  * Represents a prototyped Array node in the config tree.
  *
@@ -34,6 +34,8 @@ class PrototypedArrayNode extends ArrayNode
     /**
      * Sets the minimum number of elements that a prototype based node must
      * contain. By default this is zero, meaning no elements.
+     *
+     * @return void
      */
     public function setMinNumberOfElements(int $number)
     {
@@ -62,6 +64,8 @@ class PrototypedArrayNode extends ArrayNode
      *
      * @param string $attribute The name of the attribute which value is to be used as a key
      * @param bool   $remove    Whether or not to remove the key
+     *
+     * @return void
      */
     public function setKeyAttribute(string $attribute, bool $remove = \true)
     {
@@ -77,6 +81,8 @@ class PrototypedArrayNode extends ArrayNode
     }
     /**
      * Sets the default value of this node.
+     *
+     * @return void
      */
     public function setDefaultValue(array $value)
     {
@@ -90,6 +96,8 @@ class PrototypedArrayNode extends ArrayNode
      * Adds default children when none are set.
      *
      * @param int|string|array|null $children The number of children|The child name|The children names to be added
+     *
+     * @return void
      */
     public function setAddChildrenIfNoneSet($children = ['defaults'])
     {
@@ -118,6 +126,8 @@ class PrototypedArrayNode extends ArrayNode
     }
     /**
      * Sets the node prototype.
+     *
+     * @return void
      */
     public function setPrototype(PrototypeNodeInterface $node)
     {
@@ -132,6 +142,8 @@ class PrototypedArrayNode extends ArrayNode
     }
     /**
      * Disable adding concrete children for prototyped nodes.
+     *
+     * @return never
      *
      * @throws Exception
      */

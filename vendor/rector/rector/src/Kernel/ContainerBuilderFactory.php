@@ -3,10 +3,25 @@
 declare (strict_types=1);
 namespace Rector\Core\Kernel;
 
+use Rector\BetterPhpDocParser\Contract\BasePhpDocNodeVisitorInterface;
+use Rector\BetterPhpDocParser\Contract\PhpDocParser\PhpDocNodeDecoratorInterface;
+use Rector\ChangesReporting\Contract\Output\OutputFormatterInterface;
+use Rector\CodingStyle\Contract\ClassNameImport\ClassNameImportSkipVoterInterface;
 use Rector\Core\Config\Loader\ConfigureCallMergingLoaderFactory;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use RectorPrefix202305\Symfony\Component\DependencyInjection\ContainerBuilder;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use Rector\Core\Contract\Processor\FileProcessorInterface;
+use Rector\Core\Contract\Rector\NonPhpRectorInterface;
+use Rector\Core\Contract\Rector\PhpRectorInterface;
+use Rector\Core\Contract\Rector\RectorInterface;
+use Rector\NodeNameResolver\Contract\NodeNameResolverInterface;
+use Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface;
+use Rector\NodeTypeResolver\PHPStan\Scope\Contract\NodeVisitor\ScopeResolverNodeVisitorInterface;
+use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
+use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
+use Rector\StaticTypeMapper\Contract\PhpDocParser\PhpDocTypeMapperInterface;
+use Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\ContainerBuilder;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 final class ContainerBuilderFactory
 {
     /**
@@ -14,6 +29,10 @@ final class ContainerBuilderFactory
      * @var \Rector\Core\Config\Loader\ConfigureCallMergingLoaderFactory
      */
     private $configureCallMergingLoaderFactory;
+    /**
+     * @var array<class-string>
+     */
+    private const TYPES_TO_TAG_AUTOCONFIGURE = [BasePhpDocNodeVisitorInterface::class, PhpDocNodeDecoratorInterface::class, NodeTypeResolverInterface::class, ScopeResolverNodeVisitorInterface::class, TypeMapperInterface::class, PhpParserNodeMapperInterface::class, PhpDocTypeMapperInterface::class, ClassNameImportSkipVoterInterface::class, RectorInterface::class, RectorInterface::class, OutputFormatterInterface::class, NonPhpRectorInterface::class, PhpRectorInterface::class, NodeNameResolverInterface::class, FileProcessorInterface::class, AnnotationToAttributeMapperInterface::class];
     public function __construct(ConfigureCallMergingLoaderFactory $configureCallMergingLoaderFactory)
     {
         $this->configureCallMergingLoaderFactory = $configureCallMergingLoaderFactory;
@@ -26,8 +45,11 @@ final class ContainerBuilderFactory
     {
         Assert::allIsAOf($compilerPasses, CompilerPassInterface::class);
         Assert::allString($configFiles);
-        Assert::allFile($configFiles);
         $containerBuilder = new ContainerBuilder();
+        // tagged services here
+        foreach (self::TYPES_TO_TAG_AUTOCONFIGURE as $typeToTagAutoconfigure) {
+            $containerBuilder->registerForAutoconfiguration($typeToTagAutoconfigure)->addTag($typeToTagAutoconfigure);
+        }
         $this->registerConfigFiles($containerBuilder, $configFiles);
         foreach ($compilerPasses as $compilerPass) {
             $containerBuilder->addCompilerPass($compilerPass);

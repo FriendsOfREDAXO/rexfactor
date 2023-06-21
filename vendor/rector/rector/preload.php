@@ -278,6 +278,11 @@ require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/AssertTagMe
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/AssertTagPropertyValueNode.php';
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/AssertTagValueNode.php';
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/DeprecatedTagValueNode.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/Doctrine/DoctrineAnnotation.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/Doctrine/DoctrineArgument.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/Doctrine/DoctrineArray.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/Doctrine/DoctrineArrayItem.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/Doctrine/DoctrineTagValueNode.php';
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/ExtendsTagValueNode.php';
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/GenericTagValueNode.php';
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Ast/PhpDoc/ImplementsTagValueNode.php';
@@ -325,3 +330,6 @@ require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Parser/PhpDocParser.ph
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Parser/StringUnescaper.php';
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Parser/TokenIterator.php';
 require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Parser/TypeParser.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Printer/DiffElem.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Printer/Differ.php';
+require_once __DIR__ . '/vendor/phpstan/phpdoc-parser/src/Printer/Printer.php';

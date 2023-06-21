@@ -8,9 +8,9 @@ use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use Rector\Core\Rector\AbstractRector;
+use Rector\PHPUnit\NodeAnalyzer\ArgumentMover;
 use Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
-use Rector\PHPUnit\NodeManipulator\ArgumentMover;
 use Rector\PHPUnit\ValueObject\ConstantWithAssertMethods;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -20,17 +20,13 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertSameBoolNullToSpecificMethodRector extends AbstractRector
 {
     /**
-     * @var ConstantWithAssertMethods[]
-     */
-    private $constantWithAssertMethods = [];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
     private $identifierManipulator;
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeManipulator\ArgumentMover
+     * @var \Rector\PHPUnit\NodeAnalyzer\ArgumentMover
      */
     private $argumentMover;
     /**
@@ -38,6 +34,10 @@ final class AssertSameBoolNullToSpecificMethodRector extends AbstractRector
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var ConstantWithAssertMethods[]
+     */
+    private $constantWithAssertMethods = [];
     public function __construct(IdentifierManipulator $identifierManipulator, ArgumentMover $argumentMover, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->identifierManipulator = $identifierManipulator;
@@ -64,7 +64,10 @@ final class AssertSameBoolNullToSpecificMethodRector extends AbstractRector
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, ['assertSame', 'assertNotSame'])) {
             return null;
         }
-        $firstArgumentValue = $node->args[0]->value;
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $firstArgumentValue = $node->getArgs()[0]->value;
         if (!$firstArgumentValue instanceof ConstFetch) {
             return null;
         }
@@ -73,7 +76,7 @@ final class AssertSameBoolNullToSpecificMethodRector extends AbstractRector
                 continue;
             }
             $this->renameMethod($node, $constantWithAssertMethod);
-            $this->argumentMover->removeFirst($node);
+            $this->argumentMover->removeFirstArg($node);
             return $node;
         }
         return null;

@@ -9,7 +9,6 @@ use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\Empty_;
 use PHPStan\Analyser\Scope;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Strict\NodeFactory\ExactCompareFactory;
 use Rector\Strict\Rector\AbstractFalsyScalarRuleFixerRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
@@ -61,12 +60,8 @@ CODE_SAMPLE
     /**
      * @param Empty_|BooleanNot $node
      */
-    public function refactor(Node $node) : ?\PhpParser\Node\Expr
+    public function refactorWithScope(Node $node, Scope $scope) : ?\PhpParser\Node\Expr
     {
-        $scope = $node->getAttribute(AttributeKey::SCOPE);
-        if (!$scope instanceof Scope) {
-            return null;
-        }
         if ($node instanceof BooleanNot) {
             return $this->refactorBooleanNot($node, $scope);
         }

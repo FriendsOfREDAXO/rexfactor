@@ -66,6 +66,9 @@ CODE_SAMPLE
         if (!$this->isNames($funcCall, ['json_encode', 'json_decode'])) {
             return \true;
         }
+        if ($funcCall->isFirstClassCallable()) {
+            return \true;
+        }
         if ($funcCall->args === null) {
             return \true;
         }
@@ -116,10 +119,10 @@ CODE_SAMPLE
     }
     private function isFirstValueStringOrArray(FuncCall $funcCall) : bool
     {
-        if (!isset($funcCall->args[0])) {
+        if (!isset($funcCall->getArgs()[0])) {
             return \false;
         }
-        $firstArg = $funcCall->args[0];
+        $firstArg = $funcCall->getArgs()[0];
         $value = $this->valueResolver->getValue($firstArg->value);
         if (\is_string($value)) {
             return \true;

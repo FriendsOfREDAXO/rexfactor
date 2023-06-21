@@ -27,7 +27,7 @@ final class PhpDocTypeMapper
     /**
      * @param PhpDocTypeMapperInterface[] $phpDocTypeMappers
      */
-    public function __construct(array $phpDocTypeMappers, TypeNodeResolver $typeNodeResolver)
+    public function __construct(iterable $phpDocTypeMappers, TypeNodeResolver $typeNodeResolver)
     {
         $this->phpDocTypeMappers = $phpDocTypeMappers;
         $this->typeNodeResolver = $typeNodeResolver;

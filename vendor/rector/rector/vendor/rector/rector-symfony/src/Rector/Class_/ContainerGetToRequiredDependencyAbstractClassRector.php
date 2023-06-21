@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Rector\Class_;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Builder\Property;
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
@@ -25,10 +25,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class ContainerGetToRequiredDependencyAbstractClassRector extends AbstractRector
 {
     /**
-     * @var string[]
-     */
-    private $autowiredTypes = [];
-    /**
      * @readonly
      * @var \Rector\Symfony\NodeAnalyzer\ServiceTypeMethodCallResolver
      */
@@ -43,6 +39,10 @@ final class ContainerGetToRequiredDependencyAbstractClassRector extends Abstract
      * @var \Rector\Symfony\TypeAnalyzer\ContainerAwareAnalyzer
      */
     private $containerAwareAnalyzer;
+    /**
+     * @var string[]
+     */
+    private $autowiredTypes = [];
     public function __construct(ServiceTypeMethodCallResolver $serviceTypeMethodCallResolver, RequiredClassMethodFactory $requiredClassMethodFactory, ContainerAwareAnalyzer $containerAwareAnalyzer)
     {
         $this->serviceTypeMethodCallResolver = $serviceTypeMethodCallResolver;

@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\DependencyInjection\Argument;
+namespace RectorPrefix202306\Symfony\Component\DependencyInjection\Argument;
 
-use RectorPrefix202305\Symfony\Component\DependencyInjection\ServiceLocator as BaseServiceLocator;
+use RectorPrefix202306\Symfony\Component\DependencyInjection\ServiceLocator as BaseServiceLocator;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
@@ -43,14 +43,7 @@ class ServiceLocator extends BaseServiceLocator
      */
     public function get(string $id)
     {
-        switch (\count($this->serviceMap[$id] ?? [])) {
-            case 0:
-                return parent::get($id);
-            case 1:
-                return $this->serviceMap[$id][0];
-            default:
-                return ($this->factory)(...$this->serviceMap[$id]);
-        }
+        return \count($this->serviceMap[$id] ?? []) === 0 ? parent::get($id) : (\count($this->serviceMap[$id] ?? []) === 1 ? $this->serviceMap[$id][0] : ($this->factory)(...$this->serviceMap[$id]));
     }
     /**
      * {@inheritdoc}

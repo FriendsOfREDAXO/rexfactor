@@ -62,33 +62,39 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [ClassMethod::class];
+        return [Class_::class];
     }
     /**
-     * @param ClassMethod $node
+     * @param Class_ $node
      */
-    public function refactor(Node $node) : ?Node
+    public function refactor(Node $node) : ?Class_
     {
-        $classLike = $this->betterNodeFinder->findParentType($node, Class_::class);
-        if (!$classLike instanceof Class_) {
-            return null;
+        $hasChanged = \false;
+        foreach ($node->stmts as $key => $stmt) {
+            if (!$stmt instanceof ClassMethod) {
+                continue;
+            }
+            if ($stmt->stmts !== null && $stmt->stmts !== []) {
+                continue;
+            }
+            if ($stmt->isAbstract()) {
+                continue;
+            }
+            if ($stmt->isFinal() && !$node->isFinal()) {
+                continue;
+            }
+            if ($this->shouldSkipNonFinalNonPrivateClassMethod($node, $stmt)) {
+                continue;
+            }
+            if ($this->shouldSkipClassMethod($node, $stmt)) {
+                continue;
+            }
+            unset($node->stmts[$key]);
+            $hasChanged = \true;
         }
-        if ($node->stmts !== null && $node->stmts !== []) {
-            return null;
+        if ($hasChanged) {
+            return $node;
         }
-        if ($node->isAbstract()) {
-            return null;
-        }
-        if ($node->isFinal() && !$classLike->isFinal()) {
-            return null;
-        }
-        if ($this->shouldSkipNonFinalNonPrivateClassMethod($classLike, $node)) {
-            return null;
-        }
-        if ($this->shouldSkipClassMethod($node)) {
-            return null;
-        }
-        $this->removeNode($node);
         return null;
     }
     private function shouldSkipNonFinalNonPrivateClassMethod(Class_ $class, ClassMethod $classMethod) : bool
@@ -104,23 +110,22 @@ CODE_SAMPLE
         }
         return $classMethod->isPublic();
     }
-    private function shouldSkipClassMethod(ClassMethod $classMethod) : bool
+    private function shouldSkipClassMethod(Class_ $class, ClassMethod $classMethod) : bool
     {
         if ($this->classMethodManipulator->isNamedConstructor($classMethod)) {
             return \true;
         }
-        if ($this->classMethodManipulator->hasParentMethodOrInterfaceMethod($classMethod)) {
+        if ($this->classMethodManipulator->hasParentMethodOrInterfaceMethod($class, $classMethod->name->toString())) {
             return \true;
         }
         if ($this->paramAnalyzer->hasPropertyPromotion($classMethod->params)) {
             return \true;
         }
-        if ($this->controllerClassMethodManipulator->isControllerClassMethodWithBehaviorAnnotation($classMethod)) {
+        if ($this->controllerClassMethodManipulator->isControllerClassMethodWithBehaviorAnnotation($class, $classMethod)) {
             return \true;
         }
         if ($this->nodeNameResolver->isName($classMethod, MethodName::CONSTRUCT)) {
-            $class = $this->betterNodeFinder->findParentType($classMethod, Class_::class);
-            return $class instanceof Class_ && $class->extends instanceof FullyQualified;
+            return $class->extends instanceof FullyQualified;
         }
         return $this->nodeNameResolver->isName($classMethod, MethodName::INVOKE);
     }

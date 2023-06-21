@@ -21,14 +21,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertPropertyExistsRector extends AbstractRector
 {
     /**
-     * @var array<string, string>
-     */
-    private const RENAME_METHODS_WITH_OBJECT_MAP = ['assertTrue' => 'assertObjectHasAttribute', 'assertFalse' => 'assertObjectNotHasAttribute'];
-    /**
-     * @var array<string, string>
-     */
-    private const RENAME_METHODS_WITH_CLASS_MAP = ['assertTrue' => 'assertClassHasAttribute', 'assertFalse' => 'assertClassNotHasAttribute'];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
@@ -38,6 +30,14 @@ final class AssertPropertyExistsRector extends AbstractRector
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, string>
+     */
+    private const RENAME_METHODS_WITH_OBJECT_MAP = ['assertTrue' => 'assertObjectHasAttribute', 'assertFalse' => 'assertObjectNotHasAttribute'];
+    /**
+     * @var array<string, string>
+     */
+    private const RENAME_METHODS_WITH_CLASS_MAP = ['assertTrue' => 'assertClassHasAttribute', 'assertFalse' => 'assertClassNotHasAttribute'];
     public function __construct(IdentifierManipulator $identifierManipulator, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->identifierManipulator = $identifierManipulator;
@@ -70,19 +70,22 @@ CODE_SAMPLE
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, ['assertTrue', 'assertFalse'])) {
             return null;
         }
-        $firstArgumentValue = $node->args[0]->value;
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $firstArgumentValue = $node->getArgs()[0]->value;
         if (!$firstArgumentValue instanceof FuncCall) {
             return null;
         }
         if (!$this->isName($firstArgumentValue, 'property_exists')) {
             return null;
         }
-        $propertyExistsMethodCall = $node->args[0]->value;
+        $propertyExistsMethodCall = $node->getArgs()[0]->value;
         if (!$propertyExistsMethodCall instanceof FuncCall) {
             return null;
         }
-        $firstArgument = $propertyExistsMethodCall->args[0];
-        $secondArgument = $propertyExistsMethodCall->args[1];
+        $firstArgument = $propertyExistsMethodCall->getArgs()[0];
+        $secondArgument = $propertyExistsMethodCall->getArgs()[1];
         if ($firstArgument->value instanceof Variable) {
             $secondArg = new Variable($firstArgument->value->name);
             $map = self::RENAME_METHODS_WITH_OBJECT_MAP;
@@ -97,7 +100,7 @@ CODE_SAMPLE
         }
         unset($node->args[0]);
         $newArgs = $this->nodeFactory->createArgs([$secondArgument->value->value, $secondArg]);
-        $node->args = $this->appendArgs($newArgs, $node->args);
+        $node->args = $this->appendArgs($newArgs, $node->getArgs());
         $this->identifierManipulator->renameNodeWithMap($node, $map);
         return $node;
     }

@@ -7,8 +7,8 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use Rector\Core\Rector\AbstractRector;
+use Rector\PHPUnit\NodeAnalyzer\ArgumentMover;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
-use Rector\PHPUnit\NodeManipulator\ArgumentMover;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -18,7 +18,7 @@ final class AssertSameTrueFalseToAssertTrueFalseRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeManipulator\ArgumentMover
+     * @var \Rector\PHPUnit\NodeAnalyzer\ArgumentMover
      */
     private $argumentMover;
     /**
@@ -74,13 +74,17 @@ CODE_SAMPLE
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, ['assertSame', 'assertEqual', 'assertNotSame', 'assertNotEqual'])) {
             return null;
         }
-        if ($this->valueResolver->isTrue($node->args[0]->value)) {
-            $this->argumentMover->removeFirst($node);
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        $firstArg = $node->getArgs()[0];
+        if ($this->valueResolver->isTrue($firstArg->value)) {
+            $this->argumentMover->removeFirstArg($node);
             $node->name = new Identifier('assertTrue');
             return $node;
         }
-        if ($this->valueResolver->isFalse($node->args[0]->value)) {
-            $this->argumentMover->removeFirst($node);
+        if ($this->valueResolver->isFalse($firstArg->value)) {
+            $this->argumentMover->removeFirstArg($node);
             $node->name = new Identifier('assertFalse');
             return $node;
         }

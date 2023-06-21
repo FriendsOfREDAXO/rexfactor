@@ -29,10 +29,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class StringableForToStringRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
-     * @var string
-     */
-    private const STRINGABLE = 'Stringable';
-    /**
      * @readonly
      * @var \Rector\FamilyTree\Reflection\FamilyRelationsAnalyzer
      */
@@ -47,6 +43,10 @@ final class StringableForToStringRector extends AbstractRector implements MinPhp
      * @var \Rector\Core\NodeAnalyzer\ClassAnalyzer
      */
     private $classAnalyzer;
+    /**
+     * @var string
+     */
+    private const STRINGABLE = 'Stringable';
     public function __construct(FamilyRelationsAnalyzer $familyRelationsAnalyzer, ReturnTypeInferer $returnTypeInferer, ClassAnalyzer $classAnalyzer)
     {
         $this->familyRelationsAnalyzer = $familyRelationsAnalyzer;
@@ -91,6 +91,9 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        if ($this->classAnalyzer->isAnonymousClass($node)) {
+            return null;
+        }
         $toStringClassMethod = $node->getMethod(MethodName::TO_STRING);
         if (!$toStringClassMethod instanceof ClassMethod) {
             return null;
@@ -99,9 +102,6 @@ CODE_SAMPLE
         // reflection cannot be used for real detection
         $classLikeAncestorNames = $this->familyRelationsAnalyzer->getClassLikeAncestorNames($node);
         if (\in_array(self::STRINGABLE, $classLikeAncestorNames, \true)) {
-            return null;
-        }
-        if ($this->classAnalyzer->isAnonymousClass($node)) {
             return null;
         }
         $returnType = $this->returnTypeInferer->inferFunctionLike($toStringClassMethod);
@@ -123,11 +123,8 @@ CODE_SAMPLE
         }
         $hasReturn = $this->betterNodeFinder->hasInstancesOfInFunctionLikeScoped($toStringClassMethod, Return_::class);
         if (!$hasReturn) {
-            $stmts = (array) $toStringClassMethod->stmts;
-            \end($stmts);
-            $lastKey = \key($stmts);
-            $lastKey = $lastKey === null ? 0 : (int) $lastKey + 1;
-            $toStringClassMethod->stmts[$lastKey] = new Return_(new String_(''));
+            $emptyStringReturn = new Return_(new String_(''));
+            $toStringClassMethod->stmts[] = $emptyStringReturn;
             return;
         }
         $this->traverseNodesWithCallable((array) $toStringClassMethod->stmts, function (Node $subNode) {

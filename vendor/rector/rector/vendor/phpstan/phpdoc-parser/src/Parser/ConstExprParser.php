@@ -5,6 +5,7 @@ namespace PHPStan\PhpDocParser\Parser;
 
 use PHPStan\PhpDocParser\Ast;
 use PHPStan\PhpDocParser\Lexer\Lexer;
+use function str_replace;
 use function strtolower;
 use function substr;
 class ConstExprParser
@@ -34,12 +35,12 @@ class ConstExprParser
         if ($tokens->isCurrentTokenType(Lexer::TOKEN_FLOAT)) {
             $value = $tokens->currentTokenValue();
             $tokens->next();
-            return $this->enrichWithAttributes($tokens, new Ast\ConstExpr\ConstExprFloatNode($value), $startLine, $startIndex);
+            return $this->enrichWithAttributes($tokens, new Ast\ConstExpr\ConstExprFloatNode(str_replace('_', '', $value)), $startLine, $startIndex);
         }
         if ($tokens->isCurrentTokenType(Lexer::TOKEN_INTEGER)) {
             $value = $tokens->currentTokenValue();
             $tokens->next();
-            return $this->enrichWithAttributes($tokens, new Ast\ConstExpr\ConstExprIntegerNode($value), $startLine, $startIndex);
+            return $this->enrichWithAttributes($tokens, new Ast\ConstExpr\ConstExprIntegerNode(str_replace('_', '', $value)), $startLine, $startIndex);
         }
         if ($tokens->isCurrentTokenType(Lexer::TOKEN_SINGLE_QUOTED_STRING, Lexer::TOKEN_DOUBLE_QUOTED_STRING)) {
             $value = $tokens->currentTokenValue();
@@ -68,7 +69,7 @@ class ConstExprParser
                     return $this->enrichWithAttributes($tokens, new Ast\ConstExpr\ConstExprNullNode(), $startLine, $startIndex);
                 case 'array':
                     $tokens->consumeTokenType(Lexer::TOKEN_OPEN_PARENTHESES);
-                    return $this->parseArray($tokens, Lexer::TOKEN_CLOSE_PARENTHESES);
+                    return $this->parseArray($tokens, Lexer::TOKEN_CLOSE_PARENTHESES, $startIndex);
             }
             if ($tokens->tryConsumeTokenType(Lexer::TOKEN_DOUBLE_COLON)) {
                 $classConstantName = '';
@@ -98,15 +99,14 @@ class ConstExprParser
             }
             return $this->enrichWithAttributes($tokens, new Ast\ConstExpr\ConstFetchNode('', $identifier), $startLine, $startIndex);
         } elseif ($tokens->tryConsumeTokenType(Lexer::TOKEN_OPEN_SQUARE_BRACKET)) {
-            return $this->parseArray($tokens, Lexer::TOKEN_CLOSE_SQUARE_BRACKET);
+            return $this->parseArray($tokens, Lexer::TOKEN_CLOSE_SQUARE_BRACKET, $startIndex);
         }
         throw new \PHPStan\PhpDocParser\Parser\ParserException($tokens->currentTokenValue(), $tokens->currentTokenType(), $tokens->currentTokenOffset(), Lexer::TOKEN_IDENTIFIER, null, $tokens->currentTokenLine());
     }
-    private function parseArray(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens, int $endToken) : Ast\ConstExpr\ConstExprArrayNode
+    private function parseArray(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens, int $endToken, int $startIndex) : Ast\ConstExpr\ConstExprArrayNode
     {
         $items = [];
         $startLine = $tokens->currentTokenLine();
-        $startIndex = $tokens->currentTokenIndex();
         if (!$tokens->tryConsumeTokenType($endToken)) {
             do {
                 $items[] = $this->parseArrayItem($tokens);
@@ -136,20 +136,13 @@ class ConstExprParser
      */
     private function enrichWithAttributes(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens, Ast\ConstExpr\ConstExprNode $node, int $startLine, int $startIndex) : Ast\ConstExpr\ConstExprNode
     {
-        $endLine = $tokens->currentTokenLine();
-        $endIndex = $tokens->currentTokenIndex();
         if ($this->useLinesAttributes) {
             $node->setAttribute(Ast\Attribute::START_LINE, $startLine);
-            $node->setAttribute(Ast\Attribute::END_LINE, $endLine);
+            $node->setAttribute(Ast\Attribute::END_LINE, $tokens->currentTokenLine());
         }
         if ($this->useIndexAttributes) {
-            $tokensArray = $tokens->getTokens();
-            $endIndex--;
-            if ($tokensArray[$endIndex][Lexer::TYPE_OFFSET] === Lexer::TOKEN_HORIZONTAL_WS) {
-                $endIndex--;
-            }
             $node->setAttribute(Ast\Attribute::START_INDEX, $startIndex);
-            $node->setAttribute(Ast\Attribute::END_INDEX, $endIndex);
+            $node->setAttribute(Ast\Attribute::END_INDEX, $tokens->endIndexOfLastRelevantToken());
         }
         return $node;
     }

@@ -13,22 +13,22 @@ use Rector\Core\PhpParser\Node\Value\ValueResolver;
 use Rector\PhpAttribute\AnnotationToAttributeMapper;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
 use Rector\PhpAttribute\Enum\DocTagNodeState;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @implements AnnotationToAttributeMapperInterface<mixed[]>
  */
 final class ArrayAnnotationToAttributeMapper implements AnnotationToAttributeMapperInterface
 {
     /**
-     * @var \Rector\PhpAttribute\AnnotationToAttributeMapper
-     */
-    private $annotationToAttributeMapper;
-    /**
      * @readonly
      * @var \Rector\Core\PhpParser\Node\Value\ValueResolver
      */
     private $valueResolver;
+    /**
+     * @var \Rector\PhpAttribute\AnnotationToAttributeMapper
+     */
+    private $annotationToAttributeMapper;
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;

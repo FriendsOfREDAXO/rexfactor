@@ -20,6 +20,11 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class AssertCompareToSpecificMethodRector extends AbstractRector
 {
     /**
+     * @readonly
+     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
+     */
+    private $testsNodeAnalyzer;
+    /**
      * @var string
      */
     private const ASSERT_COUNT = 'assertCount';
@@ -31,11 +36,6 @@ final class AssertCompareToSpecificMethodRector extends AbstractRector
      * @var FunctionNameWithAssertMethods[]
      */
     private $functionNamesWithAssertMethods = [];
-    /**
-     * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
-     */
-    private $testsNodeAnalyzer;
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;
@@ -60,12 +60,15 @@ final class AssertCompareToSpecificMethodRector extends AbstractRector
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, ['assertSame', 'assertNotSame', 'assertEquals', 'assertNotEquals'])) {
             return null;
         }
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         // we need 2 args
         if (!isset($node->args[1])) {
             return null;
         }
-        $firstArgument = $node->args[0];
-        $secondArgument = $node->args[1];
+        $firstArgument = $node->getArgs()[0];
+        $secondArgument = $node->getArgs()[1];
         $firstArgumentValue = $firstArgument->value;
         $secondArgumentValue = $secondArgument->value;
         if ($secondArgumentValue instanceof FuncCall) {
@@ -109,7 +112,7 @@ final class AssertCompareToSpecificMethodRector extends AbstractRector
      */
     private function moveFunctionArgumentsUp($node, FuncCall $funcCall, Arg $requiredArg) : void
     {
-        $node->args[1] = $funcCall->args[0];
+        $node->args[1] = $funcCall->getArgs()[0];
         $node->args[0] = $requiredArg;
     }
 }

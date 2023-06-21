@@ -72,7 +72,10 @@ CODE_SAMPLE
     }
     private function processMysqlCreateDb(FuncCall $funcCall) : ?FuncCall
     {
-        if (!isset($funcCall->args[0])) {
+        if ($funcCall->isFirstClassCallable()) {
+            return null;
+        }
+        if (!isset($funcCall->getArgs()[0])) {
             return null;
         }
         if (!$funcCall->args[0] instanceof Arg) {
@@ -84,7 +87,10 @@ CODE_SAMPLE
     }
     private function processMysqlDropDb(FuncCall $funcCall) : ?FuncCall
     {
-        if (!isset($funcCall->args[0])) {
+        if ($funcCall->isFirstClassCallable()) {
+            return null;
+        }
+        if (!isset($funcCall->getArgs()[0])) {
             return null;
         }
         if (!$funcCall->args[0] instanceof Arg) {

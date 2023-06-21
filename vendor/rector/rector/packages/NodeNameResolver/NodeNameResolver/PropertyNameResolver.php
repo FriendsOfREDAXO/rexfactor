@@ -5,9 +5,10 @@ namespace Rector\NodeNameResolver\NodeNameResolver;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Property;
+use PHPStan\Analyser\Scope;
 use Rector\NodeNameResolver\Contract\NodeNameResolverInterface;
 use Rector\NodeNameResolver\NodeNameResolver;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 /**
  * @implements NodeNameResolverInterface<Property>
  */
@@ -31,7 +32,7 @@ final class PropertyNameResolver implements NodeNameResolverInterface
     /**
      * @param Property $node
      */
-    public function resolve(Node $node) : ?string
+    public function resolve(Node $node, ?Scope $scope) : ?string
     {
         if ($node->props === []) {
             return null;

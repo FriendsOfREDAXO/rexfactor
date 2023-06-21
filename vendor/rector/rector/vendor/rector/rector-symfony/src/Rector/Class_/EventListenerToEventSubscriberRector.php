@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Rector\Class_;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\FullyQualified;
@@ -22,27 +22,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class EventListenerToEventSubscriberRector extends AbstractRector
 {
     /**
-     * @var string
-     */
-    private const EVENT_SUBSCRIBER_INTERFACE = 'Symfony\\Component\\EventDispatcher\\EventSubscriberInterface';
-    /**
-     * @var string
-     */
-    private const KERNEL_EVENTS_CLASS = 'Symfony\\Component\\HttpKernel\\KernelEvents';
-    /**
-     * @var string
-     */
-    private const CONSOLE_EVENTS_CLASS = 'Symfony\\Component\\Console\\ConsoleEvents';
-    /**
-     * @var string
-     * @see https://regex101.com/r/qiHZ4T/1
-     */
-    private const LISTENER_MATCH_REGEX = '#^(.*?)(Listener)?$#';
-    /**
-     * @var EventNameToClassAndConstant[]
-     */
-    private $eventNamesToClassConstants = [];
-    /**
      * @readonly
      * @var \Rector\Symfony\ApplicationMetadata\ListenerServiceDefinitionProvider
      */
@@ -57,6 +36,27 @@ final class EventListenerToEventSubscriberRector extends AbstractRector
      * @var \Rector\Symfony\NodeAnalyzer\ClassAnalyzer
      */
     private $classAnalyzer;
+    /**
+     * @var string
+     */
+    private const EVENT_SUBSCRIBER_INTERFACE = 'Symfony\\Component\\EventDispatcher\\EventSubscriberInterface';
+    /**
+     * @var string
+     */
+    private const KERNEL_EVENTS_CLASS = 'Symfony\\Component\\HttpKernel\\KernelEvents';
+    /**
+     * @var string
+     */
+    private const CONSOLE_EVENTS_CLASS = 'Symfony\\Component\\Console\\ConsoleEvents';
+    /**
+     * @var string
+     * @changelog https://regex101.com/r/qiHZ4T/1
+     */
+    private const LISTENER_MATCH_REGEX = '#^(.*?)(Listener)?$#';
+    /**
+     * @var EventNameToClassAndConstant[]
+     */
+    private $eventNamesToClassConstants = [];
     public function __construct(ListenerServiceDefinitionProvider $listenerServiceDefinitionProvider, GetSubscribedEventsClassMethodFactory $getSubscribedEventsClassMethodFactory, ClassAnalyzer $classAnalyzer)
     {
         $this->listenerServiceDefinitionProvider = $listenerServiceDefinitionProvider;

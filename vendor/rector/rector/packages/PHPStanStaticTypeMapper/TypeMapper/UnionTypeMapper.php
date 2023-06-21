@@ -38,18 +38,14 @@ use Rector\PHPStanStaticTypeMapper\TypeAnalyzer\BoolUnionTypeAnalyzer;
 use Rector\PHPStanStaticTypeMapper\TypeAnalyzer\UnionTypeAnalyzer;
 use Rector\PHPStanStaticTypeMapper\TypeAnalyzer\UnionTypeCommonTypeNarrower;
 use Rector\PHPStanStaticTypeMapper\ValueObject\UnionTypeAnalysis;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
-use RectorPrefix202305\Webmozart\Assert\Assert;
-use RectorPrefix202305\Webmozart\Assert\InvalidArgumentException;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\InvalidArgumentException;
 /**
  * @implements TypeMapperInterface<UnionType>
  */
 final class UnionTypeMapper implements TypeMapperInterface
 {
-    /**
-     * @var \Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper
-     */
-    private $phpStanStaticTypeMapper;
     /**
      * @readonly
      * @var \Rector\PHPStanStaticTypeMapper\DoctrineTypeAnalyzer
@@ -85,6 +81,10 @@ final class UnionTypeMapper implements TypeMapperInterface
      * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
     private $typeFactory;
+    /**
+     * @var \Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper
+     */
+    private $phpStanStaticTypeMapper;
     public function __construct(DoctrineTypeAnalyzer $doctrineTypeAnalyzer, PhpVersionProvider $phpVersionProvider, UnionTypeAnalyzer $unionTypeAnalyzer, BoolUnionTypeAnalyzer $boolUnionTypeAnalyzer, UnionTypeCommonTypeNarrower $unionTypeCommonTypeNarrower, NodeNameResolver $nodeNameResolver, TypeFactory $typeFactory)
     {
         $this->doctrineTypeAnalyzer = $doctrineTypeAnalyzer;
@@ -133,13 +133,6 @@ final class UnionTypeMapper implements TypeMapperInterface
         $arrayNode = $this->matchArrayTypes($type);
         if ($arrayNode !== null) {
             return $arrayNode;
-        }
-        if ($this->boolUnionTypeAnalyzer->isNullableBoolUnionType($type) && !$this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::UNION_TYPES)) {
-            return $this->resolveNullableType(new NullableType(new Identifier('bool')));
-        }
-        if (!$this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::UNION_TYPES) && $this->isFalseBoolUnion($type)) {
-            // return new Bool
-            return new Identifier('bool');
         }
         // special case for nullable
         $nullabledType = $this->matchTypeForNullableUnionType($type);
@@ -435,19 +428,6 @@ final class UnionTypeMapper implements TypeMapperInterface
             return new ObjectType('Rector\\Core\\Contract\\Rector\\RectorInterface');
         }
         return $typeWithClassName;
-    }
-    private function isFalseBoolUnion(UnionType $unionType) : bool
-    {
-        if (\count($unionType->getTypes()) !== 2) {
-            return \false;
-        }
-        foreach ($unionType->getTypes() as $unionedType) {
-            if ($unionedType instanceof ConstantBooleanType) {
-                continue;
-            }
-            return \false;
-        }
-        return \true;
     }
     private function narrowIntegerType(UnionType $unionType) : ?Identifier
     {

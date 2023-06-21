@@ -16,14 +16,14 @@ use Rector\NodeTypeResolver\PHPStan\Scope\ScopeFactory;
 final class ScopeAnalyzer
 {
     /**
-     * @var array<class-string<Node>>
-     */
-    private const NO_SCOPE_NODES = [Name::class, Identifier::class, Param::class, Arg::class];
-    /**
      * @readonly
      * @var \Rector\NodeTypeResolver\PHPStan\Scope\ScopeFactory
      */
     private $scopeFactory;
+    /**
+     * @var array<class-string<Node>>
+     */
+    private const NO_SCOPE_NODES = [Name::class, Identifier::class, Param::class, Arg::class];
     public function __construct(ScopeFactory $scopeFactory)
     {
         $this->scopeFactory = $scopeFactory;
@@ -44,6 +44,9 @@ final class ScopeAnalyzer
         }
         $parentNode = $node->getAttribute(AttributeKey::PARENT_NODE);
         if (!$parentNode instanceof Node) {
+            return $this->scopeFactory->createFromFile($filePath);
+        }
+        if (!$this->hasScope($node)) {
             return $this->scopeFactory->createFromFile($filePath);
         }
         if (!$this->hasScope($parentNode)) {
@@ -68,12 +71,9 @@ final class ScopeAnalyzer
             return $this->scopeFactory->createFromFile($filePath);
         }
         /**
-         * Node and parent Node doesn't has Scope, and node and/or parent Node Start token pos is < 0,
+         * Node and parent Node doesn't has Scope, and Node Start token pos is < 0,
          * it means the node and parent node just re-printed, the Scope need to be resolved from file
          */
-        if ($parentNode->getStartTokenPos() < 0) {
-            return $this->scopeFactory->createFromFile($filePath);
-        }
         if ($node->getStartTokenPos() < 0) {
             return $this->scopeFactory->createFromFile($filePath);
         }

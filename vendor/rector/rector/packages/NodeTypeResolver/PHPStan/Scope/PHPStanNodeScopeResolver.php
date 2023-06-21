@@ -12,7 +12,6 @@ use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\Cast;
-use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
@@ -20,6 +19,8 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\Declare_;
 use PhpParser\Node\Stmt\Enum_;
 use PhpParser\Node\Stmt\EnumCase;
 use PhpParser\Node\Stmt\Expression;
@@ -43,30 +44,22 @@ use PHPStan\Type\ObjectType;
 use PHPStan\Type\TypeCombinator;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\Caching\FileSystem\DependencyResolver;
+use Rector\Core\Contract\PhpParser\Node\StmtsAwareInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeAnalyzer\ClassAnalyzer;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
+use Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace;
+use Rector\Core\PhpParser\NodeTraverser\FileWithoutNamespaceNodeTraverser;
 use Rector\Core\Util\Reflection\PrivatesAccessor;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
-use Rector\NodeTypeResolver\PHPStan\Scope\NodeVisitor\AssignedToNodeVisitor;
-use Rector\NodeTypeResolver\PHPStan\Scope\NodeVisitor\RemoveDeepChainMethodCallNodeVisitor;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use Rector\NodeTypeResolver\PHPStan\Scope\Contract\NodeVisitor\ScopeResolverNodeVisitorInterface;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @inspired by https://github.com/silverstripe/silverstripe-upgrader/blob/532182b23e854d02e0b27e68ebc394f436de0682/src/UpgradeRule/PHP/Visitor/PHPStanScopeVisitor.php
  * - https://github.com/silverstripe/silverstripe-upgrader/pull/57/commits/e5c7cfa166ad940d9d4ff69537d9f7608e992359#diff-5e0807bb3dc03d6a8d8b6ad049abd774
  */
 final class PHPStanNodeScopeResolver
 {
-    /**
-     * @var string
-     */
-    private const CONTEXT = 'context';
-    /**
-     * @readonly
-     * @var \PhpParser\NodeTraverser
-     */
-    private $nodeTraverser;
     /**
      * @readonly
      * @var \Rector\Caching\Detector\ChangedFilesDetector
@@ -104,15 +97,27 @@ final class PHPStanNodeScopeResolver
     private $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
-     */
-    private $betterNodeFinder;
-    /**
-     * @readonly
      * @var \Rector\Core\NodeAnalyzer\ClassAnalyzer
      */
     private $classAnalyzer;
-    public function __construct(ChangedFilesDetector $changedFilesDetector, DependencyResolver $dependencyResolver, NodeScopeResolver $nodeScopeResolver, ReflectionProvider $reflectionProvider, RemoveDeepChainMethodCallNodeVisitor $removeDeepChainMethodCallNodeVisitor, AssignedToNodeVisitor $assignedToNodeVisitor, \Rector\NodeTypeResolver\PHPStan\Scope\ScopeFactory $scopeFactory, PrivatesAccessor $privatesAccessor, NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, ClassAnalyzer $classAnalyzer)
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\NodeTraverser\FileWithoutNamespaceNodeTraverser
+     */
+    private $fileWithoutNamespaceNodeTraverser;
+    /**
+     * @var string
+     */
+    private const CONTEXT = 'context';
+    /**
+     * @readonly
+     * @var \PhpParser\NodeTraverser
+     */
+    private $nodeTraverser;
+    /**
+     * @param ScopeResolverNodeVisitorInterface[] $nodeVisitors
+     */
+    public function __construct(ChangedFilesDetector $changedFilesDetector, DependencyResolver $dependencyResolver, NodeScopeResolver $nodeScopeResolver, ReflectionProvider $reflectionProvider, iterable $nodeVisitors, \Rector\NodeTypeResolver\PHPStan\Scope\ScopeFactory $scopeFactory, PrivatesAccessor $privatesAccessor, NodeNameResolver $nodeNameResolver, ClassAnalyzer $classAnalyzer, FileWithoutNamespaceNodeTraverser $fileWithoutNamespaceNodeTraverser)
     {
         $this->changedFilesDetector = $changedFilesDetector;
         $this->dependencyResolver = $dependencyResolver;
@@ -121,11 +126,12 @@ final class PHPStanNodeScopeResolver
         $this->scopeFactory = $scopeFactory;
         $this->privatesAccessor = $privatesAccessor;
         $this->nodeNameResolver = $nodeNameResolver;
-        $this->betterNodeFinder = $betterNodeFinder;
         $this->classAnalyzer = $classAnalyzer;
+        $this->fileWithoutNamespaceNodeTraverser = $fileWithoutNamespaceNodeTraverser;
         $this->nodeTraverser = new NodeTraverser();
-        $this->nodeTraverser->addVisitor($removeDeepChainMethodCallNodeVisitor);
-        $this->nodeTraverser->addVisitor($assignedToNodeVisitor);
+        foreach ($nodeVisitors as $nodeVisitor) {
+            $this->nodeTraverser->addVisitor($nodeVisitor);
+        }
     }
     /**
      * @param Stmt[] $stmts
@@ -139,7 +145,19 @@ final class PHPStanNodeScopeResolver
          * @see vendor/phpstan/phpstan/phpstan.phar/src/Analyser/NodeScopeResolver.php:282
          */
         Assert::allIsInstanceOf($stmts, Stmt::class);
-        $this->nodeTraverser->traverse($stmts);
+        $isInitFileWithoutNamespace = \false;
+        if (!$isScopeRefreshing && !\current($stmts) instanceof FileWithoutNamespace) {
+            $stmts = $this->fileWithoutNamespaceNodeTraverser->traverse($stmts);
+            $currentStmt = \current($stmts);
+            if ($currentStmt instanceof FileWithoutNamespace) {
+                $this->nodeTraverser->traverse($stmts);
+                $stmts = $currentStmt->stmts;
+                $isInitFileWithoutNamespace = \true;
+            }
+        }
+        if (!$isInitFileWithoutNamespace) {
+            $this->nodeTraverser->traverse($stmts);
+        }
         $scope = $formerMutatingScope ?? $this->scopeFactory->createFromFile($filePath);
         // skip chain method calls, performance issue: https://github.com/phpstan/phpstan/issues/254
         $nodeCallback = function (Node $node, MutatingScope $mutatingScope) use(&$nodeCallback, $isScopeRefreshing, $filePath) : void {
@@ -186,12 +204,12 @@ final class PHPStanNodeScopeResolver
             }
             if ($node instanceof Trait_) {
                 $traitName = $this->resolveClassName($node);
-                $traitReflectionClass = $this->reflectionProvider->getClass($traitName);
+                $traitClassReflection = $this->reflectionProvider->getClass($traitName);
                 $traitScope = clone $mutatingScope;
                 $scopeContext = $this->privatesAccessor->getPrivatePropertyOfClass($traitScope, self::CONTEXT, ScopeContext::class);
                 $traitContext = clone $scopeContext;
                 // before entering the class/trait again, we have to tell scope no class was set, otherwise it crashes
-                $this->privatesAccessor->setPrivatePropertyOfClass($traitContext, 'classReflection', $traitReflectionClass, ClassReflection::class);
+                $this->privatesAccessor->setPrivatePropertyOfClass($traitContext, 'classReflection', $traitClassReflection, ClassReflection::class);
                 $this->privatesAccessor->setPrivatePropertyOfClass($traitScope, self::CONTEXT, $traitContext, ScopeContext::class);
                 $node->setAttribute(AttributeKey::SCOPE, $traitScope);
                 $this->nodeScopeResolver->processNodes($node->stmts, $traitScope, $nodeCallback);
@@ -205,7 +223,7 @@ final class PHPStanNodeScopeResolver
                 $mutatingScope = $this->resolveClassOrInterfaceScope($node, $mutatingScope, $isScopeRefreshing);
             }
             if ($node instanceof Stmt) {
-                $this->setChildOfUnreachableStatementNodeAttribute($node);
+                $this->setChildOfUnreachableStatementNodeAttribute($node, $mutatingScope);
             }
             // special case for unreachable nodes
             if ($node instanceof UnreachableStatementNode) {
@@ -216,23 +234,20 @@ final class PHPStanNodeScopeResolver
         };
         return $this->processNodesWithDependentFiles($filePath, $stmts, $scope, $nodeCallback);
     }
-    private function setChildOfUnreachableStatementNodeAttribute(Stmt $stmt) : void
+    private function setChildOfUnreachableStatementNodeAttribute(Stmt $stmt, MutatingScope $mutatingScope) : void
     {
-        if ($stmt->getAttribute(AttributeKey::IS_UNREACHABLE) === \true) {
+        if (!$stmt instanceof StmtsAwareInterface && !$stmt instanceof ClassLike && !$stmt instanceof Declare_) {
             return;
         }
-        $parentStmt = $stmt->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$parentStmt instanceof Node) {
+        if ($stmt->getAttribute(AttributeKey::IS_UNREACHABLE) !== \true) {
             return;
         }
-        if ($parentStmt instanceof Closure) {
-            $parentStmt = $this->betterNodeFinder->resolveCurrentStatement($parentStmt);
-        }
-        if (!$parentStmt instanceof Stmt) {
+        if ($stmt->stmts === null) {
             return;
         }
-        if ($parentStmt->getAttribute(AttributeKey::IS_UNREACHABLE) === \true) {
-            $stmt->setAttribute(AttributeKey::IS_UNREACHABLE, \true);
+        foreach ($stmt->stmts as $childStmt) {
+            $childStmt->setAttribute(AttributeKey::IS_UNREACHABLE, \true);
+            $childStmt->setAttribute(AttributeKey::SCOPE, $mutatingScope);
         }
     }
     private function processArray(Array_ $array, MutatingScope $mutatingScope) : void
@@ -287,11 +302,18 @@ final class PHPStanNodeScopeResolver
         $originalStmt->setAttribute(AttributeKey::IS_UNREACHABLE, \true);
         $originalStmt->setAttribute(AttributeKey::SCOPE, $mutatingScope);
         $this->processNodes([$originalStmt], $filePath, $mutatingScope);
-        $nextNode = $originalStmt->getAttribute(AttributeKey::NEXT_NODE);
-        while ($nextNode instanceof Stmt) {
-            $nextNode->setAttribute(AttributeKey::IS_UNREACHABLE, \true);
-            $this->processNodes([$nextNode], $filePath, $mutatingScope);
-            $nextNode = $nextNode->getAttribute(AttributeKey::NEXT_NODE);
+        $parentNode = $unreachableStatementNode->getAttribute(AttributeKey::PARENT_NODE);
+        if (!$parentNode instanceof StmtsAwareInterface && !$parentNode instanceof ClassLike && !$parentNode instanceof Declare_) {
+            return;
+        }
+        $stmtKey = $unreachableStatementNode->getAttribute(AttributeKey::STMT_KEY);
+        $totalKeys = $parentNode->stmts === null ? 0 : \count($parentNode->stmts);
+        for ($key = $stmtKey + 1; $key < $totalKeys; ++$key) {
+            if (!isset($parentNode->stmts[$key])) {
+                continue;
+            }
+            $parentNode->stmts[$key]->setAttribute(AttributeKey::IS_UNREACHABLE, \true);
+            $this->processNodes([$parentNode->stmts[$key]], $filePath, $mutatingScope);
         }
     }
     private function processProperty(Property $property, MutatingScope $mutatingScope) : void
@@ -337,8 +359,9 @@ final class PHPStanNodeScopeResolver
     private function resolveClassOrInterfaceScope($classLike, MutatingScope $mutatingScope, bool $isScopeRefreshing) : MutatingScope
     {
         $className = $this->resolveClassName($classLike);
+        $isAnonymous = $this->classAnalyzer->isAnonymousClass($classLike);
         // is anonymous class? - not possible to enter it since PHPStan 0.12.33, see https://github.com/phpstan/phpstan-src/commit/e87fb0ec26f9c8552bbeef26a868b1e5d8185e91
-        if ($classLike instanceof Class_ && $this->classAnalyzer->isAnonymousClass($classLike)) {
+        if ($classLike instanceof Class_ && $isAnonymous) {
             $classReflection = $this->reflectionProvider->getAnonymousClassReflection($classLike, $mutatingScope);
         } elseif (!$this->reflectionProvider->hasClass($className)) {
             return $mutatingScope;
@@ -346,7 +369,7 @@ final class PHPStanNodeScopeResolver
             $classReflection = $this->reflectionProvider->getClass($className);
         }
         // on refresh, remove entered class avoid entering the class again
-        if ($isScopeRefreshing && $mutatingScope->isInClass() && !$classReflection->isAnonymous()) {
+        if ($isScopeRefreshing && $mutatingScope->isInClass() && !$isAnonymous) {
             $context = $this->privatesAccessor->getPrivateProperty($mutatingScope, 'context');
             $this->privatesAccessor->setPrivateProperty($context, 'classReflection', null);
         }

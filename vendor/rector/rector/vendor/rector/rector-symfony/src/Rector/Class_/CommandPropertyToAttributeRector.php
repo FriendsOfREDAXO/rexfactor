@@ -8,7 +8,6 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Property;
@@ -18,12 +17,14 @@ use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer;
 use Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory;
-use Rector\Symfony\Helper\CommandHelper;
+use Rector\Symfony\Enum\SymfonyAnnotation;
+use Rector\Symfony\NodeAnalyzer\Command\AttributeValueResolver;
+use Rector\Symfony\NodeAnalyzer\Command\SetAliasesMethodCallExtractor;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @see https://symfony.com/doc/current/console.html#registering-the-command
+ * @changelog https://symfony.com/doc/current/console.html#registering-the-command
  *
  * @see \Rector\Symfony\Tests\Rector\Class_\CommandPropertyToAttributeRector\CommandPropertyToAttributeRectorTest
  */
@@ -41,20 +42,26 @@ final class CommandPropertyToAttributeRector extends AbstractRector implements M
     private $phpAttributeAnalyzer;
     /**
      * @readonly
+     * @var \Rector\Symfony\NodeAnalyzer\Command\AttributeValueResolver
+     */
+    private $attributeValueResolver;
+    /**
+     * @readonly
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Symfony\Helper\CommandHelper
+     * @var \Rector\Symfony\NodeAnalyzer\Command\SetAliasesMethodCallExtractor
      */
-    private $commandHelper;
-    public function __construct(PhpAttributeGroupFactory $phpAttributeGroupFactory, PhpAttributeAnalyzer $phpAttributeAnalyzer, ReflectionProvider $reflectionProvider, CommandHelper $commandHelper)
+    private $setAliasesMethodCallExtractor;
+    public function __construct(PhpAttributeGroupFactory $phpAttributeGroupFactory, PhpAttributeAnalyzer $phpAttributeAnalyzer, AttributeValueResolver $attributeValueResolver, ReflectionProvider $reflectionProvider, SetAliasesMethodCallExtractor $setAliasesMethodCallExtractor)
     {
         $this->phpAttributeGroupFactory = $phpAttributeGroupFactory;
         $this->phpAttributeAnalyzer = $phpAttributeAnalyzer;
+        $this->attributeValueResolver = $attributeValueResolver;
         $this->reflectionProvider = $reflectionProvider;
-        $this->commandHelper = $commandHelper;
+        $this->setAliasesMethodCallExtractor = $setAliasesMethodCallExtractor;
     }
     public function provideMinPhpVersion() : int
     {
@@ -97,7 +104,7 @@ CODE_SAMPLE
         if (!$this->isObjectType($node, new ObjectType('Symfony\\Component\\Console\\Command\\Command'))) {
             return null;
         }
-        if (!$this->reflectionProvider->hasClass(CommandHelper::ATTRIBUTE)) {
+        if (!$this->reflectionProvider->hasClass(SymfonyAnnotation::AS_COMMAND)) {
             return null;
         }
         $defaultName = $this->resolveDefaultName($node);
@@ -105,26 +112,20 @@ CODE_SAMPLE
             return null;
         }
         $defaultDescription = $this->resolveDefaultDescription($node);
-        $array = $this->commandHelper->getCommandAliasesValueFromAttributeOrSetter($node);
-        $constFetch = $this->commandHelper->getCommandHiddenValueFromAttributeOrSetter($node);
-        return $this->replaceAsCommandAttribute($node, $this->createAttributeGroupAsCommand($defaultName, $defaultDescription, $array, $constFetch));
+        $alisesArray = $this->setAliasesMethodCallExtractor->resolveCommandAliasesFromAttributeOrSetter($node);
+        return $this->replaceAsCommandAttribute($node, $this->createAttributeGroupAsCommand($defaultName, $defaultDescription, $alisesArray));
     }
-    private function createAttributeGroupAsCommand(string $defaultName, ?string $defaultDescription, ?Array_ $array, ?ConstFetch $constFetch) : AttributeGroup
+    private function createAttributeGroupAsCommand(string $defaultName, ?string $defaultDescription, ?Array_ $aliasesArray) : AttributeGroup
     {
-        $attributeGroup = $this->phpAttributeGroupFactory->createFromClass(CommandHelper::ATTRIBUTE);
+        $attributeGroup = $this->phpAttributeGroupFactory->createFromClass(SymfonyAnnotation::AS_COMMAND);
         $attributeGroup->attrs[0]->args[] = new Arg(new String_($defaultName));
         if ($defaultDescription !== null) {
             $attributeGroup->attrs[0]->args[] = new Arg(new String_($defaultDescription));
-        } elseif ($array instanceof Array_ || $constFetch instanceof ConstFetch) {
+        } elseif ($aliasesArray instanceof Array_) {
             $attributeGroup->attrs[0]->args[] = new Arg($this->nodeFactory->createNull());
         }
-        if ($array instanceof Array_) {
-            $attributeGroup->attrs[0]->args[] = new Arg($array);
-        } elseif ($constFetch instanceof ConstFetch) {
-            $attributeGroup->attrs[0]->args[] = new Arg(new Array_());
-        }
-        if ($constFetch instanceof ConstFetch) {
-            $attributeGroup->attrs[0]->args[] = new Arg($constFetch);
+        if ($aliasesArray instanceof Array_) {
+            $attributeGroup->attrs[0]->args[] = new Arg($aliasesArray);
         }
         return $attributeGroup;
     }
@@ -141,45 +142,48 @@ CODE_SAMPLE
     }
     private function resolveDefaultName(Class_ $class) : ?string
     {
-        $defaultName = null;
-        $property = $class->getProperty('defaultName');
-        // Get DefaultName from property
-        if ($property instanceof Property) {
-            $defaultName = $this->getValueFromProperty($property);
+        foreach ($class->stmts as $key => $stmt) {
+            if (!$stmt instanceof Property) {
+                continue;
+            }
+            if (!$this->isName($stmt->props[0], 'defaultName')) {
+                continue;
+            }
+            $defaultName = $this->getValueFromProperty($stmt);
             if ($defaultName !== null) {
-                $this->removeNode($property);
+                // remove property
+                unset($class->stmts[$key]);
+                return $defaultName;
             }
         }
-        // Get DefaultName from attribute
-        if ($defaultName === null && $this->phpAttributeAnalyzer->hasPhpAttribute($class, CommandHelper::ATTRIBUTE)) {
-            $defaultNameFromArgument = $this->commandHelper->getArgumentValueFromAttribute($class, 0);
-            if (\is_string($defaultNameFromArgument)) {
-                $defaultName = $defaultNameFromArgument;
-            }
-        }
-        return $defaultName;
+        return $this->defaultDefaultNameFromAttribute($class);
     }
     private function resolveDefaultDescription(Class_ $class) : ?string
     {
-        $defaultDescription = null;
-        $property = $class->getProperty('defaultDescription');
-        if ($property instanceof Property) {
-            $defaultDescription = $this->getValueFromProperty($property);
+        foreach ($class->stmts as $key => $stmt) {
+            if (!$stmt instanceof Property) {
+                continue;
+            }
+            if (!$this->isName($stmt, 'defaultDescription')) {
+                continue;
+            }
+            $defaultDescription = $this->getValueFromProperty($stmt);
             if ($defaultDescription !== null) {
-                $this->removeNode($property);
+                unset($class->stmts[$key]);
+                return $defaultDescription;
             }
         }
-        return $this->resolveDefaultDescriptionFromAttribute($class, $defaultDescription);
+        return $this->resolveDefaultDescriptionFromAttribute($class);
     }
-    private function resolveDefaultDescriptionFromAttribute(Class_ $class, ?string $defaultDescription) : ?string
+    private function resolveDefaultDescriptionFromAttribute(Class_ $class) : ?string
     {
-        if ($defaultDescription === null && $this->phpAttributeAnalyzer->hasPhpAttribute($class, CommandHelper::ATTRIBUTE)) {
-            $defaultDescriptionFromArgument = $this->commandHelper->getArgumentValueFromAttribute($class, 1);
+        if ($this->phpAttributeAnalyzer->hasPhpAttribute($class, SymfonyAnnotation::AS_COMMAND)) {
+            $defaultDescriptionFromArgument = $this->attributeValueResolver->getArgumentValueFromAttribute($class, 1);
             if (\is_string($defaultDescriptionFromArgument)) {
-                $defaultDescription = $defaultDescriptionFromArgument;
+                return $defaultDescriptionFromArgument;
             }
         }
-        return $defaultDescription;
+        return null;
     }
     private function replaceAsCommandAttribute(Class_ $class, AttributeGroup $createAttributeGroup) : ?Class_
     {
@@ -187,7 +191,7 @@ CODE_SAMPLE
         $replacedAsCommandAttribute = \false;
         foreach ($class->attrGroups as $attrGroup) {
             foreach ($attrGroup->attrs as $attribute) {
-                if ($this->nodeNameResolver->isName($attribute->name, CommandHelper::ATTRIBUTE)) {
+                if ($this->nodeNameResolver->isName($attribute->name, SymfonyAnnotation::AS_COMMAND)) {
                     $hasAsCommandAttribute = \true;
                     $replacedAsCommandAttribute = $this->replaceArguments($attribute, $createAttributeGroup);
                 }
@@ -222,5 +226,16 @@ CODE_SAMPLE
             $replacedAsCommandAttribute = \true;
         }
         return $replacedAsCommandAttribute;
+    }
+    private function defaultDefaultNameFromAttribute(Class_ $class) : ?string
+    {
+        if (!$this->phpAttributeAnalyzer->hasPhpAttribute($class, SymfonyAnnotation::AS_COMMAND)) {
+            return null;
+        }
+        $defaultNameFromArgument = $this->attributeValueResolver->getArgumentValueFromAttribute($class, 0);
+        if (\is_string($defaultNameFromArgument)) {
+            return $defaultNameFromArgument;
+        }
+        return null;
     }
 }

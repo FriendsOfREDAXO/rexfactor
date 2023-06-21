@@ -59,6 +59,9 @@ CODE_SAMPLE
         if (!$this->isName($node, 'in_array')) {
             return null;
         }
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         if (!isset($node->args[1])) {
             return null;
         }
@@ -80,17 +83,15 @@ CODE_SAMPLE
         if ($firstArrayItem->unpack) {
             return null;
         }
-        if (!isset($node->args[0])) {
-            return null;
-        }
-        if (!$node->args[0] instanceof Arg) {
+        if (!isset($node->getArgs()[0])) {
             return null;
         }
         $firstArrayItemValue = $firstArrayItem->value;
+        $firstArg = $node->getArgs()[0];
         // strict
-        if (isset($node->args[2])) {
-            return new Identical($node->args[0]->value, $firstArrayItemValue);
+        if (isset($node->getArgs()[2])) {
+            return new Identical($firstArg->value, $firstArrayItemValue);
         }
-        return new Equal($node->args[0]->value, $firstArrayItemValue);
+        return new Equal($firstArg->value, $firstArrayItemValue);
     }
 }

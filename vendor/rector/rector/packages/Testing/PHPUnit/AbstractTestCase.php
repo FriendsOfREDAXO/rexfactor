@@ -4,10 +4,10 @@ declare (strict_types=1);
 namespace Rector\Testing\PHPUnit;
 
 use PHPUnit\Framework\TestCase;
-use RectorPrefix202305\Psr\Container\ContainerInterface;
+use RectorPrefix202306\Psr\Container\ContainerInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\Kernel\RectorKernel;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use Rector\Core\Util\FileHasher;
 abstract class AbstractTestCase extends TestCase
 {
     /**
@@ -27,7 +27,8 @@ abstract class AbstractTestCase extends TestCase
      */
     protected function bootFromConfigFiles(array $configFiles) : void
     {
-        $configsHash = $this->createConfigsHash($configFiles);
+        $fileHasher = new FileHasher();
+        $configsHash = $fileHasher->hashFiles($configFiles);
         if (isset(self::$kernelsByHash[$configsHash])) {
             $rectorKernel = self::$kernelsByHash[$configsHash];
             self::$currentContainer = $rectorKernel->getContainer();
@@ -56,18 +57,5 @@ abstract class AbstractTestCase extends TestCase
             throw new ShouldNotHappenException($message);
         }
         return $object;
-    }
-    /**
-     * @param string[] $configFiles
-     */
-    private function createConfigsHash(array $configFiles) : string
-    {
-        Assert::allFile($configFiles);
-        Assert::allString($configFiles);
-        $configHash = '';
-        foreach ($configFiles as $configFile) {
-            $configHash .= \md5_file($configFile);
-        }
-        return $configHash;
     }
 }

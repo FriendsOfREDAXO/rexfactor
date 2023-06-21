@@ -22,15 +22,15 @@ use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\Rector\AbstractRector;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Rector\PHPUnit\NodeAnalyzer\ParamAndArgFromArrayResolver;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
 use Rector\PHPUnit\NodeFactory\DataProviderClassMethodFactory;
-use Rector\PHPUnit\NodeManipulator\ParamAndArgFromArrayResolver;
 use Rector\PHPUnit\ValueObject\ArrayArgumentToDataProvider;
 use Rector\PHPUnit\ValueObject\DataProviderClassMethodRecipe;
 use Rector\PHPUnit\ValueObject\ParamAndArg;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\PHPUnit\Tests\Rector\Class_\ArrayArgumentToDataProviderRector\ArrayArgumentToDataProviderRectorTest
  *
@@ -38,6 +38,21 @@ use RectorPrefix202305\Webmozart\Assert\Assert;
  */
 final class ArrayArgumentToDataProviderRector extends AbstractRector implements ConfigurableRectorInterface
 {
+    /**
+     * @readonly
+     * @var \Rector\PHPUnit\NodeFactory\DataProviderClassMethodFactory
+     */
+    private $dataProviderClassMethodFactory;
+    /**
+     * @readonly
+     * @var \Rector\PHPUnit\NodeAnalyzer\ParamAndArgFromArrayResolver
+     */
+    private $paramAndArgFromArrayResolver;
+    /**
+     * @readonly
+     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
+     */
+    private $testsNodeAnalyzer;
     /**
      * @api
      * @var string
@@ -51,21 +66,6 @@ final class ArrayArgumentToDataProviderRector extends AbstractRector implements 
      * @var DataProviderClassMethodRecipe[]
      */
     private $dataProviderClassMethodRecipes = [];
-    /**
-     * @readonly
-     * @var \Rector\PHPUnit\NodeFactory\DataProviderClassMethodFactory
-     */
-    private $dataProviderClassMethodFactory;
-    /**
-     * @readonly
-     * @var \Rector\PHPUnit\NodeManipulator\ParamAndArgFromArrayResolver
-     */
-    private $paramAndArgFromArrayResolver;
-    /**
-     * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
-     */
-    private $testsNodeAnalyzer;
     public function __construct(DataProviderClassMethodFactory $dataProviderClassMethodFactory, ParamAndArgFromArrayResolver $paramAndArgFromArrayResolver, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->dataProviderClassMethodFactory = $dataProviderClassMethodFactory;
@@ -155,11 +155,14 @@ CODE_SAMPLE
         if (!$this->isMethodCallMatch($methodCall, $arrayArgumentToDataProvider)) {
             return;
         }
-        if (\count($methodCall->args) !== 1) {
+        if ($methodCall->isFirstClassCallable()) {
+            return;
+        }
+        if (\count($methodCall->getArgs()) !== 1) {
             throw new ShouldNotHappenException();
         }
         // resolve value types
-        $firstArgumentValue = $methodCall->args[0]->value;
+        $firstArgumentValue = $methodCall->getArgs()[0]->value;
         if (!$firstArgumentValue instanceof Array_) {
             // nothing we can do
             return;
@@ -170,7 +173,7 @@ CODE_SAMPLE
         if ($dataProviderMethodName === null) {
             return;
         }
-        $this->dataProviderClassMethodRecipes[] = new DataProviderClassMethodRecipe($dataProviderMethodName, $methodCall->args);
+        $this->dataProviderClassMethodRecipes[] = new DataProviderClassMethodRecipe($dataProviderMethodName, $methodCall->getArgs());
         $methodCall->args = [];
         $paramAndArgs = $this->paramAndArgFromArrayResolver->resolve($firstArgumentValue, $arrayArgumentToDataProvider->getVariableName());
         foreach ($paramAndArgs as $paramAndArg) {
@@ -207,11 +210,11 @@ CODE_SAMPLE
     }
     private function createDataProviderMethodName(MethodCall $methodCall) : ?string
     {
-        $methodNode = $this->betterNodeFinder->findParentType($methodCall, ClassMethod::class);
-        if (!$methodNode instanceof ClassMethod) {
+        $classMethod = $this->betterNodeFinder->findParentType($methodCall, ClassMethod::class);
+        if (!$classMethod instanceof ClassMethod) {
             return null;
         }
-        $classMethodName = $this->getName($methodNode);
+        $classMethodName = $this->getName($classMethod);
         return 'provideDataFor' . \ucfirst($classMethodName);
     }
     /**

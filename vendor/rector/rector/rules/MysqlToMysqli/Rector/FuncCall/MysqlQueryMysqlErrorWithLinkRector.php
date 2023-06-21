@@ -76,11 +76,14 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         foreach (self::FUNCTION_RENAME_MAP as $oldFunction => $newFunction) {
             if (!$this->isName($node, $oldFunction)) {
                 continue;
             }
-            $args = $node->args;
+            $args = $node->getArgs();
             if ($args === [] || !$this->isProbablyMysql($args[0]->value)) {
                 $connectionVariable = $this->findConnectionVariable($node);
                 $this->removeExistingConnectionParameter($node);

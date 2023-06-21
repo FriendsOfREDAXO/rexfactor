@@ -8,17 +8,17 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config\Definition\Dumper;
+namespace RectorPrefix202306\Symfony\Component\Config\Definition\Dumper;
 
-use RectorPrefix202305\Symfony\Component\Config\Definition\ArrayNode;
-use RectorPrefix202305\Symfony\Component\Config\Definition\BaseNode;
-use RectorPrefix202305\Symfony\Component\Config\Definition\ConfigurationInterface;
-use RectorPrefix202305\Symfony\Component\Config\Definition\EnumNode;
-use RectorPrefix202305\Symfony\Component\Config\Definition\NodeInterface;
-use RectorPrefix202305\Symfony\Component\Config\Definition\PrototypedArrayNode;
-use RectorPrefix202305\Symfony\Component\Config\Definition\ScalarNode;
-use RectorPrefix202305\Symfony\Component\Config\Definition\VariableNode;
-use RectorPrefix202305\Symfony\Component\Yaml\Inline;
+use RectorPrefix202306\Symfony\Component\Config\Definition\ArrayNode;
+use RectorPrefix202306\Symfony\Component\Config\Definition\BaseNode;
+use RectorPrefix202306\Symfony\Component\Config\Definition\ConfigurationInterface;
+use RectorPrefix202306\Symfony\Component\Config\Definition\EnumNode;
+use RectorPrefix202306\Symfony\Component\Config\Definition\NodeInterface;
+use RectorPrefix202306\Symfony\Component\Config\Definition\PrototypedArrayNode;
+use RectorPrefix202306\Symfony\Component\Config\Definition\ScalarNode;
+use RectorPrefix202306\Symfony\Component\Config\Definition\VariableNode;
+use RectorPrefix202306\Symfony\Component\Yaml\Inline;
 /**
  * Dumps a Yaml reference configuration for the given configuration/node instance.
  *
@@ -30,10 +30,16 @@ class YamlReferenceDumper
      * @var string|null
      */
     private $reference;
+    /**
+     * @return string
+     */
     public function dump(ConfigurationInterface $configuration)
     {
         return $this->dumpNode($configuration->getConfigTreeBuilder()->buildTree());
     }
+    /**
+     * @return string
+     */
     public function dumpAtPath(ConfigurationInterface $configuration, string $path)
     {
         $rootNode = $node = $configuration->getConfigTreeBuilder()->buildTree();
@@ -53,6 +59,9 @@ class YamlReferenceDumper
         }
         return $this->dumpNode($node);
     }
+    /**
+     * @return string
+     */
     public function dumpNode(NodeInterface $node)
     {
         $this->reference = '';
@@ -61,7 +70,7 @@ class YamlReferenceDumper
         $this->reference = null;
         return $ref;
     }
-    private function writeNode(NodeInterface $node, NodeInterface $parentNode = null, int $depth = 0, bool $prototypedArray = \false)
+    private function writeNode(NodeInterface $node, NodeInterface $parentNode = null, int $depth = 0, bool $prototypedArray = \false) : void
     {
         $comments = [];
         $default = '';
@@ -85,7 +94,7 @@ class YamlReferenceDumper
                 }
             }
         } elseif ($node instanceof EnumNode) {
-            $comments[] = 'One of ' . \implode('; ', \array_map('json_encode', $node->getValues()));
+            $comments[] = 'One of ' . $node->getPermissibleValues('; ');
             $default = $node->hasDefaultValue() ? Inline::dump($node->getDefaultValue()) : '~';
         } elseif (VariableNode::class === \get_class($node) && \is_array($example)) {
             // If there is an array example, we are sure we dont need to print a default value
@@ -151,13 +160,13 @@ class YamlReferenceDumper
     /**
      * Outputs a single config reference line.
      */
-    private function writeLine(string $text, int $indent = 0)
+    private function writeLine(string $text, int $indent = 0) : void
     {
         $indent = \strlen($text) + $indent;
         $format = '%' . $indent . 's';
         $this->reference .= \sprintf($format, $text) . "\n";
     }
-    private function writeArray(array $array, int $depth)
+    private function writeArray(array $array, int $depth) : void
     {
         $arrayIsList = function (array $array) : bool {
             if (\function_exists('array_is_list')) {

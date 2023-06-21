@@ -13,21 +13,12 @@ use Rector\Core\Rector\AbstractRector;
 use Rector\Doctrine\NodeFactory\EntityIdNodeFactory;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Doctrine\Tests\Rector\Class_\AddEntityIdByConditionRector\AddEntityIdByConditionRectorTest
  */
 final class AddEntityIdByConditionRector extends AbstractRector implements ConfigurableRectorInterface
 {
-    /**
-     * @api
-     * @var string
-     */
-    public const DETECTED_TRAITS = 'detected_traits';
-    /**
-     * @var string[]
-     */
-    private $detectedTraits = [];
     /**
      * @readonly
      * @var \Rector\Doctrine\NodeFactory\EntityIdNodeFactory
@@ -48,6 +39,15 @@ final class AddEntityIdByConditionRector extends AbstractRector implements Confi
      * @var \Rector\Core\NodeAnalyzer\ClassAnalyzer
      */
     private $classAnalyzer;
+    /**
+     * @api
+     * @var string
+     */
+    public const DETECTED_TRAITS = 'detected_traits';
+    /**
+     * @var string[]
+     */
+    private $detectedTraits = [];
     public function __construct(EntityIdNodeFactory $entityIdNodeFactory, ClassInsertManipulator $classInsertManipulator, ReflectionProvider $reflectionProvider, ClassAnalyzer $classAnalyzer)
     {
         $this->entityIdNodeFactory = $entityIdNodeFactory;

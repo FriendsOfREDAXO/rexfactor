@@ -5,19 +5,19 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202305\Nette\Neon;
+namespace RectorPrefix202306\Nette\Neon;
 
 /** @internal */
 final class TokenStream
 {
     /**
-     * @var int
-     */
-    private $pos = 0;
-    /**
      * @var mixed[]
      */
     public $tokens;
+    /**
+     * @var int
+     */
+    private $pos = 0;
     public function __construct(array $tokens)
     {
         /** @var Token[] */

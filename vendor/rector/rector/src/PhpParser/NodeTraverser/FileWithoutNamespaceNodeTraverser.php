@@ -19,6 +19,7 @@ final class FileWithoutNamespaceNodeTraverser extends NodeTraverser
     public function __construct(NodeFinder $nodeFinder)
     {
         $this->nodeFinder = $nodeFinder;
+        parent::__construct();
     }
     /**
      * @template TNode as Node
@@ -27,6 +28,9 @@ final class FileWithoutNamespaceNodeTraverser extends NodeTraverser
      */
     public function traverse(array $nodes) : array
     {
+        if (\current($nodes) instanceof FileWithoutNamespace) {
+            return $nodes;
+        }
         $hasNamespace = (bool) $this->nodeFinder->findFirstInstanceOf($nodes, Namespace_::class);
         if (!$hasNamespace && $nodes !== []) {
             $fileWithoutNamespace = new FileWithoutNamespace($nodes);

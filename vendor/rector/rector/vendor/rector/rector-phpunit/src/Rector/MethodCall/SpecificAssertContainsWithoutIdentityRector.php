@@ -19,14 +19,14 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class SpecificAssertContainsWithoutIdentityRector extends AbstractRector
 {
     /**
-     * @var array<string, array<string, string>>
-     */
-    private const OLD_METHODS_NAMES_TO_NEW_NAMES = ['string' => ['assertContains' => 'assertContainsEquals', 'assertNotContains' => 'assertNotContainsEquals']];
-    /**
      * @readonly
      * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
     private $testsNodeAnalyzer;
+    /**
+     * @var array<string, array<string, string>>
+     */
+    private const OLD_METHODS_NAMES_TO_NEW_NAMES = ['string' => ['assertContains' => 'assertContainsEquals', 'assertNotContains' => 'assertNotContainsEquals']];
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;
@@ -72,20 +72,21 @@ CODE_SAMPLE
         if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, ['assertContains', 'assertNotContains'])) {
             return null;
         }
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         // when second argument is string: do nothing
-        $secondArgType = $this->getType($node->args[1]->value);
+        $secondArgType = $this->getType($node->getArgs()[1]->value);
         if ($secondArgType instanceof StringType) {
             return null;
         }
         //when less then 5 arguments given: do nothing
-        if (!isset($node->args[4])) {
+        if (!isset($node->getArgs()[4])) {
             return null;
         }
-        if ($node->args[4]->value === null) {
-            return null;
-        }
+        $fourthArg = $node->getArgs()[4];
         //when 5th argument check identity is true: do nothing
-        if ($this->valueResolver->isValue($node->args[4]->value, \true)) {
+        if ($this->valueResolver->isValue($fourthArg->value, \true)) {
             return null;
         }
         /* here we search for element of array without identity check  and we can replace functions */

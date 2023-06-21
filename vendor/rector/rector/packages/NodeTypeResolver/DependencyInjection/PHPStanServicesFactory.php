@@ -16,7 +16,7 @@ use PHPStan\Reflection\ReflectionProvider;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\ParameterProvider;
 use Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider;
-use RectorPrefix202305\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202306\Symfony\Component\Filesystem\Filesystem;
 /**
  * Factory so Symfony app can use services from PHPStan container
  *
@@ -24,11 +24,6 @@ use RectorPrefix202305\Symfony\Component\Filesystem\Filesystem;
  */
 final class PHPStanServicesFactory
 {
-    /**
-     * @readonly
-     * @var \PHPStan\DependencyInjection\Container
-     */
-    private $container;
     /**
      * @readonly
      * @var \Rector\Core\Configuration\Parameter\ParameterProvider
@@ -39,6 +34,11 @@ final class PHPStanServicesFactory
      * @var \Rector\NodeTypeResolver\DependencyInjection\PHPStanExtensionsConfigResolver
      */
     private $phpStanExtensionsConfigResolver;
+    /**
+     * @readonly
+     * @var \PHPStan\DependencyInjection\Container
+     */
+    private $container;
     public function __construct(ParameterProvider $parameterProvider, \Rector\NodeTypeResolver\DependencyInjection\PHPStanExtensionsConfigResolver $phpStanExtensionsConfigResolver, \Rector\NodeTypeResolver\DependencyInjection\BleedingEdgeIncludePurifier $bleedingEdgeIncludePurifier)
     {
         $this->parameterProvider = $parameterProvider;

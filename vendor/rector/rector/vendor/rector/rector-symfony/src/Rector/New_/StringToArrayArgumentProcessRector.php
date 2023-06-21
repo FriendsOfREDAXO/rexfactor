@@ -18,24 +18,24 @@ use PHPStan\Type\StringType;
 use Rector\Core\PhpParser\NodeTransformer;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202305\Symfony\Component\Console\Input\StringInput;
+use RectorPrefix202306\Symfony\Component\Console\Input\StringInput;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @see https://github.com/symfony/symfony/pull/27821/files
+ * @changelog https://github.com/symfony/symfony/pull/27821/files
  * @see \Rector\Symfony\Tests\Rector\New_\StringToArrayArgumentProcessRector\StringToArrayArgumentProcessRectorTest
  */
 final class StringToArrayArgumentProcessRector extends AbstractRector
 {
     /**
-     * @var string[]
-     */
-    private const EXCLUDED_PROCESS_METHOD_CALLS = ['setWorkingDirectory', 'addOutput', 'addErrorOutput'];
-    /**
      * @readonly
      * @var \Rector\Core\PhpParser\NodeTransformer
      */
     private $nodeTransformer;
+    /**
+     * @var string[]
+     */
+    private const EXCLUDED_PROCESS_METHOD_CALLS = ['setWorkingDirectory', 'addOutput', 'addErrorOutput'];
     public function __construct(NodeTransformer $nodeTransformer)
     {
         $this->nodeTransformer = $nodeTransformer;
@@ -156,14 +156,11 @@ CODE_SAMPLE
     private function findPreviousNodeAssign(Node $node, Expr $firstArgumentExpr) : ?Assign
     {
         /** @var Assign|null $assign */
-        $assign = $this->betterNodeFinder->findFirstPrevious($node, function (Node $checkedNode) use($firstArgumentExpr) : ?Assign {
+        $assign = $this->betterNodeFinder->findFirstPrevious($node, function (Node $checkedNode) use($firstArgumentExpr) : bool {
             if (!$checkedNode instanceof Assign) {
-                return null;
+                return \false;
             }
-            if (!$this->nodeComparator->areNodesEqual($checkedNode->var, $firstArgumentExpr)) {
-                return null;
-            }
-            return $checkedNode;
+            return $this->nodeComparator->areNodesEqual($checkedNode->var, $firstArgumentExpr);
         });
         return $assign;
     }

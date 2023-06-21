@@ -10,18 +10,18 @@ use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Scalar\String_;
 use Rector\ChangesReporting\Collector\RectorChangeCollector;
 use Rector\Core\NodeAnalyzer\ExprAnalyzer;
-use RectorPrefix202305\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
 final class ArrayManipulator
 {
-    /**
-     * @var \Rector\Core\NodeAnalyzer\ExprAnalyzer
-     */
-    private $exprAnalyzer;
     /**
      * @readonly
      * @var \Rector\ChangesReporting\Collector\RectorChangeCollector
      */
     private $rectorChangeCollector;
+    /**
+     * @var \Rector\Core\NodeAnalyzer\ExprAnalyzer
+     */
+    private $exprAnalyzer;
     public function __construct(RectorChangeCollector $rectorChangeCollector)
     {
         $this->rectorChangeCollector = $rectorChangeCollector;

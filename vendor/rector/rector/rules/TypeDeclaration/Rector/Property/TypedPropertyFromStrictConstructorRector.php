@@ -108,14 +108,14 @@ CODE_SAMPLE
             if (!$this->propertyTypeOverrideGuard->isLegal($property)) {
                 continue;
             }
-            $propertyType = $this->trustedClassMethodPropertyTypeInferer->inferProperty($property, $constructClassMethod);
+            $propertyType = $this->trustedClassMethodPropertyTypeInferer->inferProperty($node, $property, $constructClassMethod);
             if ($this->shouldSkipPropertyType($propertyType)) {
                 continue;
             }
             $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
             // public property can be anything
             if ($property->isPublic()) {
-                $this->phpDocTypeChanger->changeVarType($phpDocInfo, $propertyType);
+                $this->phpDocTypeChanger->changeVarType($property, $phpDocInfo, $propertyType);
                 $hasChanged = \true;
                 continue;
             }

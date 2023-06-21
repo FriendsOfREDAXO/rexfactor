@@ -18,7 +18,7 @@ use Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @changelog https://wiki.php.net/rfc/deprecate_dynamic_properties
  *
@@ -26,10 +26,6 @@ use RectorPrefix202305\Webmozart\Assert\Assert;
  */
 final class AddAllowDynamicPropertiesAttributeRector extends AbstractRector implements AllowEmptyConfigurableRectorInterface, MinPhpVersionInterface
 {
-    /**
-     * @var array<array-key, string>
-     */
-    private $transformOnNamespaces = [];
     /**
      * @readonly
      * @var \Rector\FamilyTree\Reflection\FamilyRelationsAnalyzer
@@ -50,6 +46,10 @@ final class AddAllowDynamicPropertiesAttributeRector extends AbstractRector impl
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
+    /**
+     * @var array<array-key, string>
+     */
+    private $transformOnNamespaces = [];
     public function __construct(FamilyRelationsAnalyzer $familyRelationsAnalyzer, PhpAttributeAnalyzer $phpAttributeAnalyzer, PhpAttributeGroupFactory $phpAttributeGroupFactory, ReflectionProvider $reflectionProvider)
     {
         $this->familyRelationsAnalyzer = $familyRelationsAnalyzer;

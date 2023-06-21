@@ -3,13 +3,18 @@
 declare (strict_types=1);
 namespace Rector\Php55;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Scalar\String_;
 use Rector\Core\PhpParser\Node\Value\ValueResolver;
 final class RegexMatcher
 {
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\Node\Value\ValueResolver
+     */
+    private $valueResolver;
     /**
      * @var string
      * @see https://regex101.com/r/Ok4wuE/1
@@ -25,11 +30,6 @@ final class RegexMatcher
      * @see https://www.php.net/manual/en/reference.pcre.pattern.modifiers.php
      */
     private const ALL_MODIFIERS_VALUES = ['i', 'm', 's', 'x', 'e', 'A', 'D', 'S', 'U', 'X', 'J', 'u'];
-    /**
-     * @readonly
-     * @var \Rector\Core\PhpParser\Node\Value\ValueResolver
-     */
-    private $valueResolver;
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;
@@ -45,23 +45,7 @@ final class RegexMatcher
                 return null;
             }
             $delimiter = $pattern[0];
-            switch ($delimiter) {
-                case '(':
-                    $delimiter = ')';
-                    break;
-                case '{':
-                    $delimiter = '}';
-                    break;
-                case '[':
-                    $delimiter = ']';
-                    break;
-                case '<':
-                    $delimiter = '>';
-                    break;
-                default:
-                    $delimiter = $delimiter;
-                    break;
-            }
+            $delimiter = $delimiter === '(' ? ')' : ($delimiter === '{' ? '}' : ($delimiter === '[' ? ']' : ($delimiter === '<' ? '>' : $delimiter)));
             /** @var string $modifiers */
             $modifiers = $this->resolveModifiers((string) Strings::after($pattern, $delimiter, -1));
             if (\strpos($modifiers, 'e') === \false) {

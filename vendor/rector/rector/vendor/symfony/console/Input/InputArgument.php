@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Console\Input;
+namespace RectorPrefix202306\Symfony\Component\Console\Input;
 
-use RectorPrefix202305\Symfony\Component\Console\Command\Command;
-use RectorPrefix202305\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202305\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202305\Symfony\Component\Console\Completion\Suggestion;
-use RectorPrefix202305\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202305\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202306\Symfony\Component\Console\Command\Command;
+use RectorPrefix202306\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202306\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202306\Symfony\Component\Console\Completion\Suggestion;
+use RectorPrefix202306\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202306\Symfony\Component\Console\Exception\LogicException;
 /**
  * Represents a command line argument.
  *
@@ -48,7 +48,7 @@ class InputArgument
     private $description;
     /**
      * @param string                                                                        $name            The argument name
-     * @param int|null                                                                      $mode            The argument mode: self::REQUIRED or self::OPTIONAL
+     * @param int|null                                                                      $mode            The argument mode: a bit mask of self::REQUIRED, self::OPTIONAL and self::IS_ARRAY
      * @param string                                                                        $description     A description text
      * @param string|bool|int|float|mixed[] $default The default value (for self::OPTIONAL mode only)
      * @param array|\Closure(CompletionInput,CompletionSuggestions):list<string|Suggestion> $suggestedValues The values used for input completion
@@ -96,13 +96,15 @@ class InputArgument
     /**
      * Sets the default value.
      *
+     * @return void
+     *
      * @throws LogicException When incorrect default value is given
      * @param string|bool|int|float|mixed[] $default
      */
     public function setDefault($default = null)
     {
         if (1 > \func_num_args()) {
-            \RectorPrefix202305\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+            \RectorPrefix202306\trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
         }
         if ($this->isRequired() && null !== $default) {
             throw new LogicException('Cannot set a default value except for InputArgument::OPTIONAL mode.');

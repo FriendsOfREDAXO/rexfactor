@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Application;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Declare_;
@@ -95,7 +95,7 @@ final class UseImportsAdder
         if ($stmts === []) {
             return;
         }
-        if ($stmts[$indexStmt] instanceof Use_) {
+        if (isset($stmts[$indexStmt]) && $stmts[$indexStmt] instanceof Use_) {
             $comments = (array) $stmts[$indexStmt]->getAttribute(AttributeKey::COMMENTS);
             if ($comments !== []) {
                 $newUses[0]->setAttribute(AttributeKey::COMMENTS, $stmts[$indexStmt]->getAttribute(AttributeKey::COMMENTS));

@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202305\Symfony\Component\Config\Definition;
+namespace RectorPrefix202306\Symfony\Component\Config\Definition;
 
-use RectorPrefix202305\Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
+use RectorPrefix202306\Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 /**
  * This node represents a value of variable type in the config tree.
  *
@@ -25,6 +25,7 @@ class VariableNode extends BaseNode implements PrototypeNodeInterface
     protected $defaultValue;
     protected $allowEmptyValue = \true;
     /**
+     * @return void
      * @param mixed $value
      */
     public function setDefaultValue($value)
@@ -48,16 +49,22 @@ class VariableNode extends BaseNode implements PrototypeNodeInterface
      * Sets if this node is allowed to have an empty value.
      *
      * @param bool $boolean True if this entity will accept empty values
+     *
+     * @return void
      */
     public function setAllowEmptyValue(bool $boolean)
     {
         $this->allowEmptyValue = $boolean;
     }
+    /**
+     * @return void
+     */
     public function setName(string $name)
     {
         $this->name = $name;
     }
     /**
+     * @return void
      * @param mixed $value
      */
     protected function validateType($value)

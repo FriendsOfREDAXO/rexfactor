@@ -3,14 +3,19 @@
 declare (strict_types=1);
 namespace Rector\Core\FileSystem;
 
-use RectorPrefix202305\Nette\Utils\Strings;
-use RectorPrefix202305\Symfony\Component\Filesystem\Filesystem;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use RectorPrefix202306\Nette\Utils\Strings;
+use RectorPrefix202306\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202306\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Core\Tests\FileSystem\FilePathHelperTest
  */
 final class FilePathHelper
 {
+    /**
+     * @readonly
+     * @var \Symfony\Component\Filesystem\Filesystem
+     */
+    private $filesystem;
     /**
      * @see https://regex101.com/r/d4F5Fm/1
      * @var string
@@ -25,11 +30,6 @@ final class FilePathHelper
      * @var string
      */
     private const SCHEME_UNDEFINED = 'undefined';
-    /**
-     * @readonly
-     * @var \Symfony\Component\Filesystem\Filesystem
-     */
-    private $filesystem;
     public function __construct(Filesystem $filesystem)
     {
         $this->filesystem = $filesystem;

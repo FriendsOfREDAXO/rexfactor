@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Php72\NodeFactory;
 
-use RectorPrefix202305\Nette\Utils\Strings;
+use RectorPrefix202306\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\ComplexType;
 use PhpParser\Node\Expr;
@@ -50,11 +50,6 @@ use Rector\StaticTypeMapper\StaticTypeMapper;
 use ReflectionParameter;
 final class AnonymousFunctionFactory
 {
-    /**
-     * @var string
-     * @see https://regex101.com/r/jkLLlM/2
-     */
-    private const DIM_FETCH_REGEX = '#(\\$|\\\\|\\x0)(?<number>\\d+)#';
     /**
      * @readonly
      * @var \Rector\NodeNameResolver\NodeNameResolver
@@ -105,6 +100,11 @@ final class AnonymousFunctionFactory
      * @var \Rector\Core\PhpParser\Parser\InlineCodeParser
      */
     private $inlineCodeParser;
+    /**
+     * @var string
+     * @see https://regex101.com/r/jkLLlM/2
+     */
+    private const DIM_FETCH_REGEX = '#(\\$|\\\\|\\x0)(?<number>\\d+)#';
     public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, NodeFactory $nodeFactory, StaticTypeMapper $staticTypeMapper, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, SimplePhpParser $simplePhpParser, ClosureNestedUsesDecorator $closureNestedUsesDecorator, AstResolver $astResolver, PrivatesAccessor $privatesAccessor, InlineCodeParser $inlineCodeParser)
     {
         $this->nodeNameResolver = $nodeNameResolver;

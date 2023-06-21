@@ -16,9 +16,7 @@ use PhpParser\Node\Stmt\PropertyProperty;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
-use Rector\Core\Contract\PhpParser\NodePrinterInterface;
-use Rector\Core\Exception\ShouldNotHappenException;
-use Rector\Core\NodeManipulator\ClassInsertManipulator;
+use Rector\Core\PhpParser\Printer\BetterStandardPrinter;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\MethodName;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -33,24 +31,18 @@ final class DowngradePropertyPromotionRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Core\NodeManipulator\ClassInsertManipulator
-     */
-    private $classInsertManipulator;
-    /**
-     * @readonly
      * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger
      */
     private $phpDocTypeChanger;
     /**
      * @readonly
-     * @var \Rector\Core\Contract\PhpParser\NodePrinterInterface
+     * @var \Rector\Core\PhpParser\Printer\BetterStandardPrinter
      */
-    private $nodePrinter;
-    public function __construct(ClassInsertManipulator $classInsertManipulator, PhpDocTypeChanger $phpDocTypeChanger, NodePrinterInterface $nodePrinter)
+    private $betterStandardPrinter;
+    public function __construct(PhpDocTypeChanger $phpDocTypeChanger, BetterStandardPrinter $betterStandardPrinter)
     {
-        $this->classInsertManipulator = $classInsertManipulator;
         $this->phpDocTypeChanger = $phpDocTypeChanger;
-        $this->nodePrinter = $nodePrinter;
+        $this->betterStandardPrinter = $betterStandardPrinter;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -92,7 +84,9 @@ CODE_SAMPLE
         if ($promotedParams === []) {
             return null;
         }
-        $properties = $this->resolvePropertiesFromPromotedParams($promotedParams, $node);
+        /** @var ClassMethod $constructClassMethod */
+        $constructClassMethod = $node->getMethod(MethodName::CONSTRUCT);
+        $properties = $this->resolvePropertiesFromPromotedParams($constructClassMethod, $promotedParams, $node);
         $this->addPropertyAssignsToConstructorClassMethod($properties, $node, $oldComments);
         foreach ($promotedParams as $promotedParam) {
             $promotedParam->flags = 0;
@@ -135,7 +129,7 @@ CODE_SAMPLE
     }
     private function setParamAttrGroupAsComment(Param $param) : void
     {
-        $attrGroupsPrint = $this->nodePrinter->print($param->attrGroups);
+        $attrGroupsPrint = $this->betterStandardPrinter->print($param->attrGroups);
         $comments = $param->getAttribute(AttributeKey::COMMENTS);
         if (\is_array($comments)) {
             /** @var Comment[] $comments */
@@ -151,10 +145,10 @@ CODE_SAMPLE
      * @param Param[] $promotedParams
      * @return Property[]
      */
-    private function resolvePropertiesFromPromotedParams(array $promotedParams, Class_ $class) : array
+    private function resolvePropertiesFromPromotedParams(ClassMethod $classMethod, array $promotedParams, Class_ $class) : array
     {
-        $properties = $this->createPropertiesFromParams($promotedParams);
-        $this->classInsertManipulator->addPropertiesToClass($class, $properties);
+        $properties = $this->createPropertiesFromParams($classMethod, $promotedParams);
+        $class->stmts = \array_merge($properties, $class->stmts);
         return $properties;
     }
     /**
@@ -179,14 +173,14 @@ CODE_SAMPLE
      * @param Param[] $params
      * @return Property[]
      */
-    private function createPropertiesFromParams(array $params) : array
+    private function createPropertiesFromParams(ClassMethod $classMethod, array $params) : array
     {
         $properties = [];
         foreach ($params as $param) {
             /** @var string $name */
             $name = $this->getName($param->var);
             $property = new Property($param->flags, [new PropertyProperty($name)], [], $param->type);
-            $this->decoratePropertyWithParamDocInfo($param, $property);
+            $this->decoratePropertyWithParamDocInfo($classMethod, $param, $property);
             $hasNew = $param->default instanceof Expr && (bool) $this->betterNodeFinder->findFirstInstanceOf($param->default, New_::class);
             if ($param->default instanceof Expr && !$hasNew) {
                 $property->props[0]->default = $param->default;
@@ -195,12 +189,8 @@ CODE_SAMPLE
         }
         return $properties;
     }
-    private function decoratePropertyWithParamDocInfo(Param $param, Property $property) : void
+    private function decoratePropertyWithParamDocInfo(ClassMethod $constructorClassMethod, Param $param, Property $property) : void
     {
-        $constructorClassMethod = $this->betterNodeFinder->findParentType($param, ClassMethod::class);
-        if (!$constructorClassMethod instanceof ClassMethod) {
-            throw new ShouldNotHappenException();
-        }
         $phpDocInfo = $this->phpDocInfoFactory->createFromNode($constructorClassMethod);
         if (!$phpDocInfo instanceof PhpDocInfo) {
             return;
@@ -214,6 +204,6 @@ CODE_SAMPLE
             return;
         }
         $propertyDocInfo = $this->phpDocInfoFactory->createEmpty($property);
-        $this->phpDocTypeChanger->changeVarTypeNode($propertyDocInfo, $paramTagValueNode->type);
+        $this->phpDocTypeChanger->changeVarTypeNode($property, $propertyDocInfo, $paramTagValueNode->type);
     }
 }

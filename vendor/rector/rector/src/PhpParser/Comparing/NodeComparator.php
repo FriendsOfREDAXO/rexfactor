@@ -5,8 +5,7 @@ namespace Rector\Core\PhpParser\Comparing;
 
 use PhpParser\Node;
 use Rector\Comments\CommentRemover;
-use Rector\Core\Contract\PhpParser\NodePrinterInterface;
-use RectorPrefix202305\Webmozart\Assert\Assert;
+use Rector\Core\PhpParser\Printer\BetterStandardPrinter;
 final class NodeComparator
 {
     /**
@@ -16,13 +15,13 @@ final class NodeComparator
     private $commentRemover;
     /**
      * @readonly
-     * @var \Rector\Core\Contract\PhpParser\NodePrinterInterface
+     * @var \Rector\Core\PhpParser\Printer\BetterStandardPrinter
      */
-    private $nodePrinter;
-    public function __construct(CommentRemover $commentRemover, NodePrinterInterface $nodePrinter)
+    private $betterStandardPrinter;
+    public function __construct(CommentRemover $commentRemover, BetterStandardPrinter $betterStandardPrinter)
     {
         $this->commentRemover = $commentRemover;
-        $this->nodePrinter = $nodePrinter;
+        $this->betterStandardPrinter = $betterStandardPrinter;
     }
     /**
      * Removes all comments from both nodes
@@ -31,7 +30,7 @@ final class NodeComparator
     public function printWithoutComments($node) : string
     {
         $node = $this->commentRemover->removeFromNode($node);
-        $content = $this->nodePrinter->print($node);
+        $content = $this->betterStandardPrinter->print($node);
         return \trim($content);
     }
     /**
@@ -46,19 +45,16 @@ final class NodeComparator
         if (!$firstNode instanceof Node && $secondNode instanceof Node) {
             return \false;
         }
+        if (\is_array($firstNode) && !\is_array($secondNode)) {
+            return \false;
+        }
+        if (!\is_array($secondNode)) {
+            return $this->printWithoutComments($firstNode) === $this->printWithoutComments($secondNode);
+        }
         if (\is_array($firstNode)) {
-            if (!\is_array($secondNode)) {
-                return \false;
-            }
-            Assert::allIsAOf($firstNode, Node::class);
+            return $this->printWithoutComments($firstNode) === $this->printWithoutComments($secondNode);
         }
-        if (\is_array($secondNode)) {
-            if (!\is_array($firstNode)) {
-                return \false;
-            }
-            Assert::allIsAOf($secondNode, Node::class);
-        }
-        return $this->printWithoutComments($firstNode) === $this->printWithoutComments($secondNode);
+        return \false;
     }
     /**
      * @api
@@ -92,8 +88,8 @@ final class NodeComparator
         if ($firstNode->getEndTokenPos() !== $secondNode->getEndTokenPos()) {
             return \false;
         }
-        $printFirstNode = $this->nodePrinter->print($firstNode);
-        $printSecondNode = $this->nodePrinter->print($secondNode);
+        $printFirstNode = $this->betterStandardPrinter->print($firstNode);
+        $printSecondNode = $this->betterStandardPrinter->print($secondNode);
         return $printFirstNode === $printSecondNode;
     }
 }

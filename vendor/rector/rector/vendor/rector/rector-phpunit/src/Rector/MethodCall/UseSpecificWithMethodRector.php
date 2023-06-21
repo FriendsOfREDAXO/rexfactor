@@ -74,6 +74,9 @@ CODE_SAMPLE
         if (!$this->isName($node->name, 'with')) {
             return null;
         }
+        if ($node->isFirstClassCallable()) {
+            return null;
+        }
         foreach ($node->getArgs() as $i => $argNode) {
             if (!$argNode->value instanceof MethodCall) {
                 continue;
@@ -82,7 +85,7 @@ CODE_SAMPLE
             if (!$this->isName($methodCall->name, 'equalTo')) {
                 continue;
             }
-            $node->args[$i] = $methodCall->args[0];
+            $node->args[$i] = $methodCall->getArgs()[0];
         }
         return $node;
     }

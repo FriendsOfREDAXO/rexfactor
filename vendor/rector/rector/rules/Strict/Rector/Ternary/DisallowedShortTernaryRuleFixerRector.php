@@ -8,7 +8,6 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Ternary;
 use PHPStan\Analyser\Scope;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Strict\NodeFactory\ExactCompareFactory;
 use Rector\Strict\Rector\AbstractFalsyScalarRuleFixerRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
@@ -63,12 +62,8 @@ CODE_SAMPLE
     /**
      * @param Ternary $node
      */
-    public function refactor(Node $node) : ?Ternary
+    public function refactorWithScope(Node $node, Scope $scope) : ?Ternary
     {
-        $scope = $node->getAttribute(AttributeKey::SCOPE);
-        if (!$scope instanceof Scope) {
-            return null;
-        }
         // skip non-short ternary
         if ($node->if instanceof Expr) {
             return null;
@@ -90,7 +85,10 @@ CODE_SAMPLE
     private function refactorResetFuncCall(Ternary $ternary, FuncCall $resetFuncCall, Scope $scope) : void
     {
         $ternary->if = $ternary->cond;
-        $firstArgValue = $resetFuncCall->args[0]->value;
+        if ($resetFuncCall->isFirstClassCallable()) {
+            return;
+        }
+        $firstArgValue = $resetFuncCall->getArgs()[0]->value;
         $firstArgType = $scope->getType($firstArgValue);
         $falsyCompareExpr = $this->exactCompareFactory->createNotIdenticalFalsyCompare($firstArgType, $firstArgValue, $this->treatAsNonEmpty);
         if (!$falsyCompareExpr instanceof Expr) {

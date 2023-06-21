@@ -5,12 +5,13 @@ namespace Rector\DeadCode\Rector\For_;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Scalar;
+use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Stmt\Else_;
 use PhpParser\Node\Stmt\For_;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\Node\Stmt\If_;
+use PhpParser\NodeTraverser;
 use Rector\Core\Rector\AbstractRector;
 use Rector\EarlyReturn\NodeTransformer\ConditionInverter;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -34,13 +35,9 @@ final class RemoveDeadIfForeachForRector extends AbstractRector
         return new RuleDefinition('Remove if, foreach and for that does not do anything', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
-    public function run($someObject)
+    public function run($value)
     {
-        $value = 5;
         if ($value) {
-        }
-
-        if ($someObject->run()) {
         }
 
         foreach ($values as $value) {
@@ -53,12 +50,8 @@ CODE_SAMPLE
 , <<<'CODE_SAMPLE'
 class SomeClass
 {
-    public function run($someObject)
+    public function run($value)
     {
-        $value = 5;
-        if ($someObject->run()) {
-        }
-
         return $value;
     }
 }
@@ -74,61 +67,37 @@ CODE_SAMPLE
     }
     /**
      * @param For_|If_|Foreach_ $node
+     * @return \PhpParser\Node|null|int
      */
-    public function refactor(Node $node) : ?Node
+    public function refactor(Node $node)
     {
         if ($node instanceof If_) {
-            $this->processIf($node);
-            return null;
+            if ($node->stmts !== []) {
+                return null;
+            }
+            if ($node->elseifs !== []) {
+                return null;
+            }
+            // useless if ()
+            if (!$node->else instanceof Else_) {
+                if ($this->hasNodeSideEffect($node->cond)) {
+                    return null;
+                }
+                return NodeTraverser::REMOVE_NODE;
+            }
+            $node->cond = $this->conditionInverter->createInvertedCondition($node->cond);
+            $node->stmts = $node->else->stmts;
+            $node->else = null;
+            return $node;
         }
-        if ($node instanceof Foreach_) {
-            $this->processForeach($node);
-            return null;
+        // nothing to "for"
+        if ($node->stmts === []) {
+            return NodeTraverser::REMOVE_NODE;
         }
-        // For
-        if ($node->stmts !== []) {
-            return null;
-        }
-        $this->removeNode($node);
         return null;
     }
-    private function processIf(If_ $if) : void
+    private function hasNodeSideEffect(Expr $expr) : bool
     {
-        if ($if->stmts !== []) {
-            return;
-        }
-        if ($if->elseifs !== []) {
-            return;
-        }
-        if ($if->else instanceof Else_) {
-            $if->cond = $this->conditionInverter->createInvertedCondition($if->cond);
-            $if->stmts = $if->else->stmts;
-            $if->else = null;
-            return;
-        }
-        if ($this->isNodeWithSideEffect($if->cond)) {
-            return;
-        }
-        $this->removeNode($if);
-    }
-    private function processForeach(Foreach_ $foreach) : void
-    {
-        if ($foreach->stmts !== []) {
-            return;
-        }
-        if ($this->isNodeWithSideEffect($foreach->expr)) {
-            return;
-        }
-        $this->removeNode($foreach);
-    }
-    private function isNodeWithSideEffect(Expr $expr) : bool
-    {
-        if ($expr instanceof Variable) {
-            return \false;
-        }
-        if ($expr instanceof Scalar) {
-            return \false;
-        }
-        return !$this->valueResolver->isTrueOrFalse($expr);
+        return $this->betterNodeFinder->hasInstancesOf($expr, [CallLike::class, Assign::class]);
     }
 }

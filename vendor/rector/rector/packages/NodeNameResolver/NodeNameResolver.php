@@ -10,27 +10,16 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassLike;
+use PHPStan\Analyser\Scope;
 use Rector\CodingStyle\Naming\ClassNaming;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeAnalyzer\CallAnalyzer;
 use Rector\Core\Util\StringUtils;
 use Rector\NodeNameResolver\Contract\NodeNameResolverInterface;
-use Rector\NodeNameResolver\Error\InvalidNameNodeReporter;
 use Rector\NodeNameResolver\Regex\RegexPatternDetector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 final class NodeNameResolver
 {
-    /**
-     * Used to check if a string might contain a regex or fnmatch pattern
-     *
-     * @var string
-     * @see https://regex101.com/r/ImTV1W/1
-     */
-    private const CONTAINS_WILDCARD_CHARS_REGEX = '/[\\*\\#\\~\\/]/';
-    /**
-     * @var array<string, NodeNameResolverInterface|null>
-     */
-    private $nodeNameResolversByClass = [];
     /**
      * @readonly
      * @var \Rector\NodeNameResolver\Regex\RegexPatternDetector
@@ -43,11 +32,6 @@ final class NodeNameResolver
     private $classNaming;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\Error\InvalidNameNodeReporter
-     */
-    private $invalidNameNodeReporter;
-    /**
-     * @readonly
      * @var \Rector\Core\NodeAnalyzer\CallAnalyzer
      */
     private $callAnalyzer;
@@ -57,13 +41,23 @@ final class NodeNameResolver
      */
     private $nodeNameResolvers = [];
     /**
+     * Used to check if a string might contain a regex or fnmatch pattern
+     *
+     * @var string
+     * @see https://regex101.com/r/ImTV1W/1
+     */
+    private const CONTAINS_WILDCARD_CHARS_REGEX = '/[\\*\\#\\~\\/]/';
+    /**
+     * @var array<string, NodeNameResolverInterface|null>
+     */
+    private $nodeNameResolversByClass = [];
+    /**
      * @param NodeNameResolverInterface[] $nodeNameResolvers
      */
-    public function __construct(RegexPatternDetector $regexPatternDetector, ClassNaming $classNaming, InvalidNameNodeReporter $invalidNameNodeReporter, CallAnalyzer $callAnalyzer, array $nodeNameResolvers = [])
+    public function __construct(RegexPatternDetector $regexPatternDetector, ClassNaming $classNaming, CallAnalyzer $callAnalyzer, iterable $nodeNameResolvers = [])
     {
         $this->regexPatternDetector = $regexPatternDetector;
         $this->classNaming = $classNaming;
-        $this->invalidNameNodeReporter = $invalidNameNodeReporter;
         $this->callAnalyzer = $callAnalyzer;
         $this->nodeNameResolvers = $nodeNameResolvers;
     }
@@ -131,13 +125,11 @@ final class NodeNameResolver
         if (\is_string($namespacedName)) {
             return $namespacedName;
         }
-        if ($node instanceof MethodCall || $node instanceof StaticCall) {
-            if ($this->isCallOrIdentifier($node->name)) {
-                return null;
-            }
-            $this->invalidNameNodeReporter->reportInvalidNodeForName($node);
+        if (($node instanceof MethodCall || $node instanceof StaticCall) && $this->isCallOrIdentifier($node->name)) {
+            return null;
         }
-        $resolvedName = $this->resolveNodeName($node);
+        $scope = $node->getAttribute(AttributeKey::SCOPE);
+        $resolvedName = $this->resolveNodeName($node, $scope);
         if ($resolvedName !== null) {
             return $resolvedName;
         }
@@ -234,13 +226,13 @@ final class NodeNameResolver
         }
         return $this->isStringName($resolvedName, $desiredName);
     }
-    private function resolveNodeName(Node $node) : ?string
+    private function resolveNodeName(Node $node, ?Scope $scope) : ?string
     {
         $nodeClass = \get_class($node);
         if (\array_key_exists($nodeClass, $this->nodeNameResolversByClass)) {
             $resolver = $this->nodeNameResolversByClass[$nodeClass];
             if ($resolver instanceof NodeNameResolverInterface) {
-                return $resolver->resolve($node);
+                return $resolver->resolve($node, $scope);
             }
             return null;
         }
@@ -249,7 +241,7 @@ final class NodeNameResolver
                 continue;
             }
             $this->nodeNameResolversByClass[$nodeClass] = $nodeNameResolver;
-            return $nodeNameResolver->resolve($node);
+            return $nodeNameResolver->resolve($node, $scope);
         }
         $this->nodeNameResolversByClass[$nodeClass] = null;
         return null;

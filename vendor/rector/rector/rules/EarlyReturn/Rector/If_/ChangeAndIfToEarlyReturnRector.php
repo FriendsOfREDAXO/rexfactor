@@ -6,22 +6,24 @@ namespace Rector\EarlyReturn\Rector\If_;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
+use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Break_;
+use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Continue_;
-use PhpParser\Node\Stmt\Else_;
-use PhpParser\Node\Stmt\ElseIf_;
+use PhpParser\Node\Stmt\Foreach_;
+use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\If_;
+use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Return_;
-use Rector\Core\Contract\PhpParser\Node\StmtsAwareInterface;
 use Rector\Core\NodeManipulator\IfManipulator;
+use Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\Core\Rector\AbstractRector;
 use Rector\EarlyReturn\NodeAnalyzer\IfAndAnalyzer;
 use Rector\EarlyReturn\NodeAnalyzer\SimpleScalarAnalyzer;
 use Rector\EarlyReturn\NodeFactory\InvertedIfFactory;
 use Rector\NodeCollector\BinaryOpConditionsCollector;
 use Rector\NodeNestingScope\ContextAnalyzer;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -107,10 +109,10 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [StmtsAwareInterface::class];
+        return [ClassMethod::class, Function_::class, Foreach_::class, Closure::class, FileWithoutNamespace::class, Namespace_::class];
     }
     /**
-     * @param StmtsAwareInterface $node
+     * @param Stmt\ClassMethod|Stmt\Function_|Stmt\Foreach_|Expr\Closure|FileWithoutNamespace|Stmt\Namespace_ $node
      */
     public function refactor(Node $node) : ?Node
     {
@@ -126,7 +128,7 @@ CODE_SAMPLE
                 continue;
             }
             $nextStmt = $stmts[$key + 1] ?? null;
-            if ($this->shouldSkip($node, $stmt, $nextStmt)) {
+            if ($this->shouldSkip($stmt, $nextStmt)) {
                 $newStmts[] = $stmt;
                 continue;
             }
@@ -192,7 +194,7 @@ CODE_SAMPLE
         }
         return \array_merge($result, [$ifNextReturnClone]);
     }
-    private function shouldSkip(StmtsAwareInterface $stmtsAware, If_ $if, ?Stmt $nexStmt) : bool
+    private function shouldSkip(If_ $if, ?Stmt $nexStmt) : bool
     {
         if (!$this->ifManipulator->isIfWithOnlyOneStmt($if)) {
             return \true;
@@ -203,12 +205,6 @@ CODE_SAMPLE
         if (!$this->ifManipulator->isIfWithoutElseAndElseIfs($if)) {
             return \true;
         }
-        if ($this->isParentIfReturnsVoidOrParentIfHasNextNode($stmtsAware)) {
-            return \true;
-        }
-        if ($this->isNestedIfInLoop($if, $stmtsAware)) {
-            return \true;
-        }
         // is simple return? skip it
         $onlyStmt = $if->stmts[0];
         if ($onlyStmt instanceof Return_ && $onlyStmt->expr instanceof Expr && $this->simpleScalarAnalyzer->isSimpleScalar($onlyStmt->expr)) {
@@ -217,40 +213,13 @@ CODE_SAMPLE
         if ($this->ifAndAnalyzer->isIfAndWithInstanceof($if->cond)) {
             return \true;
         }
-        return !$this->isLastIfOrBeforeLastReturn($if, $nexStmt);
+        return !$this->isLastIfOrBeforeLastReturn($nexStmt);
     }
-    private function isParentIfReturnsVoidOrParentIfHasNextNode(StmtsAwareInterface $stmtsAware) : bool
+    private function isLastIfOrBeforeLastReturn(?Stmt $nextStmt) : bool
     {
-        if (!$stmtsAware instanceof If_) {
-            $parent = $stmtsAware->getAttribute(AttributeKey::PARENT_NODE);
-            if ($parent instanceof If_) {
-                $node = $parent->getAttribute(AttributeKey::NEXT_NODE);
-                return !$node instanceof Return_;
-            }
-            return \false;
+        if (!$nextStmt instanceof Stmt) {
+            return \true;
         }
-        $nextNode = $stmtsAware->getAttribute(AttributeKey::NEXT_NODE);
-        return $nextNode instanceof Node;
-    }
-    private function isNestedIfInLoop(If_ $if, StmtsAwareInterface $stmtsAware) : bool
-    {
-        if (!$this->contextAnalyzer->isInLoop($if)) {
-            return \false;
-        }
-        return $stmtsAware instanceof If_ || $stmtsAware instanceof Else_ || $stmtsAware instanceof ElseIf_;
-    }
-    private function isLastIfOrBeforeLastReturn(If_ $if, ?Stmt $nextStmt) : bool
-    {
-        if ($nextStmt instanceof Node) {
-            return $nextStmt instanceof Return_;
-        }
-        $parentNode = $if->getAttribute(AttributeKey::PARENT_NODE);
-        if (!$parentNode instanceof Node) {
-            return \false;
-        }
-        if ($parentNode instanceof If_) {
-            return $this->isLastIfOrBeforeLastReturn($parentNode, $nextStmt);
-        }
-        return !$this->contextAnalyzer->hasAssignWithIndirectReturn($parentNode, $if);
+        return $nextStmt instanceof Return_;
     }
 }
