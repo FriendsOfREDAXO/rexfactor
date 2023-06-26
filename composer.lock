@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "21c9a48b7b5165b30eeb53366b71f45b",
+    "content-hash": "6e9e8c8a2bd51635304c1feac1ac1cb3",
     "packages": [
         {
             "name": "composer/pcre",
@@ -427,16 +427,16 @@
         },
         {
             "name": "friendsofphp/php-cs-fixer",
-            "version": "v3.18.0",
+            "version": "v3.19.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer.git",
-                "reference": "b123395c9fa3a70801f816f13606c0f3a7ada8df"
+                "reference": "210dd89560edb27a8e0d5086b734ac5b5fd4e0e4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHP-CS-Fixer/PHP-CS-Fixer/zipball/b123395c9fa3a70801f816f13606c0f3a7ada8df",
-                "reference": "b123395c9fa3a70801f816f13606c0f3a7ada8df",
+                "url": "https://api.github.com/repos/PHP-CS-Fixer/PHP-CS-Fixer/zipball/210dd89560edb27a8e0d5086b734ac5b5fd4e0e4",
+                "reference": "210dd89560edb27a8e0d5086b734ac5b5fd4e0e4",
                 "shasum": ""
             },
             "require": {
@@ -511,7 +511,7 @@
             ],
             "support": {
                 "issues": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/issues",
-                "source": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/tree/v3.18.0"
+                "source": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/tree/v3.19.2"
             },
             "funding": [
                 {
@@ -519,20 +519,20 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-06-18T22:25:45+00:00"
+            "time": "2023-06-25T16:42:58+00:00"
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.10.18",
+            "version": "1.10.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "52b6416c579663eebdd2f1d97df21971daf3b43f"
+                "reference": "b2a30186be2e4d97dce754ae4e65eb0ec2f04eb5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/52b6416c579663eebdd2f1d97df21971daf3b43f",
-                "reference": "52b6416c579663eebdd2f1d97df21971daf3b43f",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/b2a30186be2e4d97dce754ae4e65eb0ec2f04eb5",
+                "reference": "b2a30186be2e4d97dce754ae4e65eb0ec2f04eb5",
                 "shasum": ""
             },
             "require": {
@@ -581,7 +581,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-06-07T22:00:43+00:00"
+            "time": "2023-06-21T20:07:58+00:00"
         },
         {
             "name": "psr/cache",
