@@ -3,6 +3,7 @@
 $finder = (new PhpCsFixer\Finder())
     ->in(__DIR__.'/../')
     ->exclude('tests')
+    ->exclude('node_modules')
 ;
 
 return (new Redaxo\PhpCsFixerConfig\Config())
