@@ -212,6 +212,7 @@ final class RexFactor
         }
 
         $skipList[] = "'*/vendor/*'";
+        $skipList[] = "'*/node_modules/*'";
         if (!self::constantExists(PHPUnitSetList::class, $setNameOrRector)) {
             $skipList[] = "'*/tests/*'";
         }
