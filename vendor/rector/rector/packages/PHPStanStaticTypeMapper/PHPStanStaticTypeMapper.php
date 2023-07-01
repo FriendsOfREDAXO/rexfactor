@@ -10,7 +10,9 @@ use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\Accessory\HasMethodType;
 use PHPStan\Type\ConditionalType;
+use PHPStan\Type\ObjectShapeType;
 use PHPStan\Type\Type;
+use Rector\BetterPhpDocParser\ValueObject\Type\FullyQualifiedIdentifierTypeNode;
 use Rector\Core\Exception\NotImplementedYetException;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
@@ -28,16 +30,13 @@ final class PHPStanStaticTypeMapper
     {
         $this->typeMappers = $typeMappers;
     }
-    /**
-     * @param TypeKind::* $typeKind
-     */
-    public function mapToPHPStanPhpDocTypeNode(Type $type, string $typeKind) : TypeNode
+    public function mapToPHPStanPhpDocTypeNode(Type $type) : TypeNode
     {
         foreach ($this->typeMappers as $typeMapper) {
             if (!\is_a($type, $typeMapper->getNodeClass(), \true)) {
                 continue;
             }
-            return $typeMapper->mapToPHPStanPhpDocTypeNode($type, $typeKind);
+            return $typeMapper->mapToPHPStanPhpDocTypeNode($type);
         }
         if ($type->isString()->yes()) {
             return new IdentifierTypeNode('string');
@@ -47,6 +46,9 @@ final class PHPStanStaticTypeMapper
         }
         if ($type instanceof ConditionalType) {
             return new IdentifierTypeNode('mixed');
+        }
+        if ($type instanceof ObjectShapeType) {
+            return new FullyQualifiedIdentifierTypeNode('stdClass');
         }
         throw new NotImplementedYetException(__METHOD__ . ' for ' . \get_class($type));
     }

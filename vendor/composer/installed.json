@@ -538,17 +538,17 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.10.21",
-            "version_normalized": "1.10.21.0",
+            "version": "1.10.22",
+            "version_normalized": "1.10.22.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "b2a30186be2e4d97dce754ae4e65eb0ec2f04eb5"
+                "reference": "97d694dfd4ceb57bcce4e3b38548f13ea62e4287"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/b2a30186be2e4d97dce754ae4e65eb0ec2f04eb5",
-                "reference": "b2a30186be2e4d97dce754ae4e65eb0ec2f04eb5",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/97d694dfd4ceb57bcce4e3b38548f13ea62e4287",
+                "reference": "97d694dfd4ceb57bcce4e3b38548f13ea62e4287",
                 "shasum": ""
             },
             "require": {
@@ -557,7 +557,7 @@
             "conflict": {
                 "phpstan/phpstan-shim": "*"
             },
-            "time": "2023-06-21T20:07:58+00:00",
+            "time": "2023-06-30T20:04:11+00:00",
             "bin": [
                 "phpstan",
                 "phpstan.phar"
@@ -812,22 +812,22 @@
         },
         {
             "name": "rector/rector",
-            "version": "0.17.1",
-            "version_normalized": "0.17.1.0",
+            "version": "0.17.2",
+            "version_normalized": "0.17.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rectorphp/rector.git",
-                "reference": "11401dc1abba0a359fabbf98f1057f4e65129f86"
+                "reference": "b8f72ff7e4914bb1d1557cc5c6d33898f7fd2bfb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rectorphp/rector/zipball/11401dc1abba0a359fabbf98f1057f4e65129f86",
-                "reference": "11401dc1abba0a359fabbf98f1057f4e65129f86",
+                "url": "https://api.github.com/repos/rectorphp/rector/zipball/b8f72ff7e4914bb1d1557cc5c6d33898f7fd2bfb",
+                "reference": "b8f72ff7e4914bb1d1557cc5c6d33898f7fd2bfb",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.2|^8.0",
-                "phpstan/phpstan": "^1.10.15"
+                "phpstan/phpstan": "^1.10.20"
             },
             "conflict": {
                 "rector/rector-doctrine": "*",
@@ -835,7 +835,7 @@
                 "rector/rector-phpunit": "*",
                 "rector/rector-symfony": "*"
             },
-            "time": "2023-06-14T09:05:33+00:00",
+            "time": "2023-06-29T10:03:28+00:00",
             "bin": [
                 "bin/rector"
             ],
@@ -864,7 +864,7 @@
             ],
             "support": {
                 "issues": "https://github.com/rectorphp/rector/issues",
-                "source": "https://github.com/rectorphp/rector/tree/0.17.1"
+                "source": "https://github.com/rectorphp/rector/tree/0.17.2"
             },
             "funding": [
                 {
@@ -1331,17 +1331,17 @@
         },
         {
             "name": "symfony/filesystem",
-            "version": "v5.4.23",
-            "version_normalized": "5.4.23.0",
+            "version": "v5.4.25",
+            "version_normalized": "5.4.25.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/filesystem.git",
-                "reference": "b2f79d86cd9e7de0fff6d03baa80eaed7a5f38b5"
+                "reference": "0ce3a62c9579a53358d3a7eb6b3dfb79789a6364"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/filesystem/zipball/b2f79d86cd9e7de0fff6d03baa80eaed7a5f38b5",
-                "reference": "b2f79d86cd9e7de0fff6d03baa80eaed7a5f38b5",
+                "url": "https://api.github.com/repos/symfony/filesystem/zipball/0ce3a62c9579a53358d3a7eb6b3dfb79789a6364",
+                "reference": "0ce3a62c9579a53358d3a7eb6b3dfb79789a6364",
                 "shasum": ""
             },
             "require": {
@@ -1350,7 +1350,7 @@
                 "symfony/polyfill-mbstring": "~1.8",
                 "symfony/polyfill-php80": "^1.16"
             },
-            "time": "2023-03-02T11:38:35+00:00",
+            "time": "2023-05-31T13:04:02+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -1378,7 +1378,7 @@
             "description": "Provides basic utilities for the filesystem",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/filesystem/tree/v5.4.23"
+                "source": "https://github.com/symfony/filesystem/tree/v5.4.25"
             },
             "funding": [
                 {
