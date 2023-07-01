@@ -184,4 +184,68 @@ final class AttributeKey
      * @var string
      */
     public const STATEMENT_DEPTH = 'statementDepth';
+    /**
+     * @var string
+     */
+    public const IS_IN_LOOP = 'is_in_loop';
+    /**
+     * @var string
+     */
+    public const IS_IN_IF = 'is_in_if';
+    /**
+     * @var string
+     */
+    public const IS_ISSET_VAR = 'is_isset_var';
+    /**
+     * @var string
+     */
+    public const IS_UNSET_VAR = 'is_unset_var';
+    /**
+     * @var string
+     */
+    public const IS_ARRAY_IN_ATTRIBUTE = 'is_array_in_attribute';
+    /**
+     * @var string
+     */
+    public const IS_OBJECT_CALLER = 'is_object_caller';
+    /**
+     * @var string
+     */
+    public const IS_NAMESPACE_NAME = 'is_namespace_name';
+    /**
+     * @var string
+     */
+    public const IS_USEUSE_NAME = 'is_useuse_name';
+    /**
+     * @var string
+     */
+    public const IS_STATICCALL_CLASS_NAME = 'is_staticcall_class_name';
+    /**
+     * @var string
+     */
+    public const IS_FUNCCALL_NAME = 'is_funccall_name';
+    /**
+     * @var string
+     */
+    public const IS_CONSTFETCH_NAME = 'is_constfetch_name';
+    /**
+     * @var string
+     */
+    public const IS_NEW_INSTANCE_NAME = 'is_new_instance_name';
+    /**
+     * @var string
+     */
+    public const IS_RETURN_EXPR = 'is_return_expr';
+    /**
+     * @var string
+     */
+    public const IS_ARG_VALUE = 'is_arg_value';
+    /**
+     * @var string
+     */
+    public const IS_PARAM_TYPE = 'is_param_type';
+    /**
+     * @var string
+     */
+    public const FROM_FUNC_CALL_NAME = 'FROM_FUNC_CALL_NAME';
 }

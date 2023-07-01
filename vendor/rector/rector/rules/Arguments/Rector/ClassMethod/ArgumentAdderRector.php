@@ -229,8 +229,21 @@ CODE_SAMPLE
         if (isset($node->args[$position])) {
             return \true;
         }
-        // is correct scope?
-        return !$this->argumentAddingScope->isInCorrectScope($node, $argumentAdder);
+        // Check if default value is the same
+        $classMethod = $this->astResolver->resolveClassMethodFromCall($node);
+        if (!$classMethod instanceof ClassMethod) {
+            // is correct scope?
+            return !$this->argumentAddingScope->isInCorrectScope($node, $argumentAdder);
+        }
+        if (!isset($classMethod->params[$position])) {
+            // is correct scope?
+            return !$this->argumentAddingScope->isInCorrectScope($node, $argumentAdder);
+        }
+        if ($this->changedArgumentsDetector->isDefaultValueChanged($classMethod->params[$position], $argumentAdder->getArgumentDefaultValue())) {
+            // is correct scope?
+            return !$this->argumentAddingScope->isInCorrectScope($node, $argumentAdder);
+        }
+        return \true;
     }
     /**
      * @param mixed $defaultValue

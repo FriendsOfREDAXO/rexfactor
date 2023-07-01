@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\PhpParser\NodeFinder;
 
+use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
@@ -21,6 +22,8 @@ use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\Reflection\ReflectionResolver;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver;
+use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
+use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 final class PropertyFetchFinder
 {
     /**
@@ -53,7 +56,12 @@ final class PropertyFetchFinder
      * @var \Rector\Core\NodeAnalyzer\PropertyFetchAnalyzer
      */
     private $propertyFetchAnalyzer;
-    public function __construct(BetterNodeFinder $betterNodeFinder, NodeNameResolver $nodeNameResolver, ReflectionResolver $reflectionResolver, AstResolver $astResolver, NodeTypeResolver $nodeTypeResolver, PropertyFetchAnalyzer $propertyFetchAnalyzer)
+    /**
+     * @readonly
+     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
+     */
+    private $simpleCallableNodeTraverser;
+    public function __construct(BetterNodeFinder $betterNodeFinder, NodeNameResolver $nodeNameResolver, ReflectionResolver $reflectionResolver, AstResolver $astResolver, NodeTypeResolver $nodeTypeResolver, PropertyFetchAnalyzer $propertyFetchAnalyzer, SimpleCallableNodeTraverser $simpleCallableNodeTraverser)
     {
         $this->betterNodeFinder = $betterNodeFinder;
         $this->nodeNameResolver = $nodeNameResolver;
@@ -61,6 +69,7 @@ final class PropertyFetchFinder
         $this->astResolver = $astResolver;
         $this->nodeTypeResolver = $nodeTypeResolver;
         $this->propertyFetchAnalyzer = $propertyFetchAnalyzer;
+        $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
     }
     /**
      * @return array<PropertyFetch|StaticPropertyFetch>
@@ -84,14 +93,16 @@ final class PropertyFetchFinder
      */
     public function findLocalPropertyFetchesByName(Class_ $class, string $paramName) : array
     {
-        /** @var PropertyFetch[]|StaticPropertyFetch[] $propertyFetches */
-        $propertyFetches = $this->betterNodeFinder->findInstancesOf($class, [PropertyFetch::class, StaticPropertyFetch::class]);
-        $foundPropertyFetches = [];
-        foreach ($propertyFetches as $propertyFetch) {
-            if ($this->propertyFetchAnalyzer->isLocalPropertyFetchName($propertyFetch, $paramName)) {
-                $foundPropertyFetches[] = $propertyFetch;
+        /** @var PropertyFetch[]|StaticPropertyFetch[] $foundPropertyFetches */
+        $foundPropertyFetches = $this->betterNodeFinder->find($class->getMethods(), function (Node $subNode) use($paramName) : bool {
+            if ($subNode instanceof PropertyFetch) {
+                return $this->propertyFetchAnalyzer->isLocalPropertyFetchName($subNode, $paramName);
             }
-        }
+            if ($subNode instanceof StaticPropertyFetch) {
+                return $this->propertyFetchAnalyzer->isLocalPropertyFetchName($subNode, $paramName);
+            }
+            return \false;
+        });
         return $foundPropertyFetches;
     }
     /**
@@ -100,25 +111,31 @@ final class PropertyFetchFinder
     public function findLocalPropertyArrayDimFetchesAssignsByName(Class_ $class, Property $property) : array
     {
         $propertyName = $this->nodeNameResolver->getName($property);
-        /** @var Assign[] $assigns */
-        $assigns = $this->betterNodeFinder->findInstanceOf($class, Assign::class);
+        /** @var ArrayDimFetch[] $propertyArrayDimFetches */
         $propertyArrayDimFetches = [];
-        foreach ($assigns as $assign) {
-            if (!$assign->var instanceof ArrayDimFetch) {
-                continue;
+        $this->simpleCallableNodeTraverser->traverseNodesWithCallable($class->getMethods(), function (Node $subNode) use(&$propertyArrayDimFetches, $propertyName) {
+            if (!$subNode instanceof Assign) {
+                return null;
             }
-            $dimFetchVar = $assign->var;
+            if (!$subNode->var instanceof ArrayDimFetch) {
+                return null;
+            }
+            $dimFetchVar = $subNode->var;
             if (!$dimFetchVar->var instanceof PropertyFetch && !$dimFetchVar->var instanceof StaticPropertyFetch) {
-                continue;
+                return null;
             }
             if (!$this->propertyFetchAnalyzer->isLocalPropertyFetchName($dimFetchVar->var, $propertyName)) {
-                continue;
+                return null;
             }
             $propertyArrayDimFetches[] = $dimFetchVar;
-        }
+            return null;
+        });
         return $propertyArrayDimFetches;
     }
-    public function isLocalPropertyFetchByName(Expr $expr, string $propertyName) : bool
+    /**
+     * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Trait_ $class
+     */
+    public function isLocalPropertyFetchByName(Expr $expr, $class, string $propertyName) : bool
     {
         if (!$expr instanceof PropertyFetch) {
             return \false;
@@ -126,7 +143,11 @@ final class PropertyFetchFinder
         if (!$this->nodeNameResolver->isName($expr->name, $propertyName)) {
             return \false;
         }
-        return $this->nodeNameResolver->isName($expr->var, 'this');
+        if ($this->nodeNameResolver->isName($expr->var, 'this')) {
+            return \true;
+        }
+        $type = $this->nodeTypeResolver->getType($expr->var);
+        return $type instanceof FullyQualifiedObjectType && $this->nodeNameResolver->isName($class, $type->getClassName());
     }
     /**
      * @param Stmt[] $stmts
@@ -135,22 +156,20 @@ final class PropertyFetchFinder
      */
     private function findPropertyFetchesInClassLike($class, array $stmts, string $propertyName, bool $hasTrait) : array
     {
-        /** @var PropertyFetch[] $propertyFetches */
-        $propertyFetches = $this->betterNodeFinder->findInstanceOf($stmts, PropertyFetch::class);
-        /** @var PropertyFetch[] $matchingPropertyFetches */
-        $matchingPropertyFetches = \array_filter($propertyFetches, function (PropertyFetch $propertyFetch) use($propertyName, $class, $hasTrait) : bool {
-            if ($this->isInAnonymous($propertyFetch, $class, $hasTrait)) {
-                return \false;
+        /** @var PropertyFetch[]|StaticPropertyFetch[] $propertyFetches */
+        $propertyFetches = $this->betterNodeFinder->find($stmts, function (Node $subNode) use($class, $hasTrait, $propertyName) : bool {
+            if ($subNode instanceof PropertyFetch) {
+                if ($this->isInAnonymous($subNode, $class, $hasTrait)) {
+                    return \false;
+                }
+                return $this->isNamePropertyNameEquals($subNode, $propertyName, $class);
             }
-            return $this->isNamePropertyNameEquals($propertyFetch, $propertyName, $class);
+            if ($subNode instanceof StaticPropertyFetch) {
+                return $this->nodeNameResolver->isName($subNode->name, $propertyName);
+            }
+            return \false;
         });
-        /** @var StaticPropertyFetch[] $staticPropertyFetches */
-        $staticPropertyFetches = $this->betterNodeFinder->findInstanceOf($stmts, StaticPropertyFetch::class);
-        /** @var StaticPropertyFetch[] $matchingStaticPropertyFetches */
-        $matchingStaticPropertyFetches = \array_filter($staticPropertyFetches, function (StaticPropertyFetch $staticPropertyFetch) use($propertyName) : bool {
-            return $this->nodeNameResolver->isName($staticPropertyFetch->name, $propertyName);
-        });
-        return \array_merge($matchingPropertyFetches, $matchingStaticPropertyFetches);
+        return $propertyFetches;
     }
     /**
      * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Trait_ $class
@@ -173,7 +192,7 @@ final class PropertyFetchFinder
     {
         // early check if property fetch name is not equals with property name
         // so next check is check var name and var type only
-        if (!$this->isLocalPropertyFetchByName($propertyFetch, $propertyName)) {
+        if (!$this->isLocalPropertyFetchByName($propertyFetch, $class, $propertyName)) {
             return \false;
         }
         $propertyFetchVarType = $this->nodeTypeResolver->getType($propertyFetch->var);

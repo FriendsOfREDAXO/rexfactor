@@ -19,6 +19,7 @@ use PhpParser\Node\Scalar\DNumber;
 use PhpParser\Node\Scalar\EncapsedStringPart;
 use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Declare_;
@@ -433,7 +434,7 @@ final class BetterStandardPrinter extends Standard
     {
         // move phpdoc from node to "comment" attribute
         foreach ($nodes as $node) {
-            if (!$node instanceof Node) {
+            if (!$node instanceof Stmt && !$node instanceof Param) {
                 continue;
             }
             $this->docBlockUpdater->updateNodeWithPhpDocInfo($node);

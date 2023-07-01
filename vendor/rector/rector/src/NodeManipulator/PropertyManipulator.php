@@ -27,7 +27,7 @@ use PHPStan\Type\ObjectType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Core\NodeAnalyzer\PropertyFetchAnalyzer;
-use Rector\Core\PhpParser\AstResolver;
+use Rector\Core\PhpParser\ClassLikeAstResolver;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PhpParser\NodeFinder\PropertyFetchFinder;
 use Rector\Core\Reflection\ReflectionResolver;
@@ -110,9 +110,9 @@ final class PropertyManipulator
     private $constructorAssignDetector;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\AstResolver
+     * @var \Rector\Core\PhpParser\ClassLikeAstResolver
      */
-    private $astResolver;
+    private $classLikeAstResolver;
     /**
      * @readonly
      * @var \Rector\Core\NodeAnalyzer\PropertyFetchAnalyzer
@@ -127,7 +127,7 @@ final class PropertyManipulator
      * @var string[]|class-string<Table>[]
      */
     private const ALLOWED_NOT_READONLY_ANNOTATION_CLASS_OR_ATTRIBUTES = ['Doctrine\\ORM\\Mapping\\Entity', 'Doctrine\\ORM\\Mapping\\Table', 'Doctrine\\ORM\\Mapping\\MappedSuperclass'];
-    public function __construct(\Rector\Core\NodeManipulator\AssignManipulator $assignManipulator, BetterNodeFinder $betterNodeFinder, VariableToConstantGuard $variableToConstantGuard, ReadWritePropertyAnalyzer $readWritePropertyAnalyzer, PhpDocInfoFactory $phpDocInfoFactory, PropertyFetchFinder $propertyFetchFinder, ReflectionResolver $reflectionResolver, NodeNameResolver $nodeNameResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, NodeTypeResolver $nodeTypeResolver, PromotedPropertyResolver $promotedPropertyResolver, ConstructorAssignDetector $constructorAssignDetector, AstResolver $astResolver, PropertyFetchAnalyzer $propertyFetchAnalyzer, MultiInstanceofChecker $multiInstanceofChecker)
+    public function __construct(\Rector\Core\NodeManipulator\AssignManipulator $assignManipulator, BetterNodeFinder $betterNodeFinder, VariableToConstantGuard $variableToConstantGuard, ReadWritePropertyAnalyzer $readWritePropertyAnalyzer, PhpDocInfoFactory $phpDocInfoFactory, PropertyFetchFinder $propertyFetchFinder, ReflectionResolver $reflectionResolver, NodeNameResolver $nodeNameResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, NodeTypeResolver $nodeTypeResolver, PromotedPropertyResolver $promotedPropertyResolver, ConstructorAssignDetector $constructorAssignDetector, ClassLikeAstResolver $classLikeAstResolver, PropertyFetchAnalyzer $propertyFetchAnalyzer, MultiInstanceofChecker $multiInstanceofChecker)
     {
         $this->assignManipulator = $assignManipulator;
         $this->betterNodeFinder = $betterNodeFinder;
@@ -141,7 +141,7 @@ final class PropertyManipulator
         $this->nodeTypeResolver = $nodeTypeResolver;
         $this->promotedPropertyResolver = $promotedPropertyResolver;
         $this->constructorAssignDetector = $constructorAssignDetector;
-        $this->astResolver = $astResolver;
+        $this->classLikeAstResolver = $classLikeAstResolver;
         $this->propertyFetchAnalyzer = $propertyFetchAnalyzer;
         $this->multiInstanceofChecker = $multiInstanceofChecker;
     }
@@ -155,21 +155,20 @@ final class PropertyManipulator
             return \true;
         }
         $propertyFetches = $this->propertyFetchFinder->findPrivatePropertyFetches($class, $propertyOrParam);
+        $classMethod = $class->getMethod(MethodName::CONSTRUCT);
         foreach ($propertyFetches as $propertyFetch) {
             if ($this->isChangeableContext($propertyFetch, $scope)) {
                 return \true;
             }
             // skip for constructor? it is allowed to set value in constructor method
             $propertyName = (string) $this->nodeNameResolver->getName($propertyFetch);
-            $classMethod = $this->betterNodeFinder->findParentType($propertyFetch, ClassMethod::class);
-            if ($this->isPropertyAssignedOnlyInConstructor($class, $propertyName, $classMethod)) {
+            if ($this->isPropertyAssignedOnlyInConstructor($class, $propertyName, $propertyFetch, $classMethod)) {
                 continue;
             }
             if ($this->assignManipulator->isLeftPartOfAssign($propertyFetch)) {
                 return \true;
             }
-            $isInUnset = (bool) $this->betterNodeFinder->findParentType($propertyFetch, Unset_::class);
-            if ($isInUnset) {
+            if ($propertyFetch->getAttribute(AttributeKey::IS_UNSET_VAR) === \true) {
                 return \true;
             }
         }
@@ -200,7 +199,7 @@ final class PropertyManipulator
     public function isUsedByTrait(ClassReflection $classReflection, string $propertyName) : bool
     {
         foreach ($classReflection->getTraits() as $traitUse) {
-            $trait = $this->astResolver->resolveClassFromName($traitUse->getName());
+            $trait = $this->classLikeAstResolver->resolveClassFromClassReflection($traitUse);
             if (!$trait instanceof Trait_) {
                 continue;
             }
@@ -210,13 +209,19 @@ final class PropertyManipulator
         }
         return \false;
     }
-    private function isPropertyAssignedOnlyInConstructor(Class_ $class, string $propertyName, ?ClassMethod $classMethod) : bool
+    /**
+     * @param \PhpParser\Node\Expr\StaticPropertyFetch|\PhpParser\Node\Expr\PropertyFetch $propertyFetch
+     */
+    private function isPropertyAssignedOnlyInConstructor(Class_ $class, string $propertyName, $propertyFetch, ?ClassMethod $classMethod) : bool
     {
         if (!$classMethod instanceof ClassMethod) {
             return \false;
         }
+        $node = $this->betterNodeFinder->findFirst((array) $classMethod->stmts, static function (Node $subNode) use($propertyFetch) : bool {
+            return ($subNode instanceof PropertyFetch || $subNode instanceof StaticPropertyFetch) && $subNode === $propertyFetch;
+        });
         // there is property unset in Test class, so only check on __construct
-        if (!$this->nodeNameResolver->isName($classMethod->name, MethodName::CONSTRUCT)) {
+        if (!$node instanceof Node) {
             return \false;
         }
         return $this->constructorAssignDetector->isPropertyAssigned($class, $propertyName);

@@ -12,17 +12,15 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Foreach_;
 use PhpParser\NodeTraverser;
-use PHPStan\Analyser\Scope;
 use Rector\CodeQuality\NodeAnalyzer\ForeachAnalyzer;
 use Rector\Core\Contract\PhpParser\Node\StmtsAwareInterface;
-use Rector\Core\Rector\AbstractScopeAwareRector;
-use Rector\NodeNestingScope\ValueObject\ControlStructure;
+use Rector\Core\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\CodeQuality\Rector\Foreach_\ForeachItemsAssignToEmptyArrayToAssignRector\ForeachItemsAssignToEmptyArrayToAssignRectorTest
  */
-final class ForeachItemsAssignToEmptyArrayToAssignRector extends AbstractScopeAwareRector
+final class ForeachItemsAssignToEmptyArrayToAssignRector extends AbstractRector
 {
     /**
      * @readonly
@@ -71,7 +69,7 @@ CODE_SAMPLE
     /**
      * @param StmtsAwareInterface $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
         if ($node->stmts === null) {
             return null;
@@ -132,15 +130,7 @@ CODE_SAMPLE
         if (!$foreachedExprType->isArray()->yes()) {
             return \true;
         }
-        if ($this->shouldSkipAsPartOfOtherLoop($foreach)) {
-            return \true;
-        }
         return !$this->isNames($assignVariableExpr, $emptyArrayVariables);
-    }
-    private function shouldSkipAsPartOfOtherLoop(Foreach_ $foreach) : bool
-    {
-        $foreachParent = $this->betterNodeFinder->findParentByTypes($foreach, ControlStructure::LOOP_NODES);
-        return $foreachParent instanceof Node;
     }
     private function matchEmptyArrayVariableAssign(Stmt $stmt) : ?string
     {

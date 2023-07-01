@@ -14,7 +14,8 @@ use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\Generic\TemplateTypeMap;
 use PHPStan\Type\Type;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
+use Rector\Core\PhpParser\ClassLikeAstResolver;
+use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Naming\Naming\UseImportsResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\StaticTypeMapper\StaticTypeMapper;
@@ -33,29 +34,34 @@ final class NameScopeFactory
      */
     private $phpDocInfoFactory;
     /**
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
-     */
-    private $betterNodeFinder;
-    /**
      * @var \Rector\Naming\Naming\UseImportsResolver
      */
     private $useImportsResolver;
+    /**
+     * @var \Rector\Core\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
+     * @var \Rector\Core\PhpParser\ClassLikeAstResolver
+     */
+    private $classLikeAstResolver;
     // This is needed to avoid circular references
     /**
      * @required
      */
-    public function autowire(PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, BetterNodeFinder $betterNodeFinder, UseImportsResolver $useImportsResolver) : void
+    public function autowire(PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, UseImportsResolver $useImportsResolver, ReflectionResolver $reflectionResolver, ClassLikeAstResolver $classLikeAstResolver) : void
     {
         $this->phpDocInfoFactory = $phpDocInfoFactory;
         $this->staticTypeMapper = $staticTypeMapper;
-        $this->betterNodeFinder = $betterNodeFinder;
         $this->useImportsResolver = $useImportsResolver;
+        $this->reflectionResolver = $reflectionResolver;
+        $this->classLikeAstResolver = $classLikeAstResolver;
     }
     public function createNameScopeFromNodeWithoutTemplateTypes(Node $node) : NameScope
     {
         $scope = $node->getAttribute(AttributeKey::SCOPE);
         $namespace = $scope instanceof Scope ? $scope->getNamespace() : null;
-        $uses = $this->useImportsResolver->resolveForNode($node);
+        $uses = $this->useImportsResolver->resolve();
         $usesAliasesToNames = $this->resolveUseNamesByAlias($uses);
         if ($scope instanceof Scope && $scope->getClassReflection() instanceof ClassReflection) {
             $classReflection = $scope->getClassReflection();
@@ -93,10 +99,13 @@ final class NameScopeFactory
     private function templateTemplateTypeMap(Node $node) : TemplateTypeMap
     {
         $nodeTemplateTypes = $this->resolveTemplateTypesFromNode($node);
-        $classLike = $this->betterNodeFinder->findParentType($node, ClassLike::class);
         $classTemplateTypes = [];
-        if ($classLike instanceof ClassLike) {
-            $classTemplateTypes = $this->resolveTemplateTypesFromNode($classLike);
+        $classReflection = $this->reflectionResolver->resolveClassReflection($node);
+        if ($classReflection instanceof ClassReflection) {
+            $classLike = $this->classLikeAstResolver->resolveClassFromClassReflection($classReflection);
+            if ($classLike instanceof ClassLike) {
+                $classTemplateTypes = $this->resolveTemplateTypesFromNode($classLike);
+            }
         }
         $templateTypes = \array_merge($nodeTemplateTypes, $classTemplateTypes);
         return new TemplateTypeMap($templateTypes);
