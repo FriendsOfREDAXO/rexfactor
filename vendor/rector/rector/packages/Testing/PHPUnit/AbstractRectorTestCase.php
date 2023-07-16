@@ -4,17 +4,18 @@ declare (strict_types=1);
 namespace Rector\Testing\PHPUnit;
 
 use Iterator;
-use RectorPrefix202306\Nette\Utils\FileSystem;
-use RectorPrefix202306\Nette\Utils\Strings;
+use RectorPrefix202307\Nette\Utils\FileSystem;
+use RectorPrefix202307\Nette\Utils\Strings;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPUnit\Framework\ExpectationFailedException;
-use RectorPrefix202306\Psr\Container\ContainerInterface;
+use RectorPrefix202307\Psr\Container\ContainerInterface;
 use Rector\Core\Application\ApplicationFileProcessor;
 use Rector\Core\Autoloading\AdditionalAutoloader;
 use Rector\Core\Autoloading\BootstrapFilesIncluder;
 use Rector\Core\Configuration\ConfigurationFactory;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\ParameterProvider;
+use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\ValueObject\Application\File;
 use Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider;
@@ -68,9 +69,8 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
         if (\is_string($this->inputFilePath)) {
             FileSystem::delete($this->inputFilePath);
         }
-        // free memory and trigger gc to reduce memory peak consumption on windows
+        // free memory to reduce memory peak consumption on windows
         unset($this->applicationFileProcessor, $this->parameterProvider, $this->dynamicSourceLocatorProvider);
-        \gc_collect_cycles();
     }
     /**
      * @return Iterator<<string>>
@@ -122,6 +122,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractTe
     private function doTestFileMatchesExpectedContent(string $originalFilePath, string $inputFileContents, string $expectedFileContents, string $fixtureFilePath) : void
     {
         $this->parameterProvider->changeParameter(Option::SOURCE, [$originalFilePath]);
+        SimpleParameterProvider::setParameter(Option::SOURCE, [$originalFilePath]);
         $changedContent = $this->processFilePath($originalFilePath, $inputFileContents);
         $fixtureFilename = \basename($fixtureFilePath);
         $failureMessage = \sprintf('Failed on fixture file "%s"', $fixtureFilename);

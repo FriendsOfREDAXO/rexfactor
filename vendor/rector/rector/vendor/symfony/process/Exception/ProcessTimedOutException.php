@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Process\Exception;
+namespace RectorPrefix202307\Symfony\Component\Process\Exception;
 
-use RectorPrefix202306\Symfony\Component\Process\Process;
+use RectorPrefix202307\Symfony\Component\Process\Process;
 /**
  * Exception that is thrown when a process times out.
  *
@@ -51,6 +51,13 @@ class ProcessTimedOutException extends RuntimeException
     }
     public function getExceededTimeout() : ?float
     {
-        return $this->timeoutType === self::TYPE_GENERAL ? $this->process->getTimeout() : ($this->timeoutType === self::TYPE_IDLE ? $this->process->getIdleTimeout() : null);
+        switch ($this->timeoutType) {
+            case self::TYPE_GENERAL:
+                return $this->process->getTimeout();
+            case self::TYPE_IDLE:
+                return $this->process->getIdleTimeout();
+            default:
+                throw new \LogicException(\sprintf('Unknown timeout type "%d".', $this->timeoutType));
+        }
     }
 }

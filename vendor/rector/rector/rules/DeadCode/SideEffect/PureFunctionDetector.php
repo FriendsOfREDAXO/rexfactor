@@ -255,6 +255,6 @@ final class PureFunctionDetector
         if (!$functionReflection instanceof NativeFunctionReflection) {
             return \false;
         }
-        return !$this->nodeNameResolver->isNames($funcCall, self::IMPURE_FUNCTIONS);
+        return !\in_array($funcCallName, self::IMPURE_FUNCTIONS, \true);
     }
 }

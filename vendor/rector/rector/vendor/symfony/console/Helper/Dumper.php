@@ -8,12 +8,12 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Console\Helper;
+namespace RectorPrefix202307\Symfony\Component\Console\Helper;
 
-use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202306\Symfony\Component\VarDumper\Cloner\ClonerInterface;
-use RectorPrefix202306\Symfony\Component\VarDumper\Cloner\VarCloner;
-use RectorPrefix202306\Symfony\Component\VarDumper\Dumper\CliDumper;
+use RectorPrefix202307\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202307\Symfony\Component\VarDumper\Cloner\ClonerInterface;
+use RectorPrefix202307\Symfony\Component\VarDumper\Cloner\VarCloner;
+use RectorPrefix202307\Symfony\Component\VarDumper\Dumper\CliDumper;
 /**
  * @author Roland Franssen <franssen.roland@gmail.com>
  */
@@ -48,7 +48,18 @@ final class Dumper
             };
         } else {
             $this->handler = function ($var) : string {
-                return \true === (null === $var) ? 'null' : (\true === (\true === $var) ? 'true' : (\true === (\false === $var) ? 'false' : (\true === \is_string($var) ? '"' . $var . '"' : \rtrim(\print_r($var, \true)))));
+                switch (\true) {
+                    case null === $var:
+                        return 'null';
+                    case \true === $var:
+                        return 'true';
+                    case \false === $var:
+                        return 'false';
+                    case \is_string($var):
+                        return '"' . $var . '"';
+                    default:
+                        return \rtrim(\print_r($var, \true));
+                }
             };
         }
     }

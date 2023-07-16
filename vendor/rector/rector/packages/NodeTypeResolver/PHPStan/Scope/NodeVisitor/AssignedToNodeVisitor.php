@@ -5,6 +5,7 @@ namespace Rector\NodeTypeResolver\PHPStan\Scope\NodeVisitor;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\AssignOp;
 use PhpParser\NodeVisitorAbstract;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\PHPStan\Scope\Contract\NodeVisitor\ScopeResolverNodeVisitorInterface;
@@ -15,6 +16,10 @@ final class AssignedToNodeVisitor extends NodeVisitorAbstract implements ScopeRe
 {
     public function enterNode(Node $node) : ?Node
     {
+        if ($node instanceof AssignOp) {
+            $node->var->setAttribute(AttributeKey::IS_ASSIGNED_TO, \true);
+            return null;
+        }
         if (!$node instanceof Assign) {
             return null;
         }

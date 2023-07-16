@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Console\Helper;
+namespace RectorPrefix202307\Symfony\Component\Console\Helper;
 
-use RectorPrefix202306\Symfony\Component\Console\Cursor;
-use RectorPrefix202306\Symfony\Component\Console\Exception\LogicException;
-use RectorPrefix202306\Symfony\Component\Console\Output\ConsoleOutputInterface;
-use RectorPrefix202306\Symfony\Component\Console\Output\ConsoleSectionOutput;
-use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202306\Symfony\Component\Console\Terminal;
+use RectorPrefix202307\Symfony\Component\Console\Cursor;
+use RectorPrefix202307\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202307\Symfony\Component\Console\Output\ConsoleOutputInterface;
+use RectorPrefix202307\Symfony\Component\Console\Output\ConsoleSectionOutput;
+use RectorPrefix202307\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202307\Symfony\Component\Console\Terminal;
 /**
  * The ProgressBar provides helpers to display progress output.
  *
@@ -511,7 +511,16 @@ final class ProgressBar
     }
     private function determineBestFormat() : string
     {
-        return $this->output->getVerbosity() === OutputInterface::VERBOSITY_VERBOSE ? $this->max ? self::FORMAT_VERBOSE : self::FORMAT_VERBOSE_NOMAX : ($this->output->getVerbosity() === OutputInterface::VERBOSITY_VERY_VERBOSE ? $this->max ? self::FORMAT_VERY_VERBOSE : self::FORMAT_VERY_VERBOSE_NOMAX : ($this->output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG ? $this->max ? self::FORMAT_DEBUG : self::FORMAT_DEBUG_NOMAX : ($this->max ? self::FORMAT_NORMAL : self::FORMAT_NORMAL_NOMAX)));
+        switch ($this->output->getVerbosity()) {
+            case OutputInterface::VERBOSITY_VERBOSE:
+                return $this->max ? self::FORMAT_VERBOSE : self::FORMAT_VERBOSE_NOMAX;
+            case OutputInterface::VERBOSITY_VERY_VERBOSE:
+                return $this->max ? self::FORMAT_VERY_VERBOSE : self::FORMAT_VERY_VERBOSE_NOMAX;
+            case OutputInterface::VERBOSITY_DEBUG:
+                return $this->max ? self::FORMAT_DEBUG : self::FORMAT_DEBUG_NOMAX;
+            default:
+                return $this->max ? self::FORMAT_NORMAL : self::FORMAT_NORMAL_NOMAX;
+        }
     }
     private static function initPlaceholderFormatters() : array
     {

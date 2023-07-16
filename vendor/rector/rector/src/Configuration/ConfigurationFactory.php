@@ -5,9 +5,10 @@ namespace Rector\Core\Configuration;
 
 use Rector\ChangesReporting\Output\ConsoleOutputFormatter;
 use Rector\Core\Configuration\Parameter\ParameterProvider;
+use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Core\Contract\Console\OutputStyleInterface;
 use Rector\Core\ValueObject\Configuration;
-use RectorPrefix202306\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202307\Symfony\Component\Console\Input\InputInterface;
 final class ConfigurationFactory
 {
     /**
@@ -46,7 +47,7 @@ final class ConfigurationFactory
         $showDiffs = $this->shouldShowDiffs($input);
         $paths = $this->resolvePaths($input);
         $fileExtensions = $this->parameterProvider->provideArrayParameter(\Rector\Core\Configuration\Option::FILE_EXTENSIONS);
-        $isParallel = $this->parameterProvider->provideBoolParameter(\Rector\Core\Configuration\Option::PARALLEL);
+        $isParallel = SimpleParameterProvider::provideBoolParameter(\Rector\Core\Configuration\Option::PARALLEL);
         $parallelPort = (string) $input->getOption(\Rector\Core\Configuration\Option::PARALLEL_PORT);
         $parallelIdentifier = (string) $input->getOption(\Rector\Core\Configuration\Option::PARALLEL_IDENTIFIER);
         $memoryLimit = $this->resolveMemoryLimit($input);
@@ -70,7 +71,7 @@ final class ConfigurationFactory
             return \false;
         }
         // fallback to parameter
-        return !$this->parameterProvider->provideBoolParameter(\Rector\Core\Configuration\Option::NO_DIFFS);
+        return !SimpleParameterProvider::provideBoolParameter(\Rector\Core\Configuration\Option::NO_DIFFS, \false);
     }
     /**
      * @param string[] $commandLinePaths
@@ -105,9 +106,9 @@ final class ConfigurationFactory
         if ($memoryLimit !== null) {
             return (string) $memoryLimit;
         }
-        if (!$this->parameterProvider->hasParameter(\Rector\Core\Configuration\Option::MEMORY_LIMIT)) {
+        if (!SimpleParameterProvider::hasParameter(\Rector\Core\Configuration\Option::MEMORY_LIMIT)) {
             return null;
         }
-        return $this->parameterProvider->provideStringParameter(\Rector\Core\Configuration\Option::MEMORY_LIMIT);
+        return SimpleParameterProvider::provideStringParameter(\Rector\Core\Configuration\Option::MEMORY_LIMIT);
     }
 }

@@ -20,7 +20,7 @@ use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\TypeDeclaration\ValueObject\AddParamTypeDeclaration;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202306\Webmozart\Assert\Assert;
+use RectorPrefix202307\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\AddParamTypeDeclarationRector\AddParamTypeDeclarationRectorTest
  */
@@ -81,6 +81,7 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        $this->hasChanged = \false;
         foreach ($node->getMethods() as $classMethod) {
             if ($this->shouldSkip($node, $classMethod)) {
                 continue;

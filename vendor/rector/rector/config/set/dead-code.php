@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202306;
+namespace RectorPrefix202307;
 
 use Rector\CodeQuality\Rector\FunctionLike\SimplifyUselessVariableRector;
 use Rector\Config\RectorConfig;
@@ -42,11 +42,9 @@ use Rector\DeadCode\Rector\Return_\RemoveDeadConditionAboveReturnRector;
 use Rector\DeadCode\Rector\StaticCall\RemoveParentCallWithoutParentRector;
 use Rector\DeadCode\Rector\Stmt\RemoveUnreachableStatementRector;
 use Rector\DeadCode\Rector\StmtsAwareInterface\RemoveJustPropertyFetchForAssignRector;
-use Rector\DeadCode\Rector\StmtsAwareInterface\RemoveJustVariableAssignRector;
 use Rector\DeadCode\Rector\Switch_\RemoveDuplicatedCaseInSwitchRector;
 use Rector\DeadCode\Rector\Ternary\TernaryToBooleanOrFalseToBooleanAndRector;
 use Rector\DeadCode\Rector\TryCatch\RemoveDeadTryCatchRector;
-use Rector\PHPUnit\Rector\ClassMethod\RemoveEmptyTestMethodRector;
 return static function (RectorConfig $rectorConfig) : void {
     $rectorConfig->rules([
         UnwrapFutureCompatibleIfPhpVersionRector::class,
@@ -72,7 +70,6 @@ return static function (RectorConfig $rectorConfig) : void {
         RemoveUnreachableStatementRector::class,
         SimplifyIfElseWithSameContentRector::class,
         TernaryToBooleanOrFalseToBooleanAndRector::class,
-        RemoveEmptyTestMethodRector::class,
         RemoveDeadTryCatchRector::class,
         RemoveUnusedVariableAssignRector::class,
         RemoveUnusedNonEmptyArrayBeforeForeachRector::class,
@@ -89,7 +86,6 @@ return static function (RectorConfig $rectorConfig) : void {
         RemoveUselessVarTagRector::class,
         RemoveUnusedPromotedPropertyRector::class,
         RemoveJustPropertyFetchForAssignRector::class,
-        RemoveJustVariableAssignRector::class,
         RemoveAlwaysTrueIfConditionRector::class,
         RemoveDeadZeroAndOneOperationRector::class,
         RemovePhpVersionIdCheckRector::class,

@@ -11,7 +11,7 @@ use Rector\Core\Contract\Rector\ScopeAwarePhpRectorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\NodeAnalyzer\ScopeAnalyzer;
 use Rector\NodeTypeResolver\Node\AttributeKey;
-use RectorPrefix202306\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202307\Symfony\Contracts\Service\Attribute\Required;
 abstract class AbstractScopeAwareRector extends \Rector\Core\Rector\AbstractRector implements ScopeAwarePhpRectorInterface
 {
     /**
@@ -39,17 +39,7 @@ abstract class AbstractScopeAwareRector extends \Rector\Core\Rector\AbstractRect
             $currentScope = $this->scopeAnalyzer->resolveScope($node, $this->file->getFilePath());
         }
         if (!$currentScope instanceof Scope) {
-            /**
-             * @var Node $parentNode
-             *
-             * $parentNode is always a Node when $mutatingScope is null, as checked in previous
-             *
-             *      $this->scopeAnalyzer->resolveScope()
-             *
-             *  which verify if no parent and no scope, it resolve Scope from File
-             */
-            $parentNode = $node->getAttribute(AttributeKey::PARENT_NODE);
-            $errorMessage = \sprintf('Scope not available on "%s" node with parent node of "%s", but is required by a refactorWithScope() method of "%s" rule. Fix scope refresh on changed nodes first', \get_class($node), \get_class($parentNode), static::class);
+            $errorMessage = \sprintf('Scope not available on "%s" node, but is required by a refactorWithScope() method of "%s" rule. Fix scope refresh on changed nodes first', \get_class($node), static::class);
             throw new ShouldNotHappenException($errorMessage);
         }
         return $this->refactorWithScope($node, $currentScope);

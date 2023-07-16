@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Php55;
 
-use RectorPrefix202306\Nette\Utils\Strings;
+use RectorPrefix202307\Nette\Utils\Strings;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Scalar\String_;
@@ -45,7 +45,23 @@ final class RegexMatcher
                 return null;
             }
             $delimiter = $pattern[0];
-            $delimiter = $delimiter === '(' ? ')' : ($delimiter === '{' ? '}' : ($delimiter === '[' ? ']' : ($delimiter === '<' ? '>' : $delimiter)));
+            switch ($delimiter) {
+                case '(':
+                    $delimiter = ')';
+                    break;
+                case '{':
+                    $delimiter = '}';
+                    break;
+                case '[':
+                    $delimiter = ']';
+                    break;
+                case '<':
+                    $delimiter = '>';
+                    break;
+                default:
+                    $delimiter = $delimiter;
+                    break;
+            }
             /** @var string $modifiers */
             $modifiers = $this->resolveModifiers((string) Strings::after($pattern, $delimiter, -1));
             if (\strpos($modifiers, 'e') === \false) {

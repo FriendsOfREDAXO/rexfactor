@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\DependencyInjection\Loader;
+namespace RectorPrefix202307\Symfony\Component\DependencyInjection\Loader;
 
-use RectorPrefix202306\Symfony\Component\Config\Util\XmlUtils;
-use RectorPrefix202306\Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
+use RectorPrefix202307\Symfony\Component\Config\Util\XmlUtils;
+use RectorPrefix202307\Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 /**
  * IniFileLoader loads parameters from INI files.
  *
@@ -74,6 +74,20 @@ class IniFileLoader extends FileLoader
             $value = '""' === \substr_replace($v, '', 1, -1) ? \substr($v, 1, -1) : $v;
         }
         $lowercaseValue = \strtolower($value);
-        return \true === \defined($value) ? \constant($value) : (\true === ('yes' === $lowercaseValue) || \true === ('on' === $lowercaseValue) ? \true : (\true === ('no' === $lowercaseValue) || \true === ('off' === $lowercaseValue) || \true === ('none' === $lowercaseValue) ? \false : (\true === (isset($value[1]) && ("'" === $value[0] && "'" === $value[\strlen($value) - 1] || '"' === $value[0] && '"' === $value[\strlen($value) - 1])) ? \substr($value, 1, -1) : XmlUtils::phpize($value))));
+        switch (\true) {
+            case \defined($value):
+                return \constant($value);
+            case 'yes' === $lowercaseValue:
+            case 'on' === $lowercaseValue:
+                return \true;
+            case 'no' === $lowercaseValue:
+            case 'off' === $lowercaseValue:
+            case 'none' === $lowercaseValue:
+                return \false;
+            case isset($value[1]) && ("'" === $value[0] && "'" === $value[\strlen($value) - 1] || '"' === $value[0] && '"' === $value[\strlen($value) - 1]):
+                return \substr($value, 1, -1);
+            default:
+                return XmlUtils::phpize($value);
+        }
     }
 }
