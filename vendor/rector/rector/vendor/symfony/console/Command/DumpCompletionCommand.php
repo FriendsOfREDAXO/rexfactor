@@ -8,15 +8,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Console\Command;
+namespace RectorPrefix202307\Symfony\Component\Console\Command;
 
-use RectorPrefix202306\Symfony\Component\Console\Attribute\AsCommand;
-use RectorPrefix202306\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202306\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202306\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202306\Symfony\Component\Console\Output\ConsoleOutputInterface;
-use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202306\Symfony\Component\Process\Process;
+use RectorPrefix202307\Symfony\Component\Console\Attribute\AsCommand;
+use RectorPrefix202307\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202307\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202307\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202307\Symfony\Component\Console\Output\ConsoleOutputInterface;
+use RectorPrefix202307\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202307\Symfony\Component\Process\Process;
 /**
  * Dumps the completion script for the current shell.
  *
@@ -42,7 +42,17 @@ final class DumpCompletionCommand extends Command
         $commandName = \basename($fullCommand);
         $fullCommand = @\realpath($fullCommand) ?: $fullCommand;
         $shell = $this->guessShell();
-        [$rcFile, $completionFile] = $shell === 'fish' ? ['~/.config/fish/config.fish', "/etc/fish/completions/{$commandName}.fish"] : ($shell === 'zsh' ? ['~/.zshrc', '$fpath[1]/_' . $commandName] : ['~/.bashrc', "/etc/bash_completion.d/{$commandName}"]);
+        switch ($shell) {
+            case 'fish':
+                [$rcFile, $completionFile] = ['~/.config/fish/config.fish', "/etc/fish/completions/{$commandName}.fish"];
+                break;
+            case 'zsh':
+                [$rcFile, $completionFile] = ['~/.zshrc', '$fpath[1]/_' . $commandName];
+                break;
+            default:
+                [$rcFile, $completionFile] = ['~/.bashrc', "/etc/bash_completion.d/{$commandName}"];
+                break;
+        }
         $supportedShells = \implode(', ', $this->getSupportedShells());
         $this->setHelp(<<<EOH
 The <info>%command.name%</> command dumps the shell completion script required

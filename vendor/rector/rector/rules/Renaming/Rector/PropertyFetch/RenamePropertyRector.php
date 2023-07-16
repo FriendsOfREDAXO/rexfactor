@@ -15,7 +15,7 @@ use Rector\Core\Rector\AbstractRector;
 use Rector\Renaming\ValueObject\RenameProperty;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202306\Webmozart\Assert\Assert;
+use RectorPrefix202307\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\PropertyFetch\RenamePropertyRector\RenamePropertyRectorTest
  */
@@ -46,6 +46,7 @@ final class RenamePropertyRector extends AbstractRector implements ConfigurableR
     public function refactor(Node $node) : ?Node
     {
         if ($node instanceof ClassLike) {
+            $this->hasChanged = \false;
             foreach ($this->renamedProperties as $renamedProperty) {
                 $this->renameProperty($node, $renamedProperty);
             }

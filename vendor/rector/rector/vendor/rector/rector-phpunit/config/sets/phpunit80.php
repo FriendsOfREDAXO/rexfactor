@@ -1,22 +1,21 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202306;
+namespace RectorPrefix202307;
 
 use PHPStan\Type\MixedType;
 use PHPStan\Type\VoidType;
 use Rector\Config\RectorConfig;
 use Rector\Core\ValueObject\MethodName;
-use Rector\PHPUnit\Rector\MethodCall\AssertEqualsParameterToSpecificMethodsTypeRector;
-use Rector\PHPUnit\Rector\MethodCall\SpecificAssertContainsRector;
-use Rector\PHPUnit\Rector\MethodCall\SpecificAssertInternalTypeRector;
+use Rector\PHPUnit\PHPUnit80\Rector\MethodCall\AssertEqualsParameterToSpecificMethodsTypeRector;
+use Rector\PHPUnit\PHPUnit80\Rector\MethodCall\SpecificAssertContainsRector;
+use Rector\PHPUnit\PHPUnit80\Rector\MethodCall\SpecificAssertInternalTypeRector;
 use Rector\Renaming\Rector\Name\RenameClassRector;
 use Rector\TypeDeclaration\Rector\ClassMethod\AddParamTypeDeclarationRector;
 use Rector\TypeDeclaration\Rector\ClassMethod\AddReturnTypeDeclarationRector;
 use Rector\TypeDeclaration\ValueObject\AddParamTypeDeclaration;
 use Rector\TypeDeclaration\ValueObject\AddReturnTypeDeclaration;
 return static function (RectorConfig $rectorConfig) : void {
-    $rectorConfig->import(__DIR__ . '/phpunit-exception.php');
     $rectorConfig->rules([SpecificAssertInternalTypeRector::class, AssertEqualsParameterToSpecificMethodsTypeRector::class, SpecificAssertContainsRector::class]);
     $rectorConfig->ruleWithConfiguration(RenameClassRector::class, [
         # https://github.com/sebastianbergmann/phpunit/issues/3123

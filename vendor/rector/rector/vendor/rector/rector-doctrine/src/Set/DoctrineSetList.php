@@ -12,20 +12,13 @@ final class DoctrineSetList implements SetListInterface
     /**
      * @var string
      */
-    public const DOCTRINE_25 = __DIR__ . '/../../config/sets/doctrine25.php';
-    /**
-     * @var string
-     */
-    public const DOCTRINE_BEHAVIORS_20 = __DIR__ . '/../../config/sets/doctrine-behaviors-20.php';
-    /**
-     * @var string
-     */
     public const DOCTRINE_CODE_QUALITY = __DIR__ . '/../../config/sets/doctrine-code-quality.php';
     /**
      * @var string
      */
     public const DOCTRINE_COMMON_20 = __DIR__ . '/../../config/sets/doctrine-common-20.php';
     /**
+     * @deprecated Use dbal set 2.11 instead
      * @var string
      */
     public const DOCTRINE_DBAL_210 = __DIR__ . '/../../config/sets/doctrine-dbal-210.php';
@@ -42,9 +35,19 @@ final class DoctrineSetList implements SetListInterface
      */
     public const DOCTRINE_DBAL_40 = __DIR__ . '/../../config/sets/doctrine-dbal-40.php';
     /**
+     * @deprecated Removed as not supporting the framework native approach and rather experimental
      * @var string
      */
     public const DOCTRINE_REPOSITORY_AS_SERVICE = __DIR__ . '/../../config/sets/doctrine-repository-as-service.php';
+    /**
+     * @deprecated Use self::DOCTIRNE_ORM_25 instead
+     * @var string
+     */
+    public const DOCTRINE_25 = self::DOCTRINE_ORM_25;
+    /**
+     * @var string
+     */
+    public const DOCTRINE_ORM_25 = __DIR__ . '/../../config/sets/doctrine-orm-25.php';
     /**
      * @var string
      */
@@ -65,8 +68,4 @@ final class DoctrineSetList implements SetListInterface
      * @var string
      */
     public const GEDMO_ANNOTATIONS_TO_ATTRIBUTES = __DIR__ . '/../../config/sets/doctrine-gedmo-annotations-to-attributes.php';
-    /**
-     * @var string
-     */
-    public const DOCTRINE_ODM_23 = __DIR__ . '/../../config/sets/doctrine-odm-23.php';
 }

@@ -8,15 +8,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Console\Descriptor;
+namespace RectorPrefix202307\Symfony\Component\Console\Descriptor;
 
-use RectorPrefix202306\Symfony\Component\Console\Application;
-use RectorPrefix202306\Symfony\Component\Console\Command\Command;
-use RectorPrefix202306\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202306\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202306\Symfony\Component\Console\Input\InputDefinition;
-use RectorPrefix202306\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202306\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202307\Symfony\Component\Console\Application;
+use RectorPrefix202307\Symfony\Component\Console\Command\Command;
+use RectorPrefix202307\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202307\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202307\Symfony\Component\Console\Input\InputDefinition;
+use RectorPrefix202307\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202307\Symfony\Component\Console\Output\OutputInterface;
 /**
  * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
  *
@@ -31,7 +31,25 @@ abstract class Descriptor implements DescriptorInterface
     public function describe(OutputInterface $output, object $object, array $options = []) : void
     {
         $this->output = $output;
-        \true === $object instanceof InputArgument ? $this->describeInputArgument($object, $options) : (\true === $object instanceof InputOption ? $this->describeInputOption($object, $options) : (\true === $object instanceof InputDefinition ? $this->describeInputDefinition($object, $options) : (\true === $object instanceof Command ? $this->describeCommand($object, $options) : (\true === $object instanceof Application ? $this->describeApplication($object, $options) : null))));
+        switch (\true) {
+            case $object instanceof InputArgument:
+                $this->describeInputArgument($object, $options);
+                break;
+            case $object instanceof InputOption:
+                $this->describeInputOption($object, $options);
+                break;
+            case $object instanceof InputDefinition:
+                $this->describeInputDefinition($object, $options);
+                break;
+            case $object instanceof Command:
+                $this->describeCommand($object, $options);
+                break;
+            case $object instanceof Application:
+                $this->describeApplication($object, $options);
+                break;
+            default:
+                throw new InvalidArgumentException(\sprintf('Object of type "%s" is not describable.', \get_debug_type($object)));
+        }
     }
     protected function write(string $content, bool $decorated = \false) : void
     {

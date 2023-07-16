@@ -61,6 +61,11 @@ final class AttributeKey
      * @internal of php-parser, do not change
      * @see https://github.com/nikic/PHP-Parser/pull/681/files
      * @var string
+     *
+     * @api for BC layer
+     *
+     * The parent node can be still enabled by using custom PHPStan configuration,
+     * @see https://github.com/rectorphp/rector-src/pull/4458#discussion_r1257478146
      */
     public const PARENT_NODE = 'parent';
     /**
@@ -187,15 +192,19 @@ final class AttributeKey
     /**
      * @var string
      */
+    public const EXPRESSION_DEPTH = 'expressionDepth';
+    /**
+     * @var string
+     */
     public const IS_IN_LOOP = 'is_in_loop';
     /**
      * @var string
      */
-    public const IS_IN_IF = 'is_in_if';
+    public const IS_VARIABLE_LOOP = 'is_variable_loop';
     /**
      * @var string
      */
-    public const IS_ISSET_VAR = 'is_isset_var';
+    public const IS_IN_IF = 'is_in_if';
     /**
      * @var string
      */
@@ -204,10 +213,6 @@ final class AttributeKey
      * @var string
      */
     public const IS_ARRAY_IN_ATTRIBUTE = 'is_array_in_attribute';
-    /**
-     * @var string
-     */
-    public const IS_OBJECT_CALLER = 'is_object_caller';
     /**
      * @var string
      */
@@ -235,17 +240,25 @@ final class AttributeKey
     /**
      * @var string
      */
-    public const IS_RETURN_EXPR = 'is_return_expr';
-    /**
-     * @var string
-     */
     public const IS_ARG_VALUE = 'is_arg_value';
     /**
      * @var string
      */
-    public const IS_PARAM_TYPE = 'is_param_type';
+    public const IS_PARAM_VAR = 'IS_PARAM_VAR';
     /**
      * @var string
      */
-    public const FROM_FUNC_CALL_NAME = 'FROM_FUNC_CALL_NAME';
+    public const IS_CLASS_EXTENDS = 'is_class_extends';
+    /**
+     * @var string
+     */
+    public const IS_CLASS_IMPLEMENT = 'is_class_implement';
+    /**
+     * @var string
+     */
+    public const FROM_FUNC_CALL_NAME = 'from_func_call_name';
+    /**
+     * @var string
+     */
+    public const INSIDE_ARRAY_DIM_FETCH = 'inside_array_dim_fetch';
 }

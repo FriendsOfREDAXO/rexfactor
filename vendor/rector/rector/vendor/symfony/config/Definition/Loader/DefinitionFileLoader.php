@@ -8,13 +8,13 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Config\Definition\Loader;
+namespace RectorPrefix202307\Symfony\Component\Config\Definition\Loader;
 
-use RectorPrefix202306\Symfony\Component\Config\Definition\Builder\TreeBuilder;
-use RectorPrefix202306\Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
-use RectorPrefix202306\Symfony\Component\Config\FileLocatorInterface;
-use RectorPrefix202306\Symfony\Component\Config\Loader\FileLoader;
-use RectorPrefix202306\Symfony\Component\DependencyInjection\ContainerBuilder;
+use RectorPrefix202307\Symfony\Component\Config\Definition\Builder\TreeBuilder;
+use RectorPrefix202307\Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
+use RectorPrefix202307\Symfony\Component\Config\FileLocatorInterface;
+use RectorPrefix202307\Symfony\Component\Config\Loader\FileLoader;
+use RectorPrefix202307\Symfony\Component\DependencyInjection\ContainerBuilder;
 /**
  * DefinitionFileLoader loads config definitions from a PHP file.
  *
@@ -82,7 +82,18 @@ class DefinitionFileLoader extends FileLoader
             if (!$reflectionType instanceof \ReflectionNamedType) {
                 throw new \InvalidArgumentException(\sprintf('Could not resolve argument "$%s" for "%s". You must typehint it (for example with "%s").', $parameter->getName(), $path, DefinitionConfigurator::class));
             }
-            $arguments[] = $reflectionType->getName() === DefinitionConfigurator::class ? $configurator : ($reflectionType->getName() === TreeBuilder::class ? $this->treeBuilder : ($reflectionType->getName() === FileLoader::class || $reflectionType->getName() === self::class ? $this : null));
+            switch ($reflectionType->getName()) {
+                case DefinitionConfigurator::class:
+                    $arguments[] = $configurator;
+                    break;
+                case TreeBuilder::class:
+                    $arguments[] = $this->treeBuilder;
+                    break;
+                case FileLoader::class:
+                case self::class:
+                    $arguments[] = $this;
+                    break;
+            }
         }
         $callback(...$arguments);
     }

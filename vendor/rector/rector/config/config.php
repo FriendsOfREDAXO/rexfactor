@@ -1,18 +1,17 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202306;
+namespace RectorPrefix202307;
 
-use RectorPrefix202306\Composer\Semver\VersionParser;
-use RectorPrefix202306\Doctrine\Inflector\Inflector;
-use RectorPrefix202306\Doctrine\Inflector\Rules\English\InflectorFactory;
-use RectorPrefix202306\OndraM\CiDetector\CiDetector;
+use RectorPrefix202307\Composer\Semver\VersionParser;
+use RectorPrefix202307\Doctrine\Inflector\Inflector;
+use RectorPrefix202307\Doctrine\Inflector\Rules\English\InflectorFactory;
+use RectorPrefix202307\OndraM\CiDetector\CiDetector;
 use PhpParser\BuilderFactory;
 use PhpParser\ConstExprEvaluator;
 use PhpParser\Lexer;
 use PhpParser\NodeFinder;
 use PhpParser\NodeVisitor\CloningVisitor;
-use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPStan\Analyser\ScopeFactory;
 use PHPStan\Dependency\DependencyResolver;
@@ -78,12 +77,13 @@ use Rector\StaticTypeMapper\Mapper\PhpParserNodeMapper;
 use Rector\StaticTypeMapper\PhpDoc\PhpDocTypeMapper;
 use Rector\Utils\Command\MissingInSetCommand;
 use Rector\Utils\Command\OutsideAnySetCommand;
-use RectorPrefix202306\Symfony\Component\Console\Application;
-use RectorPrefix202306\Symfony\Component\Console\Style\SymfonyStyle;
-use function RectorPrefix202306\Symfony\Component\DependencyInjection\Loader\Configurator\service;
-use function RectorPrefix202306\Symfony\Component\DependencyInjection\Loader\Configurator\tagged_iterator;
-use RectorPrefix202306\Symfony\Component\Filesystem\Filesystem;
-use RectorPrefix202306\Symplify\EasyParallel\ValueObject\EasyParallelConfig;
+use RectorPrefix202307\Symfony\Component\Console\Application;
+use RectorPrefix202307\Symfony\Component\Console\Command\Command;
+use RectorPrefix202307\Symfony\Component\Console\Style\SymfonyStyle;
+use function RectorPrefix202307\Symfony\Component\DependencyInjection\Loader\Configurator\service;
+use function RectorPrefix202307\Symfony\Component\DependencyInjection\Loader\Configurator\tagged_iterator;
+use RectorPrefix202307\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202307\Symplify\EasyParallel\ValueObject\EasyParallelConfig;
 return static function (RectorConfig $rectorConfig) : void {
     // make use of https://github.com/symplify/easy-parallel
     $rectorConfig->import(EasyParallelConfig::FILE_PATH);
@@ -98,7 +98,6 @@ return static function (RectorConfig $rectorConfig) : void {
     $rectorConfig->importShortClasses();
     $rectorConfig->indent(' ', 4);
     $rectorConfig->fileExtensions(['php']);
-    $rectorConfig->nestedChainMethodCallLimit(120);
     $rectorConfig->cacheDirectory(\sys_get_temp_dir() . '/rector_cached_files');
     $rectorConfig->containerCacheDirectory(\sys_get_temp_dir());
     $services = $rectorConfig->services();
@@ -134,13 +133,13 @@ return static function (RectorConfig $rectorConfig) : void {
     foreach ($extensionConfigFiles as $extensionConfigFile) {
         $rectorConfig->import($extensionConfigFile);
     }
-    $services->load('Rector\\Core\\', __DIR__ . '/../src')->exclude([__DIR__ . '/../src/Rector', __DIR__ . '/../src/Console/Style/RectorConsoleOutputStyle.php', __DIR__ . '/../src/Exception', __DIR__ . '/../src/DependencyInjection/CompilerPass', __DIR__ . '/../src/DependencyInjection/Loader', __DIR__ . '/../src/Kernel', __DIR__ . '/../src/ValueObject', __DIR__ . '/../src/Bootstrap', __DIR__ . '/../src/Enum', __DIR__ . '/../src/functions', __DIR__ . '/../src/PhpParser/Node/CustomNode', __DIR__ . '/../src/PhpParser/ValueObject', __DIR__ . '/../src/constants.php']);
+    $services->load('Rector\\Core\\', __DIR__ . '/../src')->exclude([__DIR__ . '/../src/Rector', __DIR__ . '/../src/Console/Style/RectorConsoleOutputStyle.php', __DIR__ . '/../src/Exception', __DIR__ . '/../src/DependencyInjection/CompilerPass', __DIR__ . '/../src/DependencyInjection/Loader', __DIR__ . '/../src/Kernel', __DIR__ . '/../src/ValueObject', __DIR__ . '/../src/Bootstrap', __DIR__ . '/../src/Enum', __DIR__ . '/../src/functions', __DIR__ . '/../src/PhpParser/Node/CustomNode', __DIR__ . '/../src/PhpParser/ValueObject', __DIR__ . '/../src/PHPStan/NodeVisitor', __DIR__ . '/../src/constants.php']);
+    $services->set(ConsoleApplication::class)->arg('$commands', tagged_iterator(Command::class));
     $services->alias(Application::class, ConsoleApplication::class);
     $services->set(EmptyConfigurableRectorCollector::class)->arg('$containerBuilder', service('service_container'));
     $services->set(SimpleCallableNodeTraverser::class);
     $services->set(BuilderFactory::class);
     $services->set(CloningVisitor::class);
-    $services->set(ParentConnectingVisitor::class);
     $services->set(NodeFinder::class);
     $services->set(RectorConsoleOutputStyle::class)->factory([service(RectorConsoleOutputStyleFactory::class), 'create']);
     $services->set(Parser::class)->factory([service(PHPStanServicesFactory::class), 'createPHPStanParser']);
@@ -169,12 +168,10 @@ return static function (RectorConfig $rectorConfig) : void {
     if (\class_exists(MissingInSetCommand::class)) {
         $services->set(MissingInSetCommand::class);
         $services->set(OutsideAnySetCommand::class);
-        $services->get(ConsoleApplication::class)->call('add', [service(MissingInSetCommand::class)])->call('add', [service(OutsideAnySetCommand::class)]);
     }
     if (\class_exists(InitRecipeCommand::class)) {
         $services->set(InitRecipeCommand::class);
         $services->set(GenerateCommand::class);
-        $services->get(ConsoleApplication::class)->call('add', [service(InitRecipeCommand::class)])->call('add', [service(GenerateCommand::class)]);
     }
     // phpdoc parser
     $services->set(SmartPhpParser::class)->factory([service(SmartPhpParserFactory::class), 'create']);

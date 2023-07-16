@@ -8,18 +8,18 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Config\Definition\Dumper;
+namespace RectorPrefix202307\Symfony\Component\Config\Definition\Dumper;
 
-use RectorPrefix202306\Symfony\Component\Config\Definition\ArrayNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\BaseNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\BooleanNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\ConfigurationInterface;
-use RectorPrefix202306\Symfony\Component\Config\Definition\EnumNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\FloatNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\IntegerNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\NodeInterface;
-use RectorPrefix202306\Symfony\Component\Config\Definition\PrototypedArrayNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\ScalarNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\ArrayNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\BaseNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\BooleanNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\ConfigurationInterface;
+use RectorPrefix202307\Symfony\Component\Config\Definition\EnumNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\FloatNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\IntegerNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\NodeInterface;
+use RectorPrefix202307\Symfony\Component\Config\Definition\PrototypedArrayNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\ScalarNode;
 /**
  * Dumps an XML reference configuration for the given configuration/node instance.
  *
@@ -97,7 +97,24 @@ class XmlReferenceDumper
                     if ($prototype->hasDefaultValue()) {
                         $prototypeValue = $prototype->getDefaultValue();
                     } else {
-                        $prototypeValue = \get_class($prototype) === ScalarNode::class ? 'scalar value' : ($prototype::class === FloatNode::class || $prototype::class === IntegerNode::class ? 'numeric value' : ($prototype::class === BooleanNode::class ? 'true|false' : ($prototype::class === EnumNode::class ? $prototype->getPermissibleValues('|') : 'value')));
+                        switch (\get_class($prototype)) {
+                            case ScalarNode::class:
+                                $prototypeValue = 'scalar value';
+                                break;
+                            case FloatNode::class:
+                            case IntegerNode::class:
+                                $prototypeValue = 'numeric value';
+                                break;
+                            case BooleanNode::class:
+                                $prototypeValue = 'true|false';
+                                break;
+                            case EnumNode::class:
+                                $prototypeValue = $prototype->getPermissibleValues('|');
+                                break;
+                            default:
+                                $prototypeValue = 'value';
+                                break;
+                        }
                     }
                 }
             }

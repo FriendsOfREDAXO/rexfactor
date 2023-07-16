@@ -8,22 +8,22 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202306\Symfony\Component\Config\Builder;
+namespace RectorPrefix202307\Symfony\Component\Config\Builder;
 
-use RectorPrefix202306\Symfony\Component\Config\Definition\ArrayNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\BaseNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\BooleanNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\Builder\ExprBuilder;
-use RectorPrefix202306\Symfony\Component\Config\Definition\ConfigurationInterface;
-use RectorPrefix202306\Symfony\Component\Config\Definition\EnumNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
-use RectorPrefix202306\Symfony\Component\Config\Definition\FloatNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\IntegerNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\NodeInterface;
-use RectorPrefix202306\Symfony\Component\Config\Definition\PrototypedArrayNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\ScalarNode;
-use RectorPrefix202306\Symfony\Component\Config\Definition\VariableNode;
-use RectorPrefix202306\Symfony\Component\Config\Loader\ParamConfigurator;
+use RectorPrefix202307\Symfony\Component\Config\Definition\ArrayNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\BaseNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\BooleanNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\Builder\ExprBuilder;
+use RectorPrefix202307\Symfony\Component\Config\Definition\ConfigurationInterface;
+use RectorPrefix202307\Symfony\Component\Config\Definition\EnumNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
+use RectorPrefix202307\Symfony\Component\Config\Definition\FloatNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\IntegerNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\NodeInterface;
+use RectorPrefix202307\Symfony\Component\Config\Definition\PrototypedArrayNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\ScalarNode;
+use RectorPrefix202307\Symfony\Component\Config\Definition\VariableNode;
+use RectorPrefix202307\Symfony\Component\Config\Loader\ParamConfigurator;
 /**
  * Generate ConfigBuilders to help create valid config.
  *
@@ -50,7 +50,7 @@ class ConfigBuilderGenerator implements ConfigBuilderGeneratorInterface
     {
         $this->classes = [];
         $rootNode = $configuration->getConfigTreeBuilder()->buildTree();
-        $rootClass = new ClassBuilder('RectorPrefix202306\\Symfony\\Config', $rootNode->getName());
+        $rootClass = new ClassBuilder('RectorPrefix202307\\Symfony\\Config', $rootNode->getName());
         $path = $this->getFullPath($rootClass);
         if (!\is_file($path)) {
             // Generate the class if the file not exists
@@ -97,7 +97,22 @@ public function NAME(): string
             throw new \LogicException('The node was expected to be an ArrayNode. This Configuration includes an edge case not supported yet.');
         }
         foreach ($node->getChildren() as $child) {
-            \true === $child instanceof ScalarNode ? $this->handleScalarNode($child, $class) : (\true === $child instanceof PrototypedArrayNode ? $this->handlePrototypedArrayNode($child, $class, $namespace) : (\true === $child instanceof VariableNode ? $this->handleVariableNode($child, $class) : (\true === $child instanceof ArrayNode ? $this->handleArrayNode($child, $class, $namespace) : null)));
+            switch (\true) {
+                case $child instanceof ScalarNode:
+                    $this->handleScalarNode($child, $class);
+                    break;
+                case $child instanceof PrototypedArrayNode:
+                    $this->handlePrototypedArrayNode($child, $class, $namespace);
+                    break;
+                case $child instanceof VariableNode:
+                    $this->handleVariableNode($child, $class);
+                    break;
+                case $child instanceof ArrayNode:
+                    $this->handleArrayNode($child, $class, $namespace);
+                    break;
+                default:
+                    throw new \RuntimeException(\sprintf('Unknown node "%s".', \get_class($child)));
+            }
         }
     }
     private function handleArrayNode(ArrayNode $node, ClassBuilder $class, string $namespace) : void
