@@ -9,10 +9,12 @@ use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Property;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\UnionType;
 use Rector\Core\Rector\AbstractRector;
+use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\Php74\Guard\MakePropertyTypedGuard;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
@@ -41,11 +43,17 @@ final class PropertyTypeFromStrictSetterGetterRector extends AbstractRector impl
      * @var \Rector\Php74\Guard\MakePropertyTypedGuard
      */
     private $makePropertyTypedGuard;
-    public function __construct(GetterTypeDeclarationPropertyTypeInferer $getterTypeDeclarationPropertyTypeInferer, SetterTypeDeclarationPropertyTypeInferer $setterTypeDeclarationPropertyTypeInferer, MakePropertyTypedGuard $makePropertyTypedGuard)
+    /**
+     * @readonly
+     * @var \Rector\Core\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    public function __construct(GetterTypeDeclarationPropertyTypeInferer $getterTypeDeclarationPropertyTypeInferer, SetterTypeDeclarationPropertyTypeInferer $setterTypeDeclarationPropertyTypeInferer, MakePropertyTypedGuard $makePropertyTypedGuard, ReflectionResolver $reflectionResolver)
     {
         $this->getterTypeDeclarationPropertyTypeInferer = $getterTypeDeclarationPropertyTypeInferer;
         $this->setterTypeDeclarationPropertyTypeInferer = $setterTypeDeclarationPropertyTypeInferer;
         $this->makePropertyTypedGuard = $makePropertyTypedGuard;
+        $this->reflectionResolver = $reflectionResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -96,6 +104,7 @@ CODE_SAMPLE
     public function refactor(Node $node) : ?Node
     {
         $hasChanged = \false;
+        $classReflection = null;
         foreach ($node->getProperties() as $property) {
             if ($property->type instanceof Node) {
                 continue;
@@ -110,7 +119,13 @@ CODE_SAMPLE
             if (!$this->isDefaultExprTypeCompatible($property, $getterSetterPropertyType)) {
                 continue;
             }
-            if (!$this->makePropertyTypedGuard->isLegal($property, \false)) {
+            if (!$classReflection instanceof ClassReflection) {
+                $classReflection = $this->reflectionResolver->resolveClassReflection($node);
+            }
+            if (!$classReflection instanceof ClassReflection) {
+                return null;
+            }
+            if (!$this->makePropertyTypedGuard->isLegal($property, $classReflection, \false)) {
                 continue;
             }
             $propertyTypeDeclaration = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($getterSetterPropertyType, TypeKind::PROPERTY);

@@ -7,6 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
+use PhpParser\Node\Param;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\GroupUse;
 use PhpParser\Node\Stmt\InlineHTML;
@@ -96,11 +97,12 @@ final class NameImportingPostRector extends \Rector\PostRector\Rector\AbstractPo
         if ($node instanceof Name) {
             return $this->processNodeName($node, $file);
         }
-        if (SimpleParameterProvider::provideBoolParameter(Option::AUTO_IMPORT_DOC_BLOCK_NAMES)) {
+        if (($node instanceof Stmt || $node instanceof Param) && SimpleParameterProvider::provideBoolParameter(Option::AUTO_IMPORT_DOC_BLOCK_NAMES)) {
             $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
             $this->docBlockNameImporter->importNames($phpDocInfo->getPhpDocNode(), $node);
+            return $node;
         }
-        return $node;
+        return null;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -145,7 +147,7 @@ CODE_SAMPLE
             if ($nameInUse instanceof Name) {
                 return $nameInUse;
             }
-            return $this->nameImporter->importName($name, $file, $currentUses);
+            return $this->nameImporter->importName($name, $file);
         }
         return null;
     }
@@ -159,7 +161,7 @@ CODE_SAMPLE
         if (!$originalName instanceof FullyQualified) {
             return null;
         }
-        $aliasName = $this->aliasNameResolver->resolveByName($name);
+        $aliasName = $this->aliasNameResolver->resolveByName($name, $currentUses);
         if (\is_string($aliasName)) {
             return new Name($aliasName);
         }

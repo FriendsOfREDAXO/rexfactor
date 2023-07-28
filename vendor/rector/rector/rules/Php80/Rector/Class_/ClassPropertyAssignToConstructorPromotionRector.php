@@ -15,13 +15,15 @@ use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\UnionType;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\VarTagValueNode;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\TypeCombinator;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
 use Rector\BetterPhpDocParser\ValueObject\PhpDocAttributeKey;
-use Rector\Core\Contract\Rector\AllowEmptyConfigurableRectorInterface;
+use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\NodeAnalyzer\ParamAnalyzer;
 use Rector\Core\Rector\AbstractRector;
+use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Core\ValueObject\MethodName;
 use Rector\Core\ValueObject\PhpVersionFeature;
 use Rector\DeadCode\PhpDoc\TagRemover\VarTagRemover;
@@ -39,7 +41,7 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
  *
  * @see \Rector\Tests\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector\ClassPropertyAssignToConstructorPromotionRectorTest
  */
-final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRector implements MinPhpVersionInterface, AllowEmptyConfigurableRectorInterface
+final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRector implements MinPhpVersionInterface, ConfigurableRectorInterface
 {
     /**
      * @readonly
@@ -77,6 +79,11 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
      */
     private $typeComparator;
     /**
+     * @readonly
+     * @var \Rector\Core\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
      * @api
      * @var string
      */
@@ -91,7 +98,7 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
      * @var bool
      */
     private $inlinePublic = \false;
-    public function __construct(PromotedPropertyCandidateResolver $promotedPropertyCandidateResolver, VariableRenamer $variableRenamer, VarTagRemover $varTagRemover, ParamAnalyzer $paramAnalyzer, PhpDocTypeChanger $phpDocTypeChanger, MakePropertyPromotionGuard $makePropertyPromotionGuard, TypeComparator $typeComparator)
+    public function __construct(PromotedPropertyCandidateResolver $promotedPropertyCandidateResolver, VariableRenamer $variableRenamer, VarTagRemover $varTagRemover, ParamAnalyzer $paramAnalyzer, PhpDocTypeChanger $phpDocTypeChanger, MakePropertyPromotionGuard $makePropertyPromotionGuard, TypeComparator $typeComparator, ReflectionResolver $reflectionResolver)
     {
         $this->promotedPropertyCandidateResolver = $promotedPropertyCandidateResolver;
         $this->variableRenamer = $variableRenamer;
@@ -100,6 +107,7 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
         $this->phpDocTypeChanger = $phpDocTypeChanger;
         $this->makePropertyPromotionGuard = $makePropertyPromotionGuard;
         $this->typeComparator = $typeComparator;
+        $this->reflectionResolver = $reflectionResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -151,6 +159,7 @@ CODE_SAMPLE
             return null;
         }
         $classMethodPhpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($constructClassMethod);
+        $classReflection = null;
         foreach ($promotionCandidates as $promotionCandidate) {
             // does property have some useful annotations?
             $property = $promotionCandidate->getProperty();
@@ -158,7 +167,13 @@ CODE_SAMPLE
             if ($this->shouldSkipParam($param)) {
                 continue;
             }
-            if (!$this->makePropertyPromotionGuard->isLegal($node, $property, $param, $this->inlinePublic)) {
+            if (!$classReflection instanceof ClassReflection) {
+                $classReflection = $this->reflectionResolver->resolveClassReflection($node);
+            }
+            if (!$classReflection instanceof ClassReflection) {
+                return null;
+            }
+            if (!$this->makePropertyPromotionGuard->isLegal($node, $classReflection, $property, $param, $this->inlinePublic)) {
                 continue;
             }
             $propertyStmtKey = $property->getAttribute(AttributeKey::STMT_KEY);
