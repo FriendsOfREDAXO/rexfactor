@@ -23,9 +23,7 @@ use Symfony\Component\Finder\Finder as SymfonyFinder;
  */
 final class ReporterFactory
 {
-    /**
-     * @var array<string, ReporterInterface>
-     */
+    /** @var array<string, ReporterInterface> */
     private array $reporters = [];
 
     public function registerBuiltInReporters(): self
@@ -41,7 +39,7 @@ final class ReporterFactory
                 $builtInReporters[] = sprintf(
                     '%s\\%s%s',
                     __NAMESPACE__,
-                    $relativeNamespace ? $relativeNamespace.'\\' : '',
+                    '' !== $relativeNamespace ? $relativeNamespace.'\\' : '',
                     $file->getBasename('.php')
                 );
             }

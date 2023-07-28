@@ -86,6 +86,7 @@ interface Bar
      * {@inheritdoc}
      *
      * Must run before TypesSpacesFixer.
+     * Must run after NullableTypeDeclarationFixer, NullableTypeDeclarationForDefaultNullValueFixer.
      */
     public function getPriority(): int
     {

@@ -64,7 +64,7 @@ else {
      * {@inheritdoc}
      *
      * Must run before HeredocIndentationFixer.
-     * Must run after ClassAttributesSeparationFixer, CurlyBracesPositionFixer.
+     * Must run after ClassAttributesSeparationFixer, CurlyBracesPositionFixer, YieldFromArrayToYieldsFixer.
      */
     public function getPriority(): int
     {
@@ -564,7 +564,7 @@ else {
 
         $indent = preg_quote($this->whitespacesConfig->getIndent(), '~');
 
-        if (1 === Preg::match("~^(//|#)({$indent}.*)?$~", $tokens[$index]->getContent())) {
+        if (Preg::match("~^(//|#)({$indent}.*)?$~", $tokens[$index]->getContent())) {
             return false;
         }
 
