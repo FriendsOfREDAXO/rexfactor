@@ -5,6 +5,7 @@ namespace Rector\Core\Rector;
 
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\InlineHTML;
 use PhpParser\Node\Stmt\Nop;
 use PhpParser\NodeTraverser;
@@ -89,6 +90,10 @@ CODE_SAMPLE;
      * @var \Rector\Core\ValueObject\Application\File
      */
     protected $file;
+    /**
+     * @var \PhpParser\Node\Stmt|null
+     */
+    protected $currentStmt;
     /**
      * @var \Rector\Core\Application\ChangedNodeScopeRefresher
      */
@@ -176,8 +181,7 @@ CODE_SAMPLE;
     }
     public final function enterNode(Node $node)
     {
-        $nodeClass = \get_class($node);
-        if (!$this->isMatchingNodeType($nodeClass)) {
+        if (!$this->isMatchingNodeType($node)) {
             return null;
         }
         if ($this->shouldSkipCurrentNode($node)) {
@@ -224,7 +228,7 @@ CODE_SAMPLE;
             $errorMessage = \sprintf(self::EMPTY_NODE_ARRAY_MESSAGE, static::class);
             throw new ShouldNotHappenException($errorMessage);
         }
-        return $this->postRefactorProcess($originalNode, $refactoredNode);
+        return $this->postRefactorProcess($originalNode, $node, $refactoredNode);
     }
     /**
      * Replacing nodes in leaveNode() method avoids infinite recursion
@@ -301,14 +305,14 @@ CODE_SAMPLE;
     /**
      * @param \PhpParser\Node|mixed[]|int $refactoredNode
      */
-    private function postRefactorProcess(Node $originalNode, $refactoredNode) : Node
+    private function postRefactorProcess(Node $originalNode, Node $node, $refactoredNode) : Node
     {
         /** @var non-empty-array<Node>|Node $refactoredNode */
         $this->createdByRuleDecorator->decorate($refactoredNode, $originalNode, static::class);
         $rectorWithLineChange = new RectorWithLineChange(static::class, $originalNode->getLine());
         $this->file->addRectorClassWithLine($rectorWithLineChange);
         /** @var MutatingScope|null $currentScope */
-        $currentScope = $originalNode->getAttribute(AttributeKey::SCOPE);
+        $currentScope = $node->getAttribute(AttributeKey::SCOPE);
         $filePath = $this->file->getFilePath();
         // search "infinite recursion" in https://github.com/nikic/PHP-Parser/blob/master/doc/component/Walking_the_AST.markdown
         $originalNodeHash = \spl_object_hash($originalNode);
@@ -331,18 +335,20 @@ CODE_SAMPLE;
     {
         $nodes = $node instanceof Node ? [$node] : $node;
         foreach ($nodes as $node) {
-            $this->changedNodeScopeRefresher->refresh($node, $mutatingScope, $filePath);
+            $this->changedNodeScopeRefresher->refresh($node, $mutatingScope, $filePath, $this->currentStmt);
         }
     }
-    /**
-     * @param class-string<Node> $nodeClass
-     */
-    private function isMatchingNodeType(string $nodeClass) : bool
+    private function isMatchingNodeType(Node $node) : bool
     {
+        $nodeClass = \get_class($node);
         foreach ($this->getNodeTypes() as $nodeType) {
-            if (\is_a($nodeClass, $nodeType, \true)) {
-                return \true;
+            if (!\is_a($nodeClass, $nodeType, \true)) {
+                if ($node instanceof Stmt) {
+                    $this->currentStmt = $node;
+                }
+                continue;
             }
+            return \true;
         }
         return \false;
     }

@@ -58,22 +58,17 @@ final class ArrayTypeMapper implements TypeMapperInterface
      * @var \Rector\TypeDeclaration\NodeTypeAnalyzer\DetailedTypeAnalyzer
      */
     private $detailedTypeAnalyzer;
-    /**
-     * @var \Rector\PHPStanStaticTypeMapper\TypeMapper\ArrayShapeTypeMapper
-     */
-    private $arrayShapeTypeMapper;
     // To avoid circular dependency
     /**
      * @required
      */
-    public function autowire(PHPStanStaticTypeMapper $phpStanStaticTypeMapper, UnionTypeCommonTypeNarrower $unionTypeCommonTypeNarrower, ReflectionProvider $reflectionProvider, GenericClassStringTypeNormalizer $genericClassStringTypeNormalizer, DetailedTypeAnalyzer $detailedTypeAnalyzer, \Rector\PHPStanStaticTypeMapper\TypeMapper\ArrayShapeTypeMapper $arrayShapeTypeMapper) : void
+    public function autowire(PHPStanStaticTypeMapper $phpStanStaticTypeMapper, UnionTypeCommonTypeNarrower $unionTypeCommonTypeNarrower, ReflectionProvider $reflectionProvider, GenericClassStringTypeNormalizer $genericClassStringTypeNormalizer, DetailedTypeAnalyzer $detailedTypeAnalyzer) : void
     {
         $this->phpStanStaticTypeMapper = $phpStanStaticTypeMapper;
         $this->unionTypeCommonTypeNarrower = $unionTypeCommonTypeNarrower;
         $this->reflectionProvider = $reflectionProvider;
         $this->genericClassStringTypeNormalizer = $genericClassStringTypeNormalizer;
         $this->detailedTypeAnalyzer = $detailedTypeAnalyzer;
-        $this->arrayShapeTypeMapper = $arrayShapeTypeMapper;
     }
     /**
      * @return class-string<Type>
@@ -87,15 +82,11 @@ final class ArrayTypeMapper implements TypeMapperInterface
      */
     public function mapToPHPStanPhpDocTypeNode(Type $type) : TypeNode
     {
+        // this cannot be handled by PHPStan $type->toPhpDocNode() as requires space removal around "|" in union type
+        // then e.g. "int" instead of explicit number, and nice arrays
         $itemType = $type->getItemType();
         if ($itemType instanceof UnionType && !$type instanceof ConstantArrayType) {
             return $this->createArrayTypeNodeFromUnionType($itemType);
-        }
-        if ($type instanceof ConstantArrayType) {
-            $arrayShapeNode = $this->arrayShapeTypeMapper->mapConstantArrayType($type);
-            if ($arrayShapeNode instanceof TypeNode) {
-                return $arrayShapeNode;
-            }
         }
         if ($itemType instanceof ArrayType && $this->isGenericArrayCandidate($itemType)) {
             return $this->createGenericArrayType($type, \true);

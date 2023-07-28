@@ -4,11 +4,14 @@ declare (strict_types=1);
 namespace Rector\Php81\Rector\MethodCall;
 
 use PhpParser\Node;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\BinaryOp\Identical;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\Variable;
 use PHPStan\Type\ObjectType;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\PhpVersionFeature;
@@ -114,8 +117,65 @@ CODE_SAMPLE
         $enumConstFetch = $this->nodeFactory->createClassConstFetch($className, $enumCaseName);
         return new PropertyFetch($enumConstFetch, 'value');
     }
+    private function refactorEqualsMethodCall(MethodCall $methodCall) : ?Identical
+    {
+        $expr = $this->getValidEnumExpr($methodCall->var);
+        if (!$expr instanceof Expr) {
+            return null;
+        }
+        $arg = $methodCall->getArgs()[0] ?? null;
+        if (!$arg instanceof Arg) {
+            return null;
+        }
+        $right = $this->getValidEnumExpr($arg->value);
+        if (!$right instanceof Expr) {
+            return null;
+        }
+        return new Identical($expr, $right);
+    }
     /**
-     * @return null|\PhpParser\Node\Expr\ClassConstFetch|\PhpParser\Node\Expr\PropertyFetch
+     * @return null|\PhpParser\Node\Expr\ClassConstFetch|\PhpParser\Node\Expr
+     */
+    private function getValidEnumExpr(Node $node)
+    {
+        switch (\get_class($node)) {
+            case Variable::class:
+            case PropertyFetch::class:
+                return $this->getPropertyFetchOrVariable($node);
+            case StaticCall::class:
+                return $this->getEnumConstFetch($node);
+            default:
+                return null;
+        }
+    }
+    /**
+     * @param \PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\Variable $expr
+     * @return null|\PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\Variable
+     */
+    private function getPropertyFetchOrVariable($expr)
+    {
+        if (!$this->isObjectType($expr, new ObjectType('MyCLabs\\Enum\\Enum'))) {
+            return null;
+        }
+        return $expr;
+    }
+    private function getEnumConstFetch(StaticCall $staticCall) : ?\PhpParser\Node\Expr\ClassConstFetch
+    {
+        $className = $this->getName($staticCall->class);
+        if ($className === null) {
+            return null;
+        }
+        $enumCaseName = $this->getName($staticCall->name);
+        if ($enumCaseName === null) {
+            return null;
+        }
+        if ($this->shouldOmitEnumCase($enumCaseName)) {
+            return null;
+        }
+        return $this->nodeFactory->createClassConstFetch($className, $enumCaseName);
+    }
+    /**
+     * @return null|\PhpParser\Node\Expr\ClassConstFetch|\PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\BinaryOp\Identical
      */
     private function refactorMethodCall(MethodCall $methodCall, string $methodName)
     {
@@ -127,6 +187,9 @@ CODE_SAMPLE
         }
         if ($methodName === 'getValue') {
             return $this->refactorGetValueMethodCall($methodCall);
+        }
+        if ($methodName === 'equals') {
+            return $this->refactorEqualsMethodCall($methodCall);
         }
         return null;
     }
