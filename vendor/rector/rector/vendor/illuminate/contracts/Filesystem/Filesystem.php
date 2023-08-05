@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202307\Illuminate\Contracts\Filesystem;
+namespace RectorPrefix202308\Illuminate\Contracts\Filesystem;
 
 interface Filesystem
 {
@@ -41,7 +41,7 @@ interface Filesystem
      * Write the contents of a file.
      *
      * @param  string  $path
-     * @param  string|resource  $contents
+     * @param  \Psr\Http\Message\StreamInterface|\Illuminate\Http\File|\Illuminate\Http\UploadedFile|string|resource  $contents
      * @param  mixed  $options
      * @return bool
      */
