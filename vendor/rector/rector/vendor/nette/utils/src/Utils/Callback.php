@@ -5,9 +5,9 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202307\Nette\Utils;
+namespace RectorPrefix202308\Nette\Utils;
 
-use RectorPrefix202307\Nette;
+use RectorPrefix202308\Nette;
 use function is_array, is_object, is_string;
 /**
  * PHP callable tools.
@@ -137,11 +137,12 @@ final class Callback
     public static function unwrap(\Closure $closure)
     {
         $r = new \ReflectionFunction($closure);
+        $class = $r->getClosureScopeClass();
         if (\substr($r->name, -1) === '}') {
             return $closure;
-        } elseif ($obj = $r->getClosureThis()) {
+        } elseif (($obj = $r->getClosureThis()) && $class && \get_class($obj) === $class->name) {
             return [$obj, $r->name];
-        } elseif ($class = $r->getClosureScopeClass()) {
+        } elseif ($class) {
             return [$class->name, $r->name];
         } else {
             return $r->name;

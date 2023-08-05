@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use Rector\Core\PhpParser\NodeFinder\LocalMethodCallFinder;
@@ -91,7 +92,8 @@ CODE_SAMPLE
             if ($method->params === []) {
                 continue;
             }
-            if (!$method->isPrivate()) {
+            $isPrivate = $node->isFinal() && !$node->extends instanceof Name && $node->implements === [] && $method->isProtected() || $method->isFinal() && !$node->extends instanceof Name && $node->implements === [] || $method->isPrivate();
+            if (!$isPrivate) {
                 continue;
             }
             $methodCalls = $this->localMethodCallFinder->match($node, $method);

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\NodeManipulator;
 
-use RectorPrefix202307\Doctrine\ORM\Mapping\Table;
+use RectorPrefix202308\Doctrine\ORM\Mapping\Table;
 use PhpParser\Node;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
@@ -12,6 +12,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Trait_;
+use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\ObjectType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
@@ -109,13 +110,13 @@ final class PropertyManipulator
     /**
      * @param \PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $propertyOrParam
      */
-    public function isPropertyChangeableExceptConstructor(Class_ $class, $propertyOrParam) : bool
+    public function isPropertyChangeableExceptConstructor(Class_ $class, $propertyOrParam, Scope $scope) : bool
     {
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($class);
         if ($this->hasAllowedNotReadonlyAnnotationOrAttribute($phpDocInfo, $class)) {
             return \true;
         }
-        $propertyFetches = $this->propertyFetchFinder->findPrivatePropertyFetches($class, $propertyOrParam);
+        $propertyFetches = $this->propertyFetchFinder->findPrivatePropertyFetches($class, $propertyOrParam, $scope);
         $classMethod = $class->getMethod(MethodName::CONSTRUCT);
         foreach ($propertyFetches as $propertyFetch) {
             if ($this->isChangeableContext($propertyFetch)) {
@@ -195,11 +196,10 @@ final class PropertyManipulator
         if ($propertyFetch->getAttribute(AttributeKey::IS_UNSET_VAR, \false)) {
             return \true;
         }
-        // args most likely do not change properties
-        if ($propertyFetch->getAttribute(AttributeKey::IS_ARG_VALUE)) {
-            return \false;
+        if ($propertyFetch->getAttribute(AttributeKey::INSIDE_ARRAY_DIM_FETCH, \false)) {
+            return \true;
         }
-        return $propertyFetch->getAttribute(AttributeKey::INSIDE_ARRAY_DIM_FETCH, \false);
+        return $propertyFetch->getAttribute(AttributeKey::IS_USED_AS_ARG_BY_REF_VALUE, \false) === \true;
     }
     private function hasAllowedNotReadonlyAnnotationOrAttribute(PhpDocInfo $phpDocInfo, Class_ $class) : bool
     {

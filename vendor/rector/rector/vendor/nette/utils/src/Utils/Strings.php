@@ -5,10 +5,10 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202307\Nette\Utils;
+namespace RectorPrefix202308\Nette\Utils;
 
-use RectorPrefix202307\JetBrains\PhpStorm\Language;
-use RectorPrefix202307\Nette;
+use RectorPrefix202308\JetBrains\PhpStorm\Language;
+use RectorPrefix202308\Nette;
 use function is_array, is_object, strlen;
 /**
  * String tools library.
@@ -309,6 +309,7 @@ class Strings
     }
     /**
      * Pads a UTF-8 string to given length by prepending the $pad string to the beginning.
+     * @param  non-empty-string  $pad
      */
     public static function padLeft(string $s, int $length, string $pad = ' ') : string
     {
@@ -318,6 +319,7 @@ class Strings
     }
     /**
      * Pads UTF-8 string to given length by appending the $pad string to the end.
+     * @param  non-empty-string  $pad
      */
     public static function padRight(string $s, int $length, string $pad = ' ') : string
     {
