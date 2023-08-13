@@ -51,4 +51,8 @@ final class CsFixerResult
         }
         return $fileDiffs;
     }
+
+    public function getFatalErrors(): array {
+        return [];
+    }
 }
