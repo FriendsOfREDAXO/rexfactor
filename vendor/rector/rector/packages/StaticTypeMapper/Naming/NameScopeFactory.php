@@ -14,7 +14,7 @@ use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\Generic\TemplateTypeMap;
 use PHPStan\Type\Type;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\Core\PhpParser\ClassLikeAstResolver;
+use Rector\Core\PhpParser\AstResolver;
 use Rector\Core\Reflection\ReflectionResolver;
 use Rector\Naming\Naming\UseImportsResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -26,6 +26,21 @@ use RectorPrefix202308\Symfony\Contracts\Service\Attribute\Required;
 final class NameScopeFactory
 {
     /**
+     * @readonly
+     * @var \Rector\Naming\Naming\UseImportsResolver
+     */
+    private $useImportsResolver;
+    /**
+     * @readonly
+     * @var \Rector\Core\PhpParser\AstResolver
+     */
+    private $astResolver;
+    /**
+     * @readonly
+     * @var \Rector\Core\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    /**
      * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
     private $staticTypeMapper;
@@ -33,29 +48,20 @@ final class NameScopeFactory
      * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
     private $phpDocInfoFactory;
-    /**
-     * @var \Rector\Naming\Naming\UseImportsResolver
-     */
-    private $useImportsResolver;
-    /**
-     * @var \Rector\Core\Reflection\ReflectionResolver
-     */
-    private $reflectionResolver;
-    /**
-     * @var \Rector\Core\PhpParser\ClassLikeAstResolver
-     */
-    private $classLikeAstResolver;
+    public function __construct(UseImportsResolver $useImportsResolver, AstResolver $astResolver, ReflectionResolver $reflectionResolver)
+    {
+        $this->useImportsResolver = $useImportsResolver;
+        $this->astResolver = $astResolver;
+        $this->reflectionResolver = $reflectionResolver;
+    }
     // This is needed to avoid circular references
     /**
      * @required
      */
-    public function autowire(PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, UseImportsResolver $useImportsResolver, ReflectionResolver $reflectionResolver, ClassLikeAstResolver $classLikeAstResolver) : void
+    public function autowire(PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper) : void
     {
         $this->phpDocInfoFactory = $phpDocInfoFactory;
         $this->staticTypeMapper = $staticTypeMapper;
-        $this->useImportsResolver = $useImportsResolver;
-        $this->reflectionResolver = $reflectionResolver;
-        $this->classLikeAstResolver = $classLikeAstResolver;
     }
     public function createNameScopeFromNodeWithoutTemplateTypes(Node $node) : NameScope
     {
@@ -102,7 +108,7 @@ final class NameScopeFactory
         $classTemplateTypes = [];
         $classReflection = $this->reflectionResolver->resolveClassReflection($node);
         if ($classReflection instanceof ClassReflection) {
-            $classLike = $this->classLikeAstResolver->resolveClassFromClassReflection($classReflection);
+            $classLike = $this->astResolver->resolveClassFromClassReflection($classReflection);
             if ($classLike instanceof ClassLike) {
                 $classTemplateTypes = $this->resolveTemplateTypesFromNode($classLike);
             }

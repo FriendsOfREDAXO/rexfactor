@@ -87,10 +87,10 @@ CODE_SAMPLE
      */
     private function shouldSkip($node, Scope $scope) : bool
     {
-        $hasReturn = $this->betterNodeFinder->hasInstancesOfInFunctionLikeScoped($node, Return_::class);
-        if ($node instanceof ClassMethod && $node->isMagic()) {
+        if ($node->returnType instanceof Node && !$this->isName($node->returnType, 'void')) {
             return \true;
         }
+        $hasReturn = $this->betterNodeFinder->hasInstancesOfInFunctionLikeScoped($node, Return_::class);
         if ($hasReturn) {
             return \true;
         }
@@ -124,7 +124,7 @@ CODE_SAMPLE
             if ($stmt instanceof Stmt) {
                 continue;
             }
-            $stmtType = $this->getType($stmt);
+            $stmtType = $this->nodeTypeResolver->getNativeType($stmt);
             if ($stmtType instanceof NeverType) {
                 $hasNeverType = \true;
             }

@@ -8,10 +8,11 @@ use Rector\ChangesReporting\Output\JsonOutputFormatter;
 use Rector\Core\Application\ApplicationFileProcessor;
 use Rector\Core\Autoloading\AdditionalAutoloader;
 use Rector\Core\Configuration\ConfigInitializer;
+use Rector\Core\Configuration\ConfigurationFactory;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Console\ExitCode;
 use Rector\Core\Console\Output\OutputFormatterCollector;
-use Rector\Core\Contract\Console\OutputStyleInterface;
+use Rector\Core\Console\ProcessConfigureDecorator;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\StaticReflection\DynamicSourceLocatorDecorator;
 use Rector\Core\Util\MemoryLimiter;
@@ -19,9 +20,11 @@ use Rector\Core\ValueObject\Configuration;
 use Rector\Core\ValueObject\ProcessResult;
 use Rector\Core\ValueObjectFactory\ProcessResultFactory;
 use RectorPrefix202308\Symfony\Component\Console\Application;
+use RectorPrefix202308\Symfony\Component\Console\Command\Command;
 use RectorPrefix202308\Symfony\Component\Console\Input\InputInterface;
 use RectorPrefix202308\Symfony\Component\Console\Output\OutputInterface;
-final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessCommand
+use RectorPrefix202308\Symfony\Component\Console\Style\SymfonyStyle;
+final class ProcessCommand extends Command
 {
     /**
      * @readonly
@@ -60,15 +63,20 @@ final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessC
     private $outputFormatterCollector;
     /**
      * @readonly
-     * @var \Rector\Core\Contract\Console\OutputStyleInterface
+     * @var \Symfony\Component\Console\Style\SymfonyStyle
      */
-    private $rectorOutputStyle;
+    private $symfonyStyle;
     /**
      * @readonly
      * @var \Rector\Core\Util\MemoryLimiter
      */
     private $memoryLimiter;
-    public function __construct(AdditionalAutoloader $additionalAutoloader, ChangedFilesDetector $changedFilesDetector, ConfigInitializer $configInitializer, ApplicationFileProcessor $applicationFileProcessor, ProcessResultFactory $processResultFactory, DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator, OutputFormatterCollector $outputFormatterCollector, OutputStyleInterface $rectorOutputStyle, MemoryLimiter $memoryLimiter)
+    /**
+     * @readonly
+     * @var \Rector\Core\Configuration\ConfigurationFactory
+     */
+    private $configurationFactory;
+    public function __construct(AdditionalAutoloader $additionalAutoloader, ChangedFilesDetector $changedFilesDetector, ConfigInitializer $configInitializer, ApplicationFileProcessor $applicationFileProcessor, ProcessResultFactory $processResultFactory, DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator, OutputFormatterCollector $outputFormatterCollector, SymfonyStyle $symfonyStyle, MemoryLimiter $memoryLimiter, ConfigurationFactory $configurationFactory)
     {
         $this->additionalAutoloader = $additionalAutoloader;
         $this->changedFilesDetector = $changedFilesDetector;
@@ -77,14 +85,16 @@ final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessC
         $this->processResultFactory = $processResultFactory;
         $this->dynamicSourceLocatorDecorator = $dynamicSourceLocatorDecorator;
         $this->outputFormatterCollector = $outputFormatterCollector;
-        $this->rectorOutputStyle = $rectorOutputStyle;
+        $this->symfonyStyle = $symfonyStyle;
         $this->memoryLimiter = $memoryLimiter;
+        $this->configurationFactory = $configurationFactory;
         parent::__construct();
     }
     protected function configure() : void
     {
         $this->setName('process');
         $this->setDescription('Upgrades or refactors source code with provided rectors');
+        ProcessConfigureDecorator::decorate($this);
         parent::configure();
     }
     protected function execute(InputInterface $input, OutputInterface $output) : int
@@ -98,7 +108,7 @@ final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessC
         $this->memoryLimiter->adjust($configuration);
         // disable console output in case of json output formatter
         if ($configuration->getOutputFormat() === JsonOutputFormatter::NAME) {
-            $this->rectorOutputStyle->setVerbosity(OutputInterface::VERBOSITY_QUIET);
+            $this->symfonyStyle->setVerbosity(OutputInterface::VERBOSITY_QUIET);
         }
         $this->additionalAutoloader->autoloadInput($input);
         $this->additionalAutoloader->autoloadPaths();
@@ -106,7 +116,7 @@ final class ProcessCommand extends \Rector\Core\Console\Command\AbstractProcessC
         // 1. add files and directories to static locator
         $this->dynamicSourceLocatorDecorator->addPaths($paths);
         if ($this->dynamicSourceLocatorDecorator->isPathsEmpty()) {
-            $this->rectorOutputStyle->error('The given paths do not match any files');
+            $this->symfonyStyle->error('The given paths do not match any files');
             return ExitCode::FAILURE;
         }
         // MAIN PHASE

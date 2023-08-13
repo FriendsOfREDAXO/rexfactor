@@ -33,6 +33,7 @@ use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
 use Rector\Core\Configuration\RenamedClassesDataCollector;
 use Rector\Core\NodeAnalyzer\ClassAnalyzer;
+use Rector\NodeTypeResolver\Contract\NodeTypeResolverAwareInterface;
 use Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeCorrector\AccessoryNonEmptyStringTypeCorrector;
@@ -88,6 +89,9 @@ final class NodeTypeResolver
         $this->accessoryNonEmptyStringTypeCorrector = $accessoryNonEmptyStringTypeCorrector;
         $this->renamedClassesDataCollector = $renamedClassesDataCollector;
         foreach ($nodeTypeResolvers as $nodeTypeResolver) {
+            if ($nodeTypeResolver instanceof NodeTypeResolverAwareInterface) {
+                $nodeTypeResolver->autowire($this);
+            }
             foreach ($nodeTypeResolver->getNodeClasses() as $nodeClass) {
                 $this->nodeTypeResolvers[$nodeClass] = $nodeTypeResolver;
             }
@@ -185,10 +189,6 @@ final class NodeTypeResolver
         if (!$node instanceof Expr) {
             return new MixedType();
         }
-        // skip anonymous classes, ref https://github.com/rectorphp/rector/issues/1574
-        if ($node instanceof New_ && $this->classAnalyzer->isAnonymousClass($node->class)) {
-            return new ObjectWithoutClassType();
-        }
         $type = $scope->getType($node);
         $type = $this->accessoryNonEmptyStringTypeCorrector->correct($type);
         $type = $this->genericClassStringTypeCorrector->correct($type);
@@ -215,7 +215,31 @@ final class NodeTypeResolver
         if (!$scope instanceof Scope) {
             return new MixedType();
         }
+        // cover direct New_ class
+        if ($this->classAnalyzer->isAnonymousClass($expr)) {
+            $type = $this->nodeTypeResolvers[New_::class]->resolve($expr);
+            if ($type instanceof ObjectWithoutClassType) {
+                return $type;
+            }
+        }
         $type = $scope->getNativeType($expr);
+        if (!$type instanceof UnionType) {
+            if ($this->isAnonymousObjectType($type)) {
+                return new ObjectWithoutClassType();
+            }
+            return $this->accessoryNonEmptyStringTypeCorrector->correct($type);
+        }
+        $hasChanged = \false;
+        $types = $type->getTypes();
+        foreach ($types as $key => $childType) {
+            if ($this->isAnonymousObjectType($childType)) {
+                $types[$key] = new ObjectWithoutClassType();
+                $hasChanged = \true;
+            }
+        }
+        if ($hasChanged) {
+            return $this->accessoryNonEmptyStringTypeCorrector->correct(new UnionType($types));
+        }
         return $this->accessoryNonEmptyStringTypeCorrector->correct($type);
     }
     public function isNumberType(Expr $expr) : bool
@@ -273,6 +297,10 @@ final class NodeTypeResolver
             return \true;
         }
         return $classReflection->isSubclassOf($objectType->getClassName());
+    }
+    private function isAnonymousObjectType(Type $type) : bool
+    {
+        return $type instanceof ObjectType && $this->classAnalyzer->isAnonymousClassName($type->getClassName());
     }
     private function isUnionTypeable(Type $first, Type $second) : bool
     {

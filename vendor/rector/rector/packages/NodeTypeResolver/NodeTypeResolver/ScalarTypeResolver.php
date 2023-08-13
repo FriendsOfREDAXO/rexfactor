@@ -14,7 +14,7 @@ use PhpParser\Node\Scalar\String_;
 use PHPStan\Type\Constant\ConstantFloatType;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Constant\ConstantStringType;
-use PHPStan\Type\MixedType;
+use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
 use Rector\Core\Exception\NotImplementedYetException;
 use Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface;
@@ -45,7 +45,7 @@ final class ScalarTypeResolver implements NodeTypeResolverInterface
             return new ConstantStringType($node->getName());
         }
         if ($node instanceof Encapsed) {
-            return new MixedType();
+            return new StringType();
         }
         if ($node instanceof EncapsedStringPart) {
             return new ConstantStringType($node->value);

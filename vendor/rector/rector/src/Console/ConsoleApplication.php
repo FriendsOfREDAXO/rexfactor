@@ -7,6 +7,7 @@ use RectorPrefix202308\Composer\XdebugHandler\XdebugHandler;
 use Rector\ChangesReporting\Output\ConsoleOutputFormatter;
 use Rector\Core\Application\VersionResolver;
 use Rector\Core\Configuration\Option;
+use Rector\Core\Util\Reflection\PrivatesAccessor;
 use RectorPrefix202308\Symfony\Component\Console\Application;
 use RectorPrefix202308\Symfony\Component\Console\Command\Command;
 use RectorPrefix202308\Symfony\Component\Console\Input\InputDefinition;
@@ -22,14 +23,24 @@ final class ConsoleApplication extends Application
      */
     private const NAME = 'Rector';
     /**
-     * @param RewindableGenerator<int, Command> $commands
+     * @param RewindableGenerator<int, Command>|Command[] $commands
      */
     public function __construct(iterable $commands)
     {
         parent::__construct(self::NAME, VersionResolver::PACKAGE_VERSION);
-        $commands = \iterator_to_array($commands->getIterator());
+        if ($commands instanceof RewindableGenerator) {
+            $commands = \iterator_to_array($commands->getIterator());
+        }
+        Assert::notEmpty($commands);
         Assert::allIsInstanceOf($commands, Command::class);
         $this->addCommands($commands);
+        // remove unused commands
+        $privatesAccessor = new PrivatesAccessor();
+        $privatesAccessor->propertyClosure($this, 'commands', static function (array $commands) : array {
+            unset($commands['completion']);
+            unset($commands['help']);
+            return $commands;
+        });
         // run this command, if no command name is provided
         $this->setDefaultCommand('process');
     }

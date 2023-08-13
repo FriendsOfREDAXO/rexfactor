@@ -4,31 +4,27 @@ declare (strict_types=1);
 namespace Rector\Core\Rector;
 
 use PhpParser\Node;
-use PhpParser\Node\Arg;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\InlineHTML;
 use PhpParser\Node\Stmt\Nop;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitorAbstract;
 use PHPStan\Analyser\MutatingScope;
-use PHPStan\Internal\BytesHelper;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\ChangesReporting\ValueObject\RectorWithLineChange;
 use Rector\Core\Application\ChangedNodeScopeRefresher;
 use Rector\Core\Configuration\CurrentNodeProvider;
-use Rector\Core\Console\Output\RectorOutputStyle;
 use Rector\Core\Contract\Rector\PhpRectorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
-use Rector\Core\FileSystem\FilePathHelper;
 use Rector\Core\Logging\CurrentRectorProvider;
+use Rector\Core\Logging\RectorOutput;
 use Rector\Core\NodeDecorator\CreatedByRuleDecorator;
 use Rector\Core\PhpParser\Comparing\NodeComparator;
 use Rector\Core\PhpParser\Node\BetterNodeFinder;
 use Rector\Core\PhpParser\Node\NodeFactory;
 use Rector\Core\PhpParser\Node\Value\ValueResolver;
-use Rector\Core\ProcessAnalyzer\RectifiedAnalyzer;
 use Rector\Core\Provider\CurrentFileProvider;
 use Rector\Core\ValueObject\Application\File;
 use Rector\NodeNameResolver\NodeNameResolver;
@@ -123,21 +119,13 @@ CODE_SAMPLE;
      */
     private $nodesToReturn = [];
     /**
-     * @var \Rector\Core\ProcessAnalyzer\RectifiedAnalyzer
-     */
-    private $rectifiedAnalyzer;
-    /**
      * @var \Rector\Core\NodeDecorator\CreatedByRuleDecorator
      */
     private $createdByRuleDecorator;
     /**
-     * @var \Rector\Core\Console\Output\RectorOutputStyle
+     * @var \Rector\Core\Logging\RectorOutput
      */
-    private $rectorOutputStyle;
-    /**
-     * @var \Rector\Core\FileSystem\FilePathHelper
-     */
-    private $filePathHelper;
+    private $rectorOutput;
     /**
      * @var string|null
      */
@@ -145,7 +133,7 @@ CODE_SAMPLE;
     /**
      * @required
      */
-    public function autowire(NodeNameResolver $nodeNameResolver, NodeTypeResolver $nodeTypeResolver, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeFactory $nodeFactory, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, CurrentRectorProvider $currentRectorProvider, CurrentNodeProvider $currentNodeProvider, Skipper $skipper, ValueResolver $valueResolver, BetterNodeFinder $betterNodeFinder, NodeComparator $nodeComparator, CurrentFileProvider $currentFileProvider, RectifiedAnalyzer $rectifiedAnalyzer, CreatedByRuleDecorator $createdByRuleDecorator, ChangedNodeScopeRefresher $changedNodeScopeRefresher, RectorOutputStyle $rectorOutputStyle, FilePathHelper $filePathHelper) : void
+    public function autowire(NodeNameResolver $nodeNameResolver, NodeTypeResolver $nodeTypeResolver, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeFactory $nodeFactory, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, CurrentRectorProvider $currentRectorProvider, CurrentNodeProvider $currentNodeProvider, Skipper $skipper, ValueResolver $valueResolver, BetterNodeFinder $betterNodeFinder, NodeComparator $nodeComparator, CurrentFileProvider $currentFileProvider, CreatedByRuleDecorator $createdByRuleDecorator, ChangedNodeScopeRefresher $changedNodeScopeRefresher, RectorOutput $rectorOutput) : void
     {
         $this->nodeNameResolver = $nodeNameResolver;
         $this->nodeTypeResolver = $nodeTypeResolver;
@@ -160,11 +148,9 @@ CODE_SAMPLE;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->nodeComparator = $nodeComparator;
         $this->currentFileProvider = $currentFileProvider;
-        $this->rectifiedAnalyzer = $rectifiedAnalyzer;
         $this->createdByRuleDecorator = $createdByRuleDecorator;
         $this->changedNodeScopeRefresher = $changedNodeScopeRefresher;
-        $this->rectorOutputStyle = $rectorOutputStyle;
-        $this->filePathHelper = $filePathHelper;
+        $this->rectorOutput = $rectorOutput;
     }
     /**
      * @return Node[]|null
@@ -184,26 +170,26 @@ CODE_SAMPLE;
         if (!$this->isMatchingNodeType($node)) {
             return null;
         }
-        if ($this->shouldSkipCurrentNode($node)) {
+        $filePath = $this->file->getFilePath();
+        if ($this->skipper->shouldSkipCurrentNode($this, $filePath, static::class, $node)) {
             return null;
         }
-        $isDebug = $this->rectorOutputStyle->isDebug();
+        $isDebug = $this->rectorOutput->isDebug();
         $this->currentRectorProvider->changeCurrentRector($this);
         // for PHP doc info factory and change notifier
         $this->currentNodeProvider->setNode($node);
         if ($isDebug) {
-            $this->printCurrentFileAndRule();
+            $this->rectorOutput->printCurrentFileAndRule($filePath, static::class);
         }
         $this->changedNodeScopeRefresher->reIndexNodeAttributes($node);
         if ($isDebug) {
-            $startTime = \microtime(\true);
-            $previousMemory = \memory_get_peak_usage(\true);
+            $this->rectorOutput->startConsumptions();
         }
         // ensure origNode pulled before refactor to avoid changed during refactor, ref https://3v4l.org/YMEGN
         $originalNode = $node->getAttribute(AttributeKey::ORIGINAL_NODE) ?? $node;
         $refactoredNode = $this->refactor($node);
         if ($isDebug) {
-            $this->printConsumptions($startTime, $previousMemory);
+            $this->rectorOutput->printConsumptions();
         }
         // @see NodeTraverser::* codes, e.g. removal of node of stopping the traversing
         if ($refactoredNode === NodeTraverser::REMOVE_NODE) {
@@ -228,7 +214,7 @@ CODE_SAMPLE;
             $errorMessage = \sprintf(self::EMPTY_NODE_ARRAY_MESSAGE, static::class);
             throw new ShouldNotHappenException($errorMessage);
         }
-        return $this->postRefactorProcess($originalNode, $node, $refactoredNode);
+        return $this->postRefactorProcess($originalNode, $node, $refactoredNode, $filePath);
     }
     /**
      * Replacing nodes in leaveNode() method avoids infinite recursion
@@ -291,21 +277,9 @@ CODE_SAMPLE;
         }
     }
     /**
-     * @param Arg[] $currentArgs
-     * @param Arg[] $appendingArgs
-     * @return Arg[]
-     */
-    protected function appendArgs(array $currentArgs, array $appendingArgs) : array
-    {
-        foreach ($appendingArgs as $appendingArg) {
-            $currentArgs[] = new Arg($appendingArg->value);
-        }
-        return $currentArgs;
-    }
-    /**
      * @param \PhpParser\Node|mixed[]|int $refactoredNode
      */
-    private function postRefactorProcess(Node $originalNode, Node $node, $refactoredNode) : Node
+    private function postRefactorProcess(Node $originalNode, Node $node, $refactoredNode, string $filePath) : Node
     {
         /** @var non-empty-array<Node>|Node $refactoredNode */
         $this->createdByRuleDecorator->decorate($refactoredNode, $originalNode, static::class);
@@ -313,7 +287,6 @@ CODE_SAMPLE;
         $this->file->addRectorClassWithLine($rectorWithLineChange);
         /** @var MutatingScope|null $currentScope */
         $currentScope = $node->getAttribute(AttributeKey::SCOPE);
-        $filePath = $this->file->getFilePath();
         // search "infinite recursion" in https://github.com/nikic/PHP-Parser/blob/master/doc/component/Walking_the_AST.markdown
         $originalNodeHash = \spl_object_hash($originalNode);
         if (\is_array($refactoredNode)) {
@@ -351,27 +324,5 @@ CODE_SAMPLE;
             return \true;
         }
         return \false;
-    }
-    private function shouldSkipCurrentNode(Node $node) : bool
-    {
-        $filePath = $this->file->getFilePath();
-        if ($this->skipper->shouldSkipElementAndFilePath($this, $filePath)) {
-            return \true;
-        }
-        return $this->rectifiedAnalyzer->hasRectified(static::class, $node);
-    }
-    private function printCurrentFileAndRule() : void
-    {
-        $relativeFilePath = $this->filePathHelper->relativePath($this->file->getFilePath());
-        $this->rectorOutputStyle->writeln('[file] ' . $relativeFilePath);
-        $this->rectorOutputStyle->writeln('[rule] ' . static::class);
-    }
-    private function printConsumptions(float $startTime, int $previousMemory) : void
-    {
-        $elapsedTime = \microtime(\true) - $startTime;
-        $currentTotalMemory = \memory_get_peak_usage(\true);
-        $consumed = \sprintf('--- consumed %s, total %s, took %.2f s', BytesHelper::bytes($currentTotalMemory - $previousMemory), BytesHelper::bytes($currentTotalMemory), $elapsedTime);
-        $this->rectorOutputStyle->writeln($consumed);
-        $this->rectorOutputStyle->newLine(1);
     }
 }
