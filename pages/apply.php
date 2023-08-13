@@ -24,6 +24,15 @@ $backToStartUrl = rex_url::backendPage('rexfactor');
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, false, $skipList->toRectorSkipList());
 
+$fatalErrors = $result->getFatalErrors();
+if ($fatalErrors !== []) {
+    foreach($fatalErrors as $error) {
+        echo rex_view::error($error);
+    }
+
+    return;
+}
+
 $total = $result->getTotals();
 $content = '';
 if ($total['changed_files'] > 0) {

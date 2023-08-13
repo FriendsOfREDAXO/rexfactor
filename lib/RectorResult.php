@@ -71,4 +71,11 @@ diff --git a/{$fileDiff['file']} b/{$fileDiff['file']}
 
         return array_unique($rectors);
     }
+
+    /**
+     * @return list<string>
+     */
+    public function getFatalErrors(): array {
+        return $this->json['fatal_errors'] ?? [];
+    }
 }

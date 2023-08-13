@@ -52,6 +52,15 @@ $applyUrl .= '&'. $skipList->toUrl();
 
 $result = RexFactor::runRexFactor($addon, $setList, $targetVersion, true, $skipList->toRectorSkipList());
 
+$fatalErrors = $result->getFatalErrors();
+if ($fatalErrors !== []) {
+    foreach($fatalErrors as $error) {
+        echo rex_view::error($error);
+    }
+
+    return;
+}
+
 $html = $content = $diffout = '';
 $total = $result->getTotals();
 if ($total['changed_files'] > 0) {
