@@ -37,12 +37,10 @@ use Rector\Config\RectorConfig;
 use Rector\Core\Application\ApplicationFileProcessor;
 use Rector\Core\Bootstrap\ExtensionConfigResolver;
 use Rector\Core\Configuration\ConfigInitializer;
-use Rector\Core\Configuration\Parameter\ParameterProvider;
 use Rector\Core\Console\Command\ListRulesCommand;
 use Rector\Core\Console\ConsoleApplication;
 use Rector\Core\Console\Output\OutputFormatterCollector;
-use Rector\Core\Console\Style\RectorConsoleOutputStyle;
-use Rector\Core\Console\Style\RectorConsoleOutputStyleFactory;
+use Rector\Core\Console\Style\RectorStyle;
 use Rector\Core\Console\Style\SymfonyStyleFactory;
 use Rector\Core\Contract\Processor\FileProcessorInterface;
 use Rector\Core\Contract\Rector\NonPhpRectorInterface;
@@ -112,7 +110,6 @@ return static function (RectorConfig $rectorConfig) : void {
         __DIR__ . '/../packages/PhpDocParser/PhpDocParser/PhpDocNodeVisitor/CallablePhpDocNodeVisitor.php',
         __DIR__ . '/../packages/PHPStanStaticTypeMapper/Enum',
         __DIR__ . '/../packages/Caching/Cache.php',
-        __DIR__ . '/../packages/NodeTypeResolver/PhpDocNodeVisitor/UnderscoreRenamePhpDocNodeVisitor.php',
         __DIR__ . '/../packages/NodeTypeResolver/PHPStan/ObjectWithoutClassTypeWithParentTypes.php',
         // used in PHPStan
         __DIR__ . '/../packages/NodeTypeResolver/Reflection/BetterReflection/RectorBetterReflectionSourceLocatorFactory.php',
@@ -131,22 +128,21 @@ return static function (RectorConfig $rectorConfig) : void {
     foreach ($extensionConfigFiles as $extensionConfigFile) {
         $rectorConfig->import($extensionConfigFile);
     }
-    $services->load('Rector\\Core\\', __DIR__ . '/../src')->exclude([__DIR__ . '/../src/Rector', __DIR__ . '/../src/Console/Style/RectorConsoleOutputStyle.php', __DIR__ . '/../src/Exception', __DIR__ . '/../src/DependencyInjection/CompilerPass', __DIR__ . '/../src/DependencyInjection/Loader', __DIR__ . '/../src/Kernel', __DIR__ . '/../src/ValueObject', __DIR__ . '/../src/Bootstrap', __DIR__ . '/../src/Enum', __DIR__ . '/../src/functions', __DIR__ . '/../src/PhpParser/Node/CustomNode', __DIR__ . '/../src/PhpParser/ValueObject', __DIR__ . '/../src/PHPStan/NodeVisitor', __DIR__ . '/../src/constants.php']);
+    $services->load('Rector\\Core\\', __DIR__ . '/../src')->exclude([__DIR__ . '/../src/Rector', __DIR__ . '/../src/Console/Style/RectorConsoleOutputStyle.php', __DIR__ . '/../src/Exception', __DIR__ . '/../src/DependencyInjection/CompilerPass', __DIR__ . '/../src/DependencyInjection/Loader', __DIR__ . '/../src/DependencyInjection/LazyContainerFactory.php', __DIR__ . '/../src/Kernel', __DIR__ . '/../src/ValueObject', __DIR__ . '/../src/Bootstrap', __DIR__ . '/../src/Enum', __DIR__ . '/../src/functions', __DIR__ . '/../src/PhpParser/Node/CustomNode', __DIR__ . '/../src/PhpParser/ValueObject', __DIR__ . '/../src/PHPStan/NodeVisitor', __DIR__ . '/../src/constants.php']);
     $services->set(ConsoleApplication::class)->arg('$commands', tagged_iterator(Command::class));
     $services->alias(Application::class, ConsoleApplication::class);
     $services->set(SimpleCallableNodeTraverser::class);
     $services->set(BuilderFactory::class);
     $services->set(CloningVisitor::class);
     $services->set(NodeFinder::class);
-    $services->set(RectorConsoleOutputStyle::class)->factory([service(RectorConsoleOutputStyleFactory::class), 'create']);
     $services->set(Parser::class)->factory([service(PHPStanServicesFactory::class), 'createPHPStanParser']);
     $services->set(Lexer::class)->factory([service(PHPStanServicesFactory::class), 'createEmulativeLexer']);
-    $services->set(ParameterProvider::class)->arg('$container', service('service_container'));
     $services->set(InflectorFactory::class);
     $services->set(Inflector::class)->factory([service(InflectorFactory::class), 'build']);
     $services->set(VersionParser::class);
     // console
     $services->set(SymfonyStyleFactory::class);
+    $services->alias(RectorStyle::class, SymfonyStyle::class);
     $services->set(SymfonyStyle::class)->factory([service(SymfonyStyleFactory::class), 'create']);
     // cache
     $services->set(DependencyResolver::class)->factory([service(PHPStanServicesFactory::class), 'createDependencyResolver']);

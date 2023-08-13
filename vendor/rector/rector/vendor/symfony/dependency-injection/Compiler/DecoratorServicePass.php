@@ -71,7 +71,7 @@ class DecoratorServicePass extends AbstractRecursivePass
             } else {
                 throw new ServiceNotFoundException($inner, $id);
             }
-            if (($decoratedDefinition2 = $decoratedDefinition) ? $decoratedDefinition2->isSynthetic() : null) {
+            if (($nullsafeVariable1 = $decoratedDefinition) ? $nullsafeVariable1->isSynthetic() : null) {
                 throw new InvalidArgumentException(\sprintf('A synthetic service cannot be decorated: service "%s" cannot decorate "%s".', $id, $inner));
             }
             if (isset($decoratingDefinitions[$inner])) {

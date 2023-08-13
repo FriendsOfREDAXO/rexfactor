@@ -11,35 +11,44 @@ use PhpParser\Node\Expr\NullsafePropertyFetch;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
-use PHPStan\Analyser\MutatingScope;
-use PHPStan\Analyser\Scope;
-use Rector\Core\Rector\AbstractScopeAwareRector;
-use Rector\Naming\Naming\VariableNaming;
+use Rector\Core\Provider\CurrentFileProvider;
+use Rector\Core\Rector\AbstractRector;
+use Rector\Core\ValueObject\Application\File;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\DowngradePhp80\Rector\NullsafeMethodCall\DowngradeNullsafeToTernaryOperatorRector\DowngradeNullsafeToTernaryOperatorRectorTest
  */
-final class DowngradeNullsafeToTernaryOperatorRector extends AbstractScopeAwareRector
+final class DowngradeNullsafeToTernaryOperatorRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\VariableNaming
+     * @var \Rector\Core\Provider\CurrentFileProvider
      */
-    private $variableNaming;
-    public function __construct(VariableNaming $variableNaming)
+    private $currentFileProvider;
+    /**
+     * @var int
+     */
+    private $counter = 0;
+    /**
+     * @var string|null
+     */
+    private $previousFileName;
+    /**
+     * @var string|null
+     */
+    private $currentFileName;
+    public function __construct(CurrentFileProvider $currentFileProvider)
     {
-        $this->variableNaming = $variableNaming;
+        $this->currentFileProvider = $currentFileProvider;
     }
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Change nullsafe operator to ternary operator rector', [new CodeSample(<<<'CODE_SAMPLE'
 $dateAsString = $booking->getStartDate()?->asDateTimeString();
-$dateAsString = $booking->startDate?->dateTimeString;
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
 $dateAsString = ($bookingGetStartDate = $booking->getStartDate()) ? $bookingGetStartDate->asDateTimeString() : null;
-$dateAsString = ($bookingGetStartDate = $booking->startDate) ? $bookingGetStartDate->dateTimeString : null;
 CODE_SAMPLE
 )]);
     }
@@ -53,13 +62,32 @@ CODE_SAMPLE
     /**
      * @param NullsafeMethodCall|NullsafePropertyFetch $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : Ternary
+    public function refactor(Node $node) : ?Ternary
     {
-        /** @var MutatingScope $scope */
-        $tempVarName = $this->variableNaming->resolveFromNodeWithScopeCountAndFallbackName($node->var, $scope, '_');
-        $variable = new Variable($tempVarName);
-        $called = $node instanceof NullsafeMethodCall ? new MethodCall($variable, $node->name, $node->getArgs()) : new PropertyFetch($variable, $node->name);
-        $assign = new Assign($variable, $node->var);
-        return new Ternary($assign, $called, $this->nodeFactory->createNull());
+        if ($this->previousFileName === null) {
+            $previousFile = $this->currentFileProvider->getFile();
+            if (!$previousFile instanceof File) {
+                return null;
+            }
+            $this->previousFileName = $previousFile->getFilePath();
+        }
+        $currentFile = $this->currentFileProvider->getFile();
+        if (!$currentFile instanceof File) {
+            return null;
+        }
+        $this->currentFileName = $currentFile->getFilePath();
+        $nullsafeVariable = $this->createNullsafeVariable();
+        $methodCallOrPropertyFetch = $node instanceof NullsafeMethodCall ? new MethodCall($nullsafeVariable, $node->name, $node->getArgs()) : new PropertyFetch($nullsafeVariable, $node->name);
+        $assign = new Assign($nullsafeVariable, $node->var);
+        return new Ternary($assign, $methodCallOrPropertyFetch, $this->nodeFactory->createNull());
+    }
+    private function createNullsafeVariable() : Variable
+    {
+        if ($this->previousFileName !== $this->currentFileName) {
+            $this->counter = 0;
+            $this->previousFileName = $this->currentFileName;
+        }
+        $nullsafeVariableName = 'nullsafeVariable' . ++$this->counter;
+        return new Variable($nullsafeVariableName);
     }
 }

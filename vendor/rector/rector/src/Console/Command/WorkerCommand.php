@@ -8,8 +8,11 @@ use RectorPrefix202308\Clue\React\NDJson\Encoder;
 use RectorPrefix202308\React\EventLoop\StreamSelectLoop;
 use RectorPrefix202308\React\Socket\ConnectionInterface;
 use RectorPrefix202308\React\Socket\TcpConnector;
+use Rector\Core\Configuration\ConfigurationFactory;
+use Rector\Core\Console\ProcessConfigureDecorator;
 use Rector\Core\Util\MemoryLimiter;
 use Rector\Parallel\WorkerRunner;
+use RectorPrefix202308\Symfony\Component\Console\Command\Command;
 use RectorPrefix202308\Symfony\Component\Console\Input\InputInterface;
 use RectorPrefix202308\Symfony\Component\Console\Output\OutputInterface;
 use RectorPrefix202308\Symplify\EasyParallel\Enum\Action;
@@ -21,7 +24,7 @@ use RectorPrefix202308\Symplify\EasyParallel\Enum\ReactCommand;
  * ↓↓↓
  * https://github.com/phpstan/phpstan-src/commit/b84acd2e3eadf66189a64fdbc6dd18ff76323f67#diff-7f625777f1ce5384046df08abffd6c911cfbb1cfc8fcb2bdeaf78f337689e3e2
  */
-final class WorkerCommand extends \Rector\Core\Console\Command\AbstractProcessCommand
+final class WorkerCommand extends Command
 {
     /**
      * @readonly
@@ -33,16 +36,23 @@ final class WorkerCommand extends \Rector\Core\Console\Command\AbstractProcessCo
      * @var \Rector\Core\Util\MemoryLimiter
      */
     private $memoryLimiter;
-    public function __construct(WorkerRunner $workerRunner, MemoryLimiter $memoryLimiter)
+    /**
+     * @readonly
+     * @var \Rector\Core\Configuration\ConfigurationFactory
+     */
+    private $configurationFactory;
+    public function __construct(WorkerRunner $workerRunner, MemoryLimiter $memoryLimiter, ConfigurationFactory $configurationFactory)
     {
         $this->workerRunner = $workerRunner;
         $this->memoryLimiter = $memoryLimiter;
+        $this->configurationFactory = $configurationFactory;
         parent::__construct();
     }
     protected function configure() : void
     {
         $this->setName('worker');
         $this->setDescription('[INTERNAL] Support for parallel process');
+        ProcessConfigureDecorator::decorate($this);
         parent::configure();
     }
     protected function execute(InputInterface $input, OutputInterface $output) : int

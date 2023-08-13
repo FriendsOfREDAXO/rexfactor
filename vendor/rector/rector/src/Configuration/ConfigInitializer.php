@@ -8,7 +8,6 @@ use RectorPrefix202308\Nette\Utils\Strings;
 use Rector\Core\Contract\Rector\RectorInterface;
 use Rector\Core\FileSystem\InitFilePathsResolver;
 use Rector\Core\Php\PhpVersionProvider;
-use Rector\PostRector\Contract\Rector\ComplementaryRectorInterface;
 use Rector\PostRector\Contract\Rector\PostRectorInterface;
 use RectorPrefix202308\Symfony\Component\Console\Style\SymfonyStyle;
 use RectorPrefix202308\Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
@@ -34,14 +33,14 @@ final class ConfigInitializer
      */
     private $rectors = [];
     /**
-     * @param RewindableGenerator<RectorInterface> $rectors
+     * @param RewindableGenerator<RectorInterface>|RectorInterface[] $rectors
      */
-    public function __construct(RewindableGenerator $rectors, InitFilePathsResolver $initFilePathsResolver, SymfonyStyle $symfonyStyle, PhpVersionProvider $phpVersionProvider)
+    public function __construct(iterable $rectors, InitFilePathsResolver $initFilePathsResolver, SymfonyStyle $symfonyStyle, PhpVersionProvider $phpVersionProvider)
     {
         $this->initFilePathsResolver = $initFilePathsResolver;
         $this->symfonyStyle = $symfonyStyle;
         $this->phpVersionProvider = $phpVersionProvider;
-        $this->rectors = \iterator_to_array($rectors);
+        $this->rectors = $rectors instanceof RewindableGenerator ? \iterator_to_array($rectors->getIterator()) : $rectors;
     }
     public function createConfig(string $projectDirectory) : void
     {
@@ -73,10 +72,7 @@ final class ConfigInitializer
     private function filterActiveRectors(array $rectors) : array
     {
         return \array_filter($rectors, static function (RectorInterface $rector) : bool {
-            if ($rector instanceof PostRectorInterface) {
-                return \false;
-            }
-            return !$rector instanceof ComplementaryRectorInterface;
+            return !$rector instanceof PostRectorInterface;
         });
     }
     private function replacePhpLevelContents(string $rectorPhpTemplateContents) : string
