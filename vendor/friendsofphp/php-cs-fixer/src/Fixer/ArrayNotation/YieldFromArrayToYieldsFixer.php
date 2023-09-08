@@ -52,6 +52,7 @@ final class YieldFromArrayToYieldsFixer extends AbstractFixer
      * {@inheritdoc}
      *
      * Must run before BlankLineBeforeStatementFixer, NoExtraBlankLinesFixer, NoMultipleStatementsPerLineFixer, NoWhitespaceInBlankLineFixer, StatementIndentationFixer.
+     * Must run after ReturnToYieldFromFixer.
      */
     public function getPriority(): int
     {
@@ -78,10 +79,13 @@ final class YieldFromArrayToYieldsFixer extends AbstractFixer
 
             $arrayHasTrailingComma = false;
 
+            $startIndex = $tokens->getNextMeaningfulToken($startIndex);
+
             $inserts[$startIndex] = [new Token([T_YIELD, 'yield']), new Token([T_WHITESPACE, ' '])];
+
             foreach ($this->findArrayItemCommaIndex(
                 $tokens,
-                $tokens->getNextMeaningfulToken($startIndex),
+                $startIndex,
                 $tokens->getPrevMeaningfulToken($endIndex),
             ) as $commaIndex) {
                 $nextItemIndex = $tokens->getNextMeaningfulToken($commaIndex);
@@ -106,11 +110,10 @@ final class YieldFromArrayToYieldsFixer extends AbstractFixer
     }
 
     /**
-     * @return array<int, array<int>>
+     * @return iterable<int, array<int>>
      */
-    private function getYieldsFromToUnpack(Tokens $tokens): array
+    private function getYieldsFromToUnpack(Tokens $tokens): iterable
     {
-        $yieldsFromToUnpack = [];
         $tokensCount = $tokens->count();
         $index = 0;
         while (++$index < $tokensCount) {
@@ -119,7 +122,7 @@ final class YieldFromArrayToYieldsFixer extends AbstractFixer
             }
 
             $prevIndex = $tokens->getPrevMeaningfulToken($index);
-            if (!$tokens[$prevIndex]->equalsAny([';', '{', [T_OPEN_TAG]])) {
+            if (!$tokens[$prevIndex]->equalsAny([';', '{', '}', [T_OPEN_TAG]])) {
                 continue;
             }
 
@@ -142,10 +145,8 @@ final class YieldFromArrayToYieldsFixer extends AbstractFixer
                 continue;
             }
 
-            $yieldsFromToUnpack[$index] = [$startIndex, $endIndex];
+            yield $index => [$startIndex, $endIndex];
         }
-
-        return $yieldsFromToUnpack;
     }
 
     /**
