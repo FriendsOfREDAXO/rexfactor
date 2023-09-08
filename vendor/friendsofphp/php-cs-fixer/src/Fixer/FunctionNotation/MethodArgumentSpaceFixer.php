@@ -23,16 +23,12 @@ use PhpCsFixer\FixerConfiguration\FixerOptionBuilder;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
-use PhpCsFixer\FixerDefinition\VersionSpecification;
-use PhpCsFixer\FixerDefinition\VersionSpecificCodeSample;
 use PhpCsFixer\Preg;
 use PhpCsFixer\Tokenizer\CT;
 use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 
 /**
- * Fixer for rules defined in PSR2 ¶4.4, ¶4.6.
- *
  * @author Kuanhung Chen <ericj.tw@gmail.com>
  */
 final class MethodArgumentSpaceFixer extends AbstractFixer implements ConfigurableFixerInterface, WhitespacesAwareFixerInterface
@@ -76,23 +72,23 @@ final class MethodArgumentSpaceFixer extends AbstractFixer implements Configurab
                         'keep_multiple_spaces_after_comma' => false,
                     ]
                 ),
-                new VersionSpecificCodeSample(
+                new CodeSample(
                     <<<'SAMPLE'
-<?php
-sample(
-    <<<EOD
-        foo
-        EOD
-    ,
-    'bar'
-);
+                        <?php
+                        sample(
+                            <<<EOD
+                                foo
+                                EOD
+                            ,
+                            'bar'
+                        );
 
-SAMPLE
+                        SAMPLE
                     ,
-                    new VersionSpecification(7_03_00),
                     ['after_heredoc' => true]
                 ),
-            ]
+            ],
+            'This fixer covers rules defined in PSR2 ¶4.4, ¶4.6.'
         );
     }
 
@@ -101,21 +97,10 @@ SAMPLE
         return $tokens->isTokenKindFound('(');
     }
 
-    public function configure(array $configuration): void
-    {
-        parent::configure($configuration);
-
-        if (isset($configuration['ensure_fully_multiline'])) {
-            $this->configuration['on_multiline'] = $this->configuration['ensure_fully_multiline']
-                ? 'ensure_fully_multiline'
-                : 'ignore';
-        }
-    }
-
     /**
      * {@inheritdoc}
      *
-     * Must run before ArrayIndentationFixer.
+     * Must run before ArrayIndentationFixer, StatementIndentationFixer.
      * Must run after CombineNestedDirnameFixer, FunctionDeclarationFixer, ImplodeCallFixer, LambdaNotUsedImportFixer, NoMultilineWhitespaceAroundDoubleArrowFixer, NoUselessSprintfFixer, PowToExponentiationFixer, StrictParamFixer.
      */
     public function getPriority(): int
@@ -342,8 +327,17 @@ SAMPLE
                 continue;
             }
 
-            if ($token->equals(',') && !$tokens[$tokens->getNextMeaningfulToken($index)]->equals(')')) {
+            $isAttribute = $token->isGivenKind(CT::T_ATTRIBUTE_CLOSE);
+
+            if (
+                ($token->equals(',') || $isAttribute)
+                && !$tokens[$tokens->getNextMeaningfulToken($index)]->equals(')')
+            ) {
                 $this->fixNewline($tokens, $index, $indentation);
+
+                if ($isAttribute) {
+                    $index = $tokens->findBlockStart(Tokens::BLOCK_TYPE_ATTRIBUTE, $index);
+                }
             }
         }
 
