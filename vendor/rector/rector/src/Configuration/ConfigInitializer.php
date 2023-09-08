@@ -3,16 +3,20 @@
 declare (strict_types=1);
 namespace Rector\Core\Configuration;
 
-use RectorPrefix202308\Nette\Utils\FileSystem;
-use RectorPrefix202308\Nette\Utils\Strings;
+use RectorPrefix202309\Nette\Utils\FileSystem;
+use RectorPrefix202309\Nette\Utils\Strings;
 use Rector\Core\Contract\Rector\RectorInterface;
 use Rector\Core\FileSystem\InitFilePathsResolver;
 use Rector\Core\Php\PhpVersionProvider;
 use Rector\PostRector\Contract\Rector\PostRectorInterface;
-use RectorPrefix202308\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202308\Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
+use RectorPrefix202309\Symfony\Component\Console\Style\SymfonyStyle;
 final class ConfigInitializer
 {
+    /**
+     * @var RectorInterface[]
+     * @readonly
+     */
+    private $rectors;
     /**
      * @readonly
      * @var \Rector\Core\FileSystem\InitFilePathsResolver
@@ -29,18 +33,14 @@ final class ConfigInitializer
      */
     private $phpVersionProvider;
     /**
-     * @var RectorInterface[]
+     * @param RectorInterface[] $rectors
      */
-    private $rectors = [];
-    /**
-     * @param RewindableGenerator<RectorInterface>|RectorInterface[] $rectors
-     */
-    public function __construct(iterable $rectors, InitFilePathsResolver $initFilePathsResolver, SymfonyStyle $symfonyStyle, PhpVersionProvider $phpVersionProvider)
+    public function __construct(array $rectors, InitFilePathsResolver $initFilePathsResolver, SymfonyStyle $symfonyStyle, PhpVersionProvider $phpVersionProvider)
     {
+        $this->rectors = $rectors;
         $this->initFilePathsResolver = $initFilePathsResolver;
         $this->symfonyStyle = $symfonyStyle;
         $this->phpVersionProvider = $phpVersionProvider;
-        $this->rectors = $rectors instanceof RewindableGenerator ? \iterator_to_array($rectors->getIterator()) : $rectors;
     }
     public function createConfig(string $projectDirectory) : void
     {

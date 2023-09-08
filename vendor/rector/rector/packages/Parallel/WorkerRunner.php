@@ -3,17 +3,16 @@
 declare (strict_types=1);
 namespace Rector\Parallel;
 
-use RectorPrefix202308\Clue\React\NDJson\Decoder;
-use RectorPrefix202308\Clue\React\NDJson\Encoder;
-use PHPStan\Analyser\NodeScopeResolver;
+use RectorPrefix202309\Clue\React\NDJson\Decoder;
+use RectorPrefix202309\Clue\React\NDJson\Encoder;
 use Rector\Core\Application\ApplicationFileProcessor;
 use Rector\Core\StaticReflection\DynamicSourceLocatorDecorator;
 use Rector\Core\ValueObject\Configuration;
 use Rector\Core\ValueObject\Error\SystemError;
 use Rector\Parallel\ValueObject\Bridge;
-use RectorPrefix202308\Symplify\EasyParallel\Enum\Action;
-use RectorPrefix202308\Symplify\EasyParallel\Enum\ReactCommand;
-use RectorPrefix202308\Symplify\EasyParallel\Enum\ReactEvent;
+use RectorPrefix202309\Symplify\EasyParallel\Enum\Action;
+use RectorPrefix202309\Symplify\EasyParallel\Enum\ReactCommand;
+use RectorPrefix202309\Symplify\EasyParallel\Enum\ReactEvent;
 use Throwable;
 final class WorkerRunner
 {
@@ -28,19 +27,13 @@ final class WorkerRunner
      */
     private $applicationFileProcessor;
     /**
-     * @readonly
-     * @var \PHPStan\Analyser\NodeScopeResolver
-     */
-    private $nodeScopeResolver;
-    /**
      * @var string
      */
     private const RESULT = 'result';
-    public function __construct(DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator, ApplicationFileProcessor $applicationFileProcessor, NodeScopeResolver $nodeScopeResolver)
+    public function __construct(DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator, ApplicationFileProcessor $applicationFileProcessor)
     {
         $this->dynamicSourceLocatorDecorator = $dynamicSourceLocatorDecorator;
         $this->applicationFileProcessor = $applicationFileProcessor;
-        $this->nodeScopeResolver = $nodeScopeResolver;
     }
     public function run(Encoder $encoder, Decoder $decoder, Configuration $configuration) : void
     {
@@ -60,8 +53,6 @@ final class WorkerRunner
             }
             /** @var string[] $filePaths */
             $filePaths = $json[Bridge::FILES] ?? [];
-            // 1. allow PHPStan to work with static reflection on provided files
-            $this->nodeScopeResolver->setAnalysedFiles($filePaths);
             $systemErrorsAndFileDiffs = $this->applicationFileProcessor->processFiles($filePaths, $configuration);
             /**
              * this invokes all listeners listening $decoder->on(...) @see \Symplify\EasyParallel\Enum\ReactEvent::DATA

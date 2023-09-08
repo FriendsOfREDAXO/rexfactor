@@ -43,16 +43,16 @@
         "phpunit\/phpunit": "^9.5 || ^5.7 || ^4.8.35",
         "react\/async": "^4 || ^3 || ^2",
         "react\/promise-stream": "^1.4",
-        "react\/promise-timer": "^1.9"
+        "react\/promise-timer": "^1.10"
     },
     "autoload": {
         "psr-4": {
-            "RectorPrefix202308\\React\\Socket\\": "src"
+            "RectorPrefix202309\\React\\Socket\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "RectorPrefix202308\\React\\Tests\\Socket\\": "tests"
+            "RectorPrefix202309\\React\\Tests\\Socket\\": "tests"
         }
     }
 }

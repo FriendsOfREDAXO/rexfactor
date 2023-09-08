@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PostRector\Rector;
 
-use RectorPrefix202308\Nette\Utils\Strings;
+use RectorPrefix202309\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
@@ -18,8 +18,6 @@ use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
-use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
-use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 final class UnusedImportRemovingPostRector extends \Rector\PostRector\Rector\AbstractPostRector
 {
     /**
@@ -68,26 +66,6 @@ final class UnusedImportRemovingPostRector extends \Rector\PostRector\Rector\Abs
         }
         $node->stmts = \array_values($node->stmts);
         return $node;
-    }
-    public function getRuleDefinition() : RuleDefinition
-    {
-        return new RuleDefinition('Removes unused import names', [new CodeSample(<<<'CODE_SAMPLE'
-namespace App;
-
-use App\SomeUnusedClass;
-
-class SomeClass
-{
-}
-CODE_SAMPLE
-, <<<'CODE_SAMPLE'
-namespace App;
-
-class SomeClass
-{
-}
-CODE_SAMPLE
-)]);
     }
     /**
      * @return string[]

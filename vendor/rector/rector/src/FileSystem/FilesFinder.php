@@ -6,8 +6,8 @@ namespace Rector\Core\FileSystem;
 use Rector\Caching\UnchangedFilesFilter;
 use Rector\Core\Util\StringUtils;
 use Rector\Skipper\SkipCriteriaResolver\SkippedPathsResolver;
-use RectorPrefix202308\Symfony\Component\Finder\Finder;
-use RectorPrefix202308\Symfony\Component\Finder\SplFileInfo;
+use RectorPrefix202309\Symfony\Component\Finder\Finder;
+use RectorPrefix202309\Symfony\Component\Finder\SplFileInfo;
 /**
  * @see \Rector\Core\Tests\FileSystem\FilesFinder\FilesFinderTest
  */
@@ -50,7 +50,7 @@ final class FilesFinder
         $filesAndDirectories = $this->filesystemTweaker->resolveWithFnmatch($source);
         $filePaths = $this->fileAndDirectoryFilter->filterFiles($filesAndDirectories);
         $directories = $this->fileAndDirectoryFilter->filterDirectories($filesAndDirectories);
-        $currentAndDependentFilePaths = $this->unchangedFilesFilter->filterAndJoinWithDependentFileInfos($filePaths);
+        $currentAndDependentFilePaths = $this->unchangedFilesFilter->filterFileInfos($filePaths);
         return \array_merge($currentAndDependentFilePaths, $this->findInDirectories($directories, $suffixes, $sortByName));
     }
     /**
@@ -82,7 +82,7 @@ final class FilesFinder
                 $filePaths[] = $path;
             }
         }
-        return $this->unchangedFilesFilter->filterAndJoinWithDependentFileInfos($filePaths);
+        return $this->unchangedFilesFilter->filterFileInfos($filePaths);
     }
     /**
      * @param string[] $suffixes

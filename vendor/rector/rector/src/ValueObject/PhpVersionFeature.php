@@ -35,6 +35,10 @@ final class PhpVersionFeature
     /**
      * @var int
      */
+    public const ANONYMOUS_FUNCTION_PARAM_TYPE = \Rector\Core\ValueObject\PhpVersion::PHP_53;
+    /**
+     * @var int
+     */
     public const NO_ZERO_BREAK = \Rector\Core\ValueObject\PhpVersion::PHP_54;
     /**
      * @var int
@@ -72,6 +76,10 @@ final class PhpVersionFeature
      * @var int
      */
     public const SCALAR_TYPES = \Rector\Core\ValueObject\PhpVersion::PHP_70;
+    /**
+     * @var int
+     */
+    public const HAS_RETURN_TYPE = \Rector\Core\ValueObject\PhpVersion::PHP_70;
     /**
      * @var int
      */
@@ -147,6 +155,10 @@ final class PhpVersionFeature
      * @var int
      */
     public const WRAP_VARIABLE_VARIABLE = \Rector\Core\ValueObject\PhpVersion::PHP_70;
+    /**
+     * @var int
+     */
+    public const ANONYMOUS_FUNCTION_RETURN_TYPE = \Rector\Core\ValueObject\PhpVersion::PHP_70;
     /**
      * @var int
      */

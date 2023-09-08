@@ -3,18 +3,17 @@
 declare (strict_types=1);
 namespace Rector\Core\Console\Command;
 
-use RectorPrefix202308\Nette\Utils\Json;
+use RectorPrefix202309\Nette\Utils\Json;
 use Rector\ChangesReporting\Output\ConsoleOutputFormatter;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Contract\Rector\RectorInterface;
 use Rector\PostRector\Contract\Rector\PostRectorInterface;
 use Rector\Skipper\SkipCriteriaResolver\SkippedClassResolver;
-use RectorPrefix202308\Symfony\Component\Console\Command\Command;
-use RectorPrefix202308\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202308\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202308\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202308\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202308\Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
+use RectorPrefix202309\Symfony\Component\Console\Command\Command;
+use RectorPrefix202309\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202309\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202309\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202309\Symfony\Component\Console\Style\SymfonyStyle;
 final class ListRulesCommand extends Command
 {
     /**
@@ -29,20 +28,18 @@ final class ListRulesCommand extends Command
     private $skippedClassResolver;
     /**
      * @var RectorInterface[]
+     * @readonly
      */
-    private $rectors = [];
+    private $rectors;
     /**
-     * @param RewindableGenerator<RectorInterface>|RectorInterface[] $rectors
+     * @param RectorInterface[] $rectors
      */
-    public function __construct(SymfonyStyle $symfonyStyle, SkippedClassResolver $skippedClassResolver, iterable $rectors)
+    public function __construct(SymfonyStyle $symfonyStyle, SkippedClassResolver $skippedClassResolver, array $rectors)
     {
         $this->symfonyStyle = $symfonyStyle;
         $this->skippedClassResolver = $skippedClassResolver;
-        parent::__construct();
-        if ($rectors instanceof RewindableGenerator) {
-            $rectors = \iterator_to_array($rectors->getIterator());
-        }
         $this->rectors = $rectors;
+        parent::__construct();
     }
     protected function configure() : void
     {
@@ -66,6 +63,8 @@ final class ListRulesCommand extends Command
             $this->symfonyStyle->title('Skipped Rector rules');
             $this->symfonyStyle->listing($skippedClasses);
         }
+        $this->symfonyStyle->newLine();
+        $this->symfonyStyle->note(\sprintf('Loaded %d rules', \count($rectorClasses)));
         return Command::SUCCESS;
     }
     /**
@@ -80,7 +79,7 @@ final class ListRulesCommand extends Command
             return \get_class($rector);
         }, $customRectors);
         \sort($rectorClasses);
-        return $rectorClasses;
+        return \array_unique($rectorClasses);
     }
     /**
      * @return string[]

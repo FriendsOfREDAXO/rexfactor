@@ -5,6 +5,7 @@ namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\AssignOp\Concat;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\Variable;
@@ -75,12 +76,17 @@ CODE_SAMPLE
             return null;
         }
         $hasChanged = \false;
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         foreach ($node->getParams() as $param) {
             if ($param->type instanceof Node) {
                 continue;
             }
             $variableConcattedFromParam = $this->resolveVariableConcattedFromParam($param, $node);
             if (!$variableConcattedFromParam instanceof Variable) {
+                continue;
+            }
+            $paramDocType = $phpDocInfo->getParamType($this->getName($param));
+            if (!$paramDocType instanceof MixedType && !$paramDocType->isString()->yes()) {
                 continue;
             }
             $nativeType = $this->nodeTypeResolver->getNativeType($variableConcattedFromParam);
@@ -114,15 +120,17 @@ CODE_SAMPLE
             if ($node instanceof FunctionLike || $node instanceof Class_) {
                 return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
+            if ($node instanceof Assign && $node->var instanceof Variable && $this->isName($node->var, $paramName)) {
+                $variableConcatted = null;
+                return NodeTraverser::STOP_TRAVERSAL;
+            }
             $expr = $this->resolveAssignConcatVariable($node, $paramName);
             if ($expr instanceof Variable) {
-                $variableConcatted = $node;
-                return NodeTraverser::STOP_TRAVERSAL;
+                $variableConcatted = $expr;
             }
             $variableBinaryConcat = $this->resolveBinaryConcatVariable($node, $paramName);
             if ($variableBinaryConcat instanceof Variable) {
                 $variableConcatted = $variableBinaryConcat;
-                return NodeTraverser::STOP_TRAVERSAL;
             }
             return null;
         });
