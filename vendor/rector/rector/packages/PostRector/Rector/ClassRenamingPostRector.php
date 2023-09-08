@@ -14,16 +14,10 @@ use Rector\CodingStyle\Application\UseImportsRemover;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Core\Configuration\RenamedClassesDataCollector;
-use Rector\Core\Contract\Rector\RectorInterface;
-use Rector\Core\NonPhpFile\Rector\RenameClassNonPhpRector;
 use Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\NodeTypeResolver\Node\AttributeKey;
-use Rector\PostRector\Contract\Rector\PostRectorDependencyInterface;
 use Rector\Renaming\NodeManipulator\ClassRenamer;
-use Rector\Renaming\Rector\Name\RenameClassRector;
-use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
-use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-final class ClassRenamingPostRector extends \Rector\PostRector\Rector\AbstractPostRector implements PostRectorDependencyInterface
+final class ClassRenamingPostRector extends \Rector\PostRector\Rector\AbstractPostRector
 {
     /**
      * @readonly
@@ -66,13 +60,6 @@ final class ClassRenamingPostRector extends \Rector\PostRector\Rector\AbstractPo
         }
         return $nodes;
     }
-    /**
-     * @return class-string<RectorInterface>[]
-     */
-    public function getRectorDependencies() : array
-    {
-        return [RenameClassRector::class, RenameClassNonPhpRector::class];
-    }
     public function enterNode(Node $node) : ?Node
     {
         // cannot be renamed
@@ -95,19 +82,5 @@ final class ClassRenamingPostRector extends \Rector\PostRector\Rector\AbstractPo
         $removedUses = $this->renamedClassesDataCollector->getOldClasses();
         $this->rootNode->stmts = $this->useImportsRemover->removeImportsFromStmts($this->rootNode->stmts, $removedUses);
         return $result;
-    }
-    public function getRuleDefinition() : RuleDefinition
-    {
-        return new RuleDefinition('Rename references for classes that were renamed during Rector run', [new CodeSample(<<<'CODE_SAMPLE'
-function (OriginalClass $someClass)
-{
-}
-CODE_SAMPLE
-, <<<'CODE_SAMPLE'
-function (RenamedClass $someClass)
-{
-}
-CODE_SAMPLE
-)]);
     }
 }

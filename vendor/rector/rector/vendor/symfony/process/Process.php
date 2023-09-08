@@ -8,17 +8,17 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202308\Symfony\Component\Process;
+namespace RectorPrefix202309\Symfony\Component\Process;
 
-use RectorPrefix202308\Symfony\Component\Process\Exception\InvalidArgumentException;
-use RectorPrefix202308\Symfony\Component\Process\Exception\LogicException;
-use RectorPrefix202308\Symfony\Component\Process\Exception\ProcessFailedException;
-use RectorPrefix202308\Symfony\Component\Process\Exception\ProcessSignaledException;
-use RectorPrefix202308\Symfony\Component\Process\Exception\ProcessTimedOutException;
-use RectorPrefix202308\Symfony\Component\Process\Exception\RuntimeException;
-use RectorPrefix202308\Symfony\Component\Process\Pipes\PipesInterface;
-use RectorPrefix202308\Symfony\Component\Process\Pipes\UnixPipes;
-use RectorPrefix202308\Symfony\Component\Process\Pipes\WindowsPipes;
+use RectorPrefix202309\Symfony\Component\Process\Exception\InvalidArgumentException;
+use RectorPrefix202309\Symfony\Component\Process\Exception\LogicException;
+use RectorPrefix202309\Symfony\Component\Process\Exception\ProcessFailedException;
+use RectorPrefix202309\Symfony\Component\Process\Exception\ProcessSignaledException;
+use RectorPrefix202309\Symfony\Component\Process\Exception\ProcessTimedOutException;
+use RectorPrefix202309\Symfony\Component\Process\Exception\RuntimeException;
+use RectorPrefix202309\Symfony\Component\Process\Pipes\PipesInterface;
+use RectorPrefix202309\Symfony\Component\Process\Pipes\UnixPipes;
+use RectorPrefix202309\Symfony\Component\Process\Pipes\WindowsPipes;
 /**
  * Process is a thin wrapper around proc_* functions to easily
  * start independent PHP processes.
@@ -298,7 +298,7 @@ class Process implements \IteratorAggregate
             $descriptors[3] = ['pipe', 'w'];
             // See https://unix.stackexchange.com/questions/71205/background-process-pipe-input
             $commandline = '{ (' . $commandline . ') <&3 3<&- 3>/dev/null & } 3<&0;';
-            $commandline .= 'pid=$!; echo $pid >&3; wait $pid; code=$?; echo $code >&3; exit $code';
+            $commandline .= 'pid=$!; echo $pid >&3; wait $pid 2>/dev/null; code=$?; echo $code >&3; exit $code';
             // Workaround for the bug, when PTS functionality is enabled.
             // @see : https://bugs.php.net/69442
             $ptsWorkaround = \fopen(__FILE__, 'r');

@@ -3,31 +3,28 @@
 declare (strict_types=1);
 namespace Rector\Config;
 
+use RectorPrefix202309\Illuminate\Container\Container;
 use Rector\Caching\Contract\ValueObject\Storage\CacheStorageInterface;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
-use Rector\Core\Configuration\ValueObjectInliner;
 use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Core\Contract\Rector\NonPhpRectorInterface;
-use Rector\Core\Contract\Rector\PhpRectorInterface;
 use Rector\Core\Contract\Rector\RectorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
+use Rector\Core\FileSystem\FilesystemTweaker;
+use Rector\Core\NodeAnalyzer\ScopeAnalyzer;
+use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\Core\ValueObject\PhpVersion;
-use RectorPrefix202308\Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use RectorPrefix202308\Symfony\Component\DependencyInjection\Loader\Configurator\ServiceConfigurator;
-use RectorPrefix202308\Symfony\Component\DependencyInjection\Loader\Configurator\ServicesConfigurator;
-use RectorPrefix202308\Webmozart\Assert\Assert;
+use RectorPrefix202309\Webmozart\Assert\Assert;
 /**
  * @api
- * Same as Symfony container configurator, with patched return type for "set()" method for easier DX.
- * It is an alias for internal class that is prefixed during build, so it's basically for keeping stable public API.
  */
-final class RectorConfig extends ContainerConfigurator
+final class RectorConfig extends Container
 {
     /**
-     * @var \Symfony\Component\DependencyInjection\Loader\Configurator\ServicesConfigurator|null
+     * @var array<class-string<RectorInterface>, mixed[]>>
      */
-    private $servicesConfigurator;
+    private $ruleConfigurations = [];
     /**
      * @param string[] $paths
      */
@@ -46,6 +43,8 @@ final class RectorConfig extends ContainerConfigurator
             Assert::fileExists($set);
             $this->import($set);
         }
+        // for cache invalidation in case of sets change
+        SimpleParameterProvider::addParameter(Option::REGISTERED_RECTOR_SETS, $sets);
     }
     public function disableParallel() : void
     {
@@ -118,13 +117,23 @@ final class RectorConfig extends ContainerConfigurator
         SimpleParameterProvider::setParameter(Option::IMPORT_SHORT_CLASSES, $importShortClasses);
     }
     /**
-     * Set PHPStan custom config to load extensions and custom configuration to Rector.
-     * By default, the "phpstan.neon" path is used.
+     * Add PHPStan custom config to load extensions and custom configuration to Rector.
      */
     public function phpstanConfig(string $filePath) : void
     {
         Assert::fileExists($filePath);
-        SimpleParameterProvider::setParameter(Option::PHPSTAN_FOR_RECTOR_PATH, $filePath);
+        SimpleParameterProvider::addParameter(Option::PHPSTAN_FOR_RECTOR_PATHS, [$filePath]);
+    }
+    /**
+     * Add PHPStan custom configs to load extensions and custom configuration to Rector.
+     *
+     * @param string[] $filePaths
+     */
+    public function phpstanConfigs(array $filePaths) : void
+    {
+        Assert::allString($filePaths);
+        Assert::allFileExists($filePaths);
+        SimpleParameterProvider::addParameter(Option::PHPSTAN_FOR_RECTOR_PATHS, $filePaths);
     }
     /**
      * @param class-string<ConfigurableRectorInterface&RectorInterface> $rectorClass
@@ -135,16 +144,16 @@ final class RectorConfig extends ContainerConfigurator
         Assert::classExists($rectorClass);
         Assert::isAOf($rectorClass, RectorInterface::class);
         Assert::isAOf($rectorClass, ConfigurableRectorInterface::class);
-        // decorate with value object inliner so Symfony understands, see https://getrector.com/blog/2020/09/07/how-to-inline-value-object-in-symfony-php-config
-        \array_walk_recursive($configuration, static function (&$value) {
-            if (\is_object($value)) {
-                $value = ValueObjectInliner::inline($value);
-            }
-            return $value;
+        // store configuration to cache
+        $this->ruleConfigurations[$rectorClass] = \array_merge($this->ruleConfigurations[$rectorClass] ?? [], $configuration);
+        $this->singleton($rectorClass);
+        $this->tagRectorService($rectorClass);
+        $this->afterResolving($rectorClass, function (ConfigurableRectorInterface $configurableRector) use($rectorClass) : void {
+            $ruleConfiguration = $this->ruleConfigurations[$rectorClass];
+            $configurableRector->configure($ruleConfiguration);
         });
-        $servicesConfigurator = $this->getServices();
-        $rectorService = $servicesConfigurator->set($rectorClass)->public()->autowire()->call('configure', [$configuration]);
-        $this->tagRectorService($rectorService, $rectorClass);
+        // for cache invalidation in case of sets change
+        SimpleParameterProvider::addParameter(Option::REGISTERED_RECTOR_RULES, $rectorClass);
     }
     /**
      * @param class-string<RectorInterface> $rectorClass
@@ -153,9 +162,28 @@ final class RectorConfig extends ContainerConfigurator
     {
         Assert::classExists($rectorClass);
         Assert::isAOf($rectorClass, RectorInterface::class);
-        $servicesConfigurator = $this->getServices();
-        $rectorService = $servicesConfigurator->set($rectorClass)->public()->autowire();
-        $this->tagRectorService($rectorService, $rectorClass);
+        $this->singleton($rectorClass);
+        $this->tagRectorService($rectorClass);
+        if (\is_a($rectorClass, AbstractScopeAwareRector::class, \true)) {
+            $this->extend($rectorClass, static function (AbstractScopeAwareRector $scopeAwareRector, Container $container) : AbstractScopeAwareRector {
+                $scopeAnalyzer = $container->make(ScopeAnalyzer::class);
+                $scopeAwareRector->autowireAbstractScopeAwareRector($scopeAnalyzer);
+                return $scopeAwareRector;
+            });
+        }
+        // for cache invalidation in case of change
+        SimpleParameterProvider::addParameter(Option::REGISTERED_RECTOR_RULES, $rectorClass);
+    }
+    public function import(string $filePath) : void
+    {
+        $paths = [$filePath];
+        if (\strpos($filePath, '*') !== \false) {
+            $filesystemTweaker = new FilesystemTweaker();
+            $paths = $filesystemTweaker->resolveWithFnmatch($paths);
+        }
+        foreach ($paths as $path) {
+            $this->importFile($path);
+        }
     }
     /**
      * @param array<class-string<RectorInterface>> $rectorClasses
@@ -163,10 +191,7 @@ final class RectorConfig extends ContainerConfigurator
     public function rules(array $rectorClasses) : void
     {
         Assert::allString($rectorClasses);
-        $duplicatedRectorClasses = $this->resolveDuplicatedValues($rectorClasses);
-        if ($duplicatedRectorClasses !== []) {
-            throw new ShouldNotHappenException('Following rules are registered twice: ' . \implode(', ', $duplicatedRectorClasses));
-        }
+        $this->ensureNotDuplicatedClasses($rectorClasses);
         foreach ($rectorClasses as $rectorClass) {
             $this->rule($rectorClass);
         }
@@ -239,6 +264,26 @@ final class RectorConfig extends ContainerConfigurator
         SimpleParameterProvider::setParameter(Option::INDENT_SIZE, $count);
     }
     /**
+     * @api deprecated, just for BC layer warning
+     */
+    public function services() : void
+    {
+        \trigger_error('The services() method is deprecated. Use $rectorConfig->singleton(ServiceType::class) instead', \E_USER_ERROR);
+    }
+    public function resetRuleConfigurations() : void
+    {
+        $this->ruleConfigurations = [];
+    }
+    private function importFile(string $filePath) : void
+    {
+        Assert::fileExists($filePath);
+        $self = $this;
+        $callable = (require $filePath);
+        Assert::isCallable($callable);
+        /** @var callable(Container $container): void $callable */
+        $callable($self);
+    }
+    /**
      * @param mixed $skipRule
      */
     private function isRuleNoLongerExists($skipRule) : bool
@@ -260,24 +305,26 @@ final class RectorConfig extends ContainerConfigurator
         }
         return \array_unique($duplicates);
     }
-    private function getServices() : ServicesConfigurator
+    /**
+     * @param class-string<RectorInterface> $rectorClass
+     */
+    private function tagRectorService(string $rectorClass) : void
     {
-        if ($this->servicesConfigurator instanceof ServicesConfigurator) {
-            return $this->servicesConfigurator;
+        $this->tag($rectorClass, RectorInterface::class);
+        if (\is_a($rectorClass, NonPhpRectorInterface::class, \true)) {
+            \trigger_error(\sprintf('The "%s" interface of "%s" rule is deprecated. Rector will process only PHP code, as designed to with AST. For another file format, use custom tooling.', NonPhpRectorInterface::class, $rectorClass));
+            exit;
         }
-        $this->servicesConfigurator = $this->services();
-        return $this->servicesConfigurator;
     }
     /**
-     * @param class-string<RectorInterface|PhpRectorInterface|NonPhpRectorInterface> $rectorClass
+     * @param string[] $rectorClasses
      */
-    private function tagRectorService(ServiceConfigurator $rectorServiceConfigurator, string $rectorClass) : void
+    private function ensureNotDuplicatedClasses(array $rectorClasses) : void
     {
-        $rectorServiceConfigurator->tag(RectorInterface::class);
-        if (\is_a($rectorClass, PhpRectorInterface::class, \true)) {
-            $rectorServiceConfigurator->tag(PhpRectorInterface::class);
-        } elseif (\is_a($rectorClass, NonPhpRectorInterface::class, \true)) {
-            $rectorServiceConfigurator->tag(NonPhpRectorInterface::class);
+        $duplicatedRectorClasses = $this->resolveDuplicatedValues($rectorClasses);
+        if ($duplicatedRectorClasses === []) {
+            return;
         }
+        throw new ShouldNotHappenException('Following rules are registered twice: ' . \implode(', ', $duplicatedRectorClasses));
     }
 }

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Symfony30\Rector\ClassMethod;
 
-use RectorPrefix202308\Nette\Utils\Strings;
+use RectorPrefix202309\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
@@ -11,7 +11,6 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Return_;
 use Rector\Core\Rector\AbstractRector;
-use RectorPrefix202308\Symfony\Component\String\UnicodeString;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -82,8 +81,7 @@ CODE_SAMPLE
             if (\substr_compare($shortClassName, 'Type', -\strlen('Type')) === 0) {
                 $shortClassName = (string) Strings::before($shortClassName, 'Type');
             }
-            $shortClassNameUnicodeString = new UnicodeString($shortClassName);
-            $underscoredClassShortName = $shortClassNameUnicodeString->snake()->toString();
+            $underscoredClassShortName = $this->camelToSnake($shortClassName);
             if ($underscoredClassShortName !== $returnedValue) {
                 continue;
             }
@@ -92,6 +90,10 @@ CODE_SAMPLE
             return $node;
         }
         return null;
+    }
+    private function camelToSnake(string $content) : string
+    {
+        return \mb_strtolower(Strings::replace($content, '#([a-z])([A-Z])#', '$1_$2'));
     }
     /**
      * return <$thisValue>;

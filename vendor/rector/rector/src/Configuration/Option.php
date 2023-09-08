@@ -124,7 +124,7 @@ final class Option
      * @internal Use @see \Rector\Config\RectorConfig::phpstanConfig() instead
      * @var string
      */
-    public const PHPSTAN_FOR_RECTOR_PATH = 'phpstan_for_rector_path';
+    public const PHPSTAN_FOR_RECTOR_PATHS = 'phpstan_for_rector_paths';
     /**
      * @var string
      */
@@ -180,4 +180,14 @@ final class Option
      * @var string
      */
     public const CONTAINER_CACHE_DIRECTORY = 'container-cache-directory';
+    /**
+     * @internal For cache invalidation in case of change
+     * @var string
+     */
+    public const REGISTERED_RECTOR_RULES = 'registered_rector_rules';
+    /**
+     * @internal For cache invalidation in case of change
+     * @var string
+     */
+    public const REGISTERED_RECTOR_SETS = 'registered_rector_sets';
 }

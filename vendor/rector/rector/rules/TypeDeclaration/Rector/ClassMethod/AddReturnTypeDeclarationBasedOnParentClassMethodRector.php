@@ -7,11 +7,12 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Reflection\MethodReflection;
+use PHPStan\Reflection\ParametersAcceptorSelector;
+use PHPStan\Reflection\ParametersAcceptorWithPhpDocs;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use Rector\Core\Php\PhpVersionProvider;
-use Rector\Core\PhpParser\AstResolver;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\ValueObject\MethodName;
 use Rector\Core\ValueObject\PhpVersionFeature;
@@ -33,18 +34,12 @@ final class AddReturnTypeDeclarationBasedOnParentClassMethodRector extends Abstr
     private $parentClassMethodTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\AstResolver
-     */
-    private $astResolver;
-    /**
-     * @readonly
      * @var \Rector\Core\Php\PhpVersionProvider
      */
     private $phpVersionProvider;
-    public function __construct(ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard, AstResolver $astResolver, PhpVersionProvider $phpVersionProvider)
+    public function __construct(ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard, PhpVersionProvider $phpVersionProvider)
     {
         $this->parentClassMethodTypeOverrideGuard = $parentClassMethodTypeOverrideGuard;
-        $this->astResolver = $astResolver;
         $this->phpVersionProvider = $phpVersionProvider;
     }
     public function provideMinPhpVersion() : int
@@ -118,21 +113,28 @@ CODE_SAMPLE
     private function getReturnTypeRecursive(ClassMethod $classMethod) : ?Type
     {
         $returnType = $classMethod->getReturnType();
-        if ($returnType === null) {
-            $parentMethodReflection = $this->parentClassMethodTypeOverrideGuard->getParentClassMethod($classMethod);
-            if (!$parentMethodReflection instanceof MethodReflection) {
-                return null;
-            }
-            $parentClassMethod = $this->astResolver->resolveClassMethodFromMethodReflection($parentMethodReflection);
-            if (!$parentClassMethod instanceof ClassMethod) {
-                return null;
-            }
-            if ($parentClassMethod->isPrivate()) {
-                return null;
-            }
-            return $this->getReturnTypeRecursive($parentClassMethod);
+        if ($returnType !== null) {
+            return $this->staticTypeMapper->mapPhpParserNodePHPStanType($returnType);
         }
-        return $this->staticTypeMapper->mapPhpParserNodePHPStanType($returnType);
+        $parentMethodReflection = $this->parentClassMethodTypeOverrideGuard->getParentClassMethod($classMethod);
+        while ($parentMethodReflection instanceof MethodReflection) {
+            if ($parentMethodReflection->isPrivate()) {
+                return null;
+            }
+            $parameterAcceptor = ParametersAcceptorSelector::selectSingle($parentMethodReflection->getVariants());
+            if (!$parameterAcceptor instanceof ParametersAcceptorWithPhpDocs) {
+                return null;
+            }
+            $parentReturnType = $parameterAcceptor->getNativeReturnType();
+            if (!$parentReturnType instanceof MixedType) {
+                return $parentReturnType;
+            }
+            if ($parentReturnType->isExplicitMixed()) {
+                return $parentReturnType;
+            }
+            $parentMethodReflection = $this->parentClassMethodTypeOverrideGuard->getParentClassMethod($parentMethodReflection);
+        }
+        return null;
     }
     private function processClassMethodReturnType(Class_ $class, ClassMethod $classMethod, Type $parentType) : ?ClassMethod
     {

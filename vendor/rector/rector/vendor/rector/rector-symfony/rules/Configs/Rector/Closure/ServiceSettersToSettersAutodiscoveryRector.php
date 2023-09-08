@@ -13,16 +13,16 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\Rector\AbstractRector;
-use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Symfony\MinimalSharedStringSolver;
 use Rector\Symfony\NodeAnalyzer\SymfonyPhpClosureDetector;
 use Rector\Symfony\ValueObject\ClassNameAndFilePath;
-use RectorPrefix202308\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202309\Symfony\Component\Filesystem\Filesystem;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -102,12 +102,12 @@ CODE_SAMPLE
         if (!$this->symfonyPhpClosureDetector->detect($node)) {
             return null;
         }
-        /** @var array<Expression<MethodCall>> $bareServicesSetMethodCalls */
-        $bareServicesSetMethodCalls = $this->collectServiceSetMethodCallExpressions($node);
-        if ($bareServicesSetMethodCalls === []) {
+        /** @var array<Expression<MethodCall>> $bareServicesSetMethodCallExpressions */
+        $bareServicesSetMethodCallExpressions = $this->collectServiceSetMethodCallExpressions($node);
+        if ($bareServicesSetMethodCallExpressions === []) {
             return null;
         }
-        $classNamesAndFilesPaths = $this->createClassNamesAndFilePaths($bareServicesSetMethodCalls);
+        $classNamesAndFilesPaths = $this->createClassNamesAndFilePaths($bareServicesSetMethodCallExpressions);
         $classNames = \array_map(function (ClassNameAndFilePath $classNameAndFilePath) {
             return $classNameAndFilePath->getClassName();
         }, $classNamesAndFilesPaths);
@@ -117,12 +117,7 @@ CODE_SAMPLE
         $directoryConcat = $this->createAbsolutePathConcat($classFilePath);
         $loadMethodCall = $this->createServicesLoadMethodCall($sharedNamespace, $directoryConcat);
         $node->stmts[] = new Expression($loadMethodCall);
-        // remove all method calls
-        foreach ($bareServicesSetMethodCalls as $bareServiceSetMethodCall) {
-            /** @var Expression $bareServiceSetMethodCall */
-            $stmtsKey = $bareServiceSetMethodCall->getAttribute(AttributeKey::STMT_KEY);
-            unset($node->stmts[$stmtsKey]);
-        }
+        $this->removeServicesSetMethodCalls($node, $bareServicesSetMethodCallExpressions);
         return $node;
     }
     public function isBareServicesSetMethodCall(MethodCall $methodCall) : bool
@@ -200,5 +195,19 @@ CODE_SAMPLE
     {
         $args = [new Arg(new String_($sharedNamespace)), new Arg($directoryConcat)];
         return new MethodCall(new Variable('services'), 'load', $args);
+    }
+    /**
+     * @param Stmt[] $stmtsToRemove
+     */
+    private function removeServicesSetMethodCalls(Closure $closure, array $stmtsToRemove) : void
+    {
+        foreach ($closure->stmts as $key => $stmt) {
+            foreach ($stmtsToRemove as $stmtToRemove) {
+                if ($stmt === $stmtToRemove) {
+                    unset($closure->stmts[$key]);
+                    continue 2;
+                }
+            }
+        }
     }
 }

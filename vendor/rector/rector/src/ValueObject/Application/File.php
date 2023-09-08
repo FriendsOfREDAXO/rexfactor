@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Core\ValueObject\Application;
 
+use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use Rector\ChangesReporting\ValueObject\RectorWithLineChange;
 use Rector\Core\Exception\ShouldNotHappenException;
@@ -35,11 +36,11 @@ final class File
      */
     private $fileDiff;
     /**
-     * @var Stmt[]
+     * @var Node[]
      */
     private $oldStmts = [];
     /**
-     * @var Stmt[]
+     * @var Node[]
      */
     private $newStmts = [];
     /**
@@ -128,7 +129,7 @@ final class File
         return $this->oldTokens;
     }
     /**
-     * @param Stmt[] $newStmts
+     * @param Node[] $newStmts
      */
     public function changeNewStmts(array $newStmts) : void
     {

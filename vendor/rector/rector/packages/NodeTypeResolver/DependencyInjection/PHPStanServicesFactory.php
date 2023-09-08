@@ -6,7 +6,6 @@ namespace Rector\NodeTypeResolver\DependencyInjection;
 use PhpParser\Lexer;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPStan\Analyser\ScopeFactory;
-use PHPStan\Dependency\DependencyResolver;
 use PHPStan\DependencyInjection\Container;
 use PHPStan\DependencyInjection\ContainerFactory;
 use PHPStan\File\FileHelper;
@@ -16,7 +15,7 @@ use PHPStan\Reflection\ReflectionProvider;
 use Rector\Core\Configuration\Option;
 use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
 use Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider;
-use RectorPrefix202308\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202309\Webmozart\Assert\Assert;
 /**
  * Factory so Symfony app can use services from PHPStan container
  *
@@ -26,37 +25,14 @@ final class PHPStanServicesFactory
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\DependencyInjection\PHPStanExtensionsConfigResolver
-     */
-    private $phpStanExtensionsConfigResolver;
-    /**
-     * @readonly
      * @var \PHPStan\DependencyInjection\Container
      */
     private $container;
-    public function __construct(\Rector\NodeTypeResolver\DependencyInjection\PHPStanExtensionsConfigResolver $phpStanExtensionsConfigResolver, \Rector\NodeTypeResolver\DependencyInjection\BleedingEdgeIncludePurifier $bleedingEdgeIncludePurifier)
+    public function __construct()
     {
-        $this->phpStanExtensionsConfigResolver = $phpStanExtensionsConfigResolver;
-        $additionalConfigFiles = $this->resolveAdditionalConfigFiles();
-        $purifiedConfigFiles = [];
-        foreach ($additionalConfigFiles as $key => $additionalConfigFile) {
-            $purifiedConfigFile = $bleedingEdgeIncludePurifier->purifyConfigFile($additionalConfigFile);
-            // nothing was changed
-            if ($purifiedConfigFile === null) {
-                continue;
-            }
-            $additionalConfigFiles[$key] = $purifiedConfigFile;
-            $purifiedConfigFiles[] = $purifiedConfigFile;
-        }
         $containerFactory = new ContainerFactory(\getcwd());
+        $additionalConfigFiles = $this->resolveAdditionalConfigFiles();
         $this->container = $containerFactory->create(SimpleParameterProvider::provideStringParameter(Option::CONTAINER_CACHE_DIRECTORY), $additionalConfigFiles, []);
-        // clear temporary files, after container is created
-        $filesystem = new Filesystem();
-        $filesystem->remove($purifiedConfigFiles);
-    }
-    public function provideContainer() : Container
-    {
-        return $this->container;
     }
     /**
      * @api
@@ -106,13 +82,6 @@ final class PHPStanServicesFactory
     /**
      * @api
      */
-    public function createDependencyResolver() : DependencyResolver
-    {
-        return $this->container->getByType(DependencyResolver::class);
-    }
-    /**
-     * @api
-     */
     public function createFileHelper() : FileHelper
     {
         return $this->container->getByType(FileHelper::class);
@@ -137,14 +106,16 @@ final class PHPStanServicesFactory
     private function resolveAdditionalConfigFiles() : array
     {
         $additionalConfigFiles = [];
-        if (SimpleParameterProvider::hasParameter(Option::PHPSTAN_FOR_RECTOR_PATH)) {
-            $additionalConfigFiles[] = SimpleParameterProvider::provideStringParameter(Option::PHPSTAN_FOR_RECTOR_PATH);
+        if (SimpleParameterProvider::hasParameter(Option::PHPSTAN_FOR_RECTOR_PATHS)) {
+            $paths = SimpleParameterProvider::provideArrayParameter(Option::PHPSTAN_FOR_RECTOR_PATHS);
+            foreach ($paths as $path) {
+                Assert::string($path);
+                $additionalConfigFiles[] = $path;
+            }
         }
         $additionalConfigFiles[] = __DIR__ . '/../../../config/phpstan/static-reflection.neon';
         $additionalConfigFiles[] = __DIR__ . '/../../../config/phpstan/better-infer.neon';
         $additionalConfigFiles[] = __DIR__ . '/../../../config/phpstan/parser.neon';
-        $extensionConfigFiles = $this->phpStanExtensionsConfigResolver->resolve();
-        $additionalConfigFiles = \array_merge($additionalConfigFiles, $extensionConfigFiles);
         return \array_filter($additionalConfigFiles, 'file_exists');
     }
 }

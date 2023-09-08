@@ -1,11 +1,10 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202308;
+namespace RectorPrefix202309;
 
 use PhpParser\Node;
 use PhpParser\PrettyPrinter\Standard;
-use RectorPrefix202308\Tracy\Dumper;
 // @deprecated, use dump() or dd() instead
 if (!\function_exists('dump_node')) {
     /**
@@ -28,7 +27,7 @@ if (!\function_exists('print_node')) {
         $nodes = \is_array($node) ? $node : [$node];
         foreach ($nodes as $node) {
             $printedContent = $standard->prettyPrint([$node]);
-            Dumper::dump($printedContent);
+            \var_dump($printedContent);
         }
     }
 }

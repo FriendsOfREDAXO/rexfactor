@@ -7,7 +7,6 @@ use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
@@ -18,7 +17,7 @@ use PHPStan\Type\StringType;
 use Rector\Core\PhpParser\NodeTransformer;
 use Rector\Core\Rector\AbstractRector;
 use Rector\Core\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202308\Symfony\Component\Console\Input\StringInput;
+use RectorPrefix202309\Symfony\Component\Console\Input\StringInput;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**

@@ -3,13 +3,12 @@
 declare (strict_types=1);
 namespace Rector\Core\Application\FileProcessor;
 
-use RectorPrefix202308\Nette\Utils\Strings;
+use RectorPrefix202309\Nette\Utils\Strings;
 use PHPStan\AnalysedCodeException;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ChangesReporting\ValueObjectFactory\ErrorFactory;
 use Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory;
 use Rector\Core\Application\FileProcessor;
-use Rector\Core\Contract\Processor\FileProcessorInterface;
 use Rector\Core\Exception\ShouldNotHappenException;
 use Rector\Core\FileSystem\FilePathHelper;
 use Rector\Core\PhpParser\Printer\FormatPerservingPrinter;
@@ -20,9 +19,9 @@ use Rector\Core\ValueObject\Reporting\FileDiff;
 use Rector\Parallel\ValueObject\Bridge;
 use Rector\PostRector\Application\PostFileProcessor;
 use Rector\Testing\PHPUnit\StaticPHPUnitEnvironment;
-use RectorPrefix202308\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202309\Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
-final class PhpFileProcessor implements FileProcessorInterface
+final class PhpFileProcessor
 {
     /**
      * @readonly
@@ -127,18 +126,6 @@ final class PhpFileProcessor implements FileProcessorInterface
         }
         $systemErrorsAndFileDiffs[Bridge::FILE_DIFFS] = [$fileDiff];
         return $systemErrorsAndFileDiffs;
-    }
-    public function supports(File $file, Configuration $configuration) : bool
-    {
-        $filePathExtension = \pathinfo($file->getFilePath(), \PATHINFO_EXTENSION);
-        return \in_array($filePathExtension, $configuration->getFileExtensions(), \true);
-    }
-    /**
-     * @return string[]
-     */
-    public function getSupportedFileExtensions() : array
-    {
-        return ['php'];
     }
     /**
      * @return SystemError[]

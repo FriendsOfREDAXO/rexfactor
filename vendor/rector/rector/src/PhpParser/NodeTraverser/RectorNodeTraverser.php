@@ -5,11 +5,14 @@ namespace Rector\Core\PhpParser\NodeTraverser;
 
 use PhpParser\Node;
 use PhpParser\NodeTraverser;
-use Rector\Core\Contract\Rector\PhpRectorInterface;
+use Rector\Core\Contract\Rector\RectorInterface;
 use Rector\VersionBonding\PhpVersionedFilter;
-use RectorPrefix202308\Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
 final class RectorNodeTraverser extends NodeTraverser
 {
+    /**
+     * @var RectorInterface[]
+     */
+    private $rectors;
     /**
      * @readonly
      * @var \Rector\VersionBonding\PhpVersionedFilter
@@ -20,22 +23,17 @@ final class RectorNodeTraverser extends NodeTraverser
      */
     private $areNodeVisitorsPrepared = \false;
     /**
-     * @var PhpRectorInterface[]
+     * @param RectorInterface[] $rectors
      */
-    private $phpRectors = [];
-    /**
-     * @param RewindableGenerator<PhpRectorInterface>|PhpRectorInterface[] $phpRectors
-     */
-    public function __construct(iterable $phpRectors, PhpVersionedFilter $phpVersionedFilter)
+    public function __construct(array $rectors, PhpVersionedFilter $phpVersionedFilter)
     {
+        $this->rectors = $rectors;
         $this->phpVersionedFilter = $phpVersionedFilter;
-        $this->phpRectors = \is_array($phpRectors) ? $phpRectors : \iterator_to_array($phpRectors);
         parent::__construct();
     }
     /**
-     * @template TNode as Node
-     * @param TNode[] $nodes
-     * @return TNode[]
+     * @param Node[] $nodes
+     * @return Node[]
      */
     public function traverse(array $nodes) : array
     {
@@ -43,12 +41,12 @@ final class RectorNodeTraverser extends NodeTraverser
         return parent::traverse($nodes);
     }
     /**
+     * @param RectorInterface[] $rectors
      * @api used in tests to update the active rules
-     * @param PhpRectorInterface[] $phpRectors
      */
-    public function refreshPhpRectors(array $phpRectors) : void
+    public function refreshPhpRectors(array $rectors) : void
     {
-        $this->phpRectors = $phpRectors;
+        $this->rectors = $rectors;
         $this->visitors = [];
         $this->areNodeVisitorsPrepared = \false;
     }
@@ -64,7 +62,7 @@ final class RectorNodeTraverser extends NodeTraverser
             return;
         }
         // filer out by version
-        $activePhpRectors = $this->phpVersionedFilter->filter($this->phpRectors);
+        $activePhpRectors = $this->phpVersionedFilter->filter($this->rectors);
         $this->visitors = $this->visitors === [] ? $activePhpRectors : \array_merge($this->visitors, $activePhpRectors);
         $this->areNodeVisitorsPrepared = \true;
     }
