@@ -22,7 +22,7 @@ foreach (rex_addon::getAvailableAddons() as $availableAddon) {
     $batches = [];
     if (
         !is_dir($addonPath.'/.git') // the addon is versioned?
-        && !is_dir(rex_path::base('.git')) // the while project is versioned?
+        && !is_dir(rex_path::base('.git')) // the whole project is versioned?
     ) {
         $batches[] = '<span class="label label-danger">unversioned sources</span>';
     } elseif ($hasGit) {
