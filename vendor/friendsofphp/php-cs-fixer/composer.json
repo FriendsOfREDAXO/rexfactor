@@ -49,13 +49,8 @@
         "phpspec/prophecy": "^1.16",
         "phpspec/prophecy-phpunit": "^2.0",
         "phpunit/phpunit": "^9.5",
-        "phpunitgoodpractices/polyfill": "^1.6",
-        "phpunitgoodpractices/traits": "^1.9.2",
         "symfony/phpunit-bridge": "^6.2.3",
         "symfony/yaml": "^5.4 || ^6.0"
-    },
-    "conflict": {
-        "stevebauman/unfinalize": "*"
     },
     "suggest": {
         "ext-dom": "For handling output formats in XML",
