@@ -3,6 +3,72 @@ CHANGELOG for PHP CS Fixer
 
 This file contains changelogs for stable releases only.
 
+Changelog for v3.38.2
+---------------------
+
+* docs: fix 'Could not lex literal_block as "php". Highlighting skipped.' (#7433)
+* docs: small unification between FixerDocumentGenerator and ListDocumentGenerator (#7435)
+* docs: unify ../ <> ./../ (#7434)
+
+Changelog for v3.38.1
+---------------------
+
+* chore: ListSetsCommand::execute - add missing return type (#7432)
+* chore: PHPStan - add counter to dataProvider exception, so we do not increase the tech debt on it (#7425)
+* CI: Use `actions/checkout` v4 (#7423)
+* fix: ClassAttributesSeparationFixer - handle Disjunctive Normal Form types parentheses (#7428)
+* fix: Remove all variable names in `@var` callable signature (#7429)
+* fix: Satisfy `composer normalize` (#7424)
+
+Changelog for v3.38.0
+---------------------
+
+* chore: upgrade phpstan (#7421)
+* CI: add curl and mbstring to build php (#7409)
+* CI: cache dev-tools/bin (#7416)
+* CI: Composer - move prefer-stable to file config (#7406)
+* CI: conditionally install flex (#7412)
+* CI: dev-tools/build.sh - no need to repeat 'prefer-stable', but let's use '--no-scripts' (#7408)
+* CI: Do not run post-autoload-dump on Composer install (#7403)
+* CI: general restructure (#7407)
+* CI: GitHub Actions - use actions/cache for Composer in composite action (#7415)
+* CI: Improve QA process - suplement (#7411)
+* CI: prevent Infection plugins during build time, as we do not use it (#7422)
+* CI: simplify setup-php config (#7404)
+* DX: Do not mark as stale issues/PRs with milestone assigned (#7398)
+* DX: Improve QA process (#7366)
+* feat: phpDoc to property/return/param Fixer - allow fixing mixed on PHP >= 8 (#6356)
+* feat: phpDoc to property/return/param Fixer - allow fixing union types on PHP >= 8 (#6359)
+* feat: Support for array destructuring in `array_indentation` (#7405)
+* feat: `@Symfony` - keep Annotation,NamedArgumentConstructor,Target annotations as single group (#7399)
+* fix(SelfAccessorFixer): do not touch references inside lambda and/or arrow function (#7349)
+* fix: long_to_shorthand_operator - mark as risky fixer (#7418)
+* fix: OrderedImportsFixer - handle non-grouped list of const/function imports (#7397)
+
+Changelog for v3.37.1
+---------------------
+
+* docs: config file - provide better examples (#7396)
+* docs: config file - provide better link to Finder docs (#6992)
+
+Changelog for v3.37.0
+---------------------
+
+* feat: add parallel cache support (#7131)
+
+Changelog for v3.36.0
+---------------------
+
+* chore: disable `infection-installer` plugin, as we do not use `infection/*` yet (#7391)
+* chore: Run dev-tools on PHP 8.2 (#7389)
+* CI: Run Symfony 6 compat check on PHP 8.1 (#7383)
+* CI: use fast-linter when calculating code coverage (#7390)
+* docs: extend example for nullable_type_declaration (#7381)
+* DX: FixerFactoryTest - make assertion failing msg more descriptive (#7387)
+* feat: PhpdocSummaryFixer - support lists in description (#7385)
+* feat: PSR12 - configure unary_operator_spaces (#7388)
+* feat: StatementIndentationFixer - support comment for continuous control statement (#7384)
+
 Changelog for v3.35.1
 ---------------------
 

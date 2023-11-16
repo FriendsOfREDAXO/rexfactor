@@ -229,17 +229,17 @@
         },
         {
             "name": "friendsofphp/php-cs-fixer",
-            "version": "v3.35.1",
-            "version_normalized": "3.35.1.0",
+            "version": "v3.38.2",
+            "version_normalized": "3.38.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer.git",
-                "reference": "ec1ccc264994b6764882669973ca435cf05bab08"
+                "reference": "d872cdd543797ade030aaa307c0a4954a712e081"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHP-CS-Fixer/PHP-CS-Fixer/zipball/ec1ccc264994b6764882669973ca435cf05bab08",
-                "reference": "ec1ccc264994b6764882669973ca435cf05bab08",
+                "url": "https://api.github.com/repos/PHP-CS-Fixer/PHP-CS-Fixer/zipball/d872cdd543797ade030aaa307c0a4954a712e081",
+                "reference": "d872cdd543797ade030aaa307c0a4954a712e081",
                 "shasum": ""
             },
             "require": {
@@ -279,7 +279,7 @@
                 "ext-dom": "For handling output formats in XML",
                 "ext-mbstring": "For handling non-UTF8 characters."
             },
-            "time": "2023-10-12T13:47:26+00:00",
+            "time": "2023-11-14T00:19:22+00:00",
             "bin": [
                 "php-cs-fixer"
             ],
@@ -313,7 +313,7 @@
             ],
             "support": {
                 "issues": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/issues",
-                "source": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/tree/v3.35.1"
+                "source": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/tree/v3.38.2"
             },
             "funding": [
                 {
