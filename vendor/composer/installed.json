@@ -325,17 +325,17 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.10.39",
-            "version_normalized": "1.10.39.0",
+            "version": "1.10.41",
+            "version_normalized": "1.10.41.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "d9dedb0413f678b4d03cbc2279a48f91592c97c4"
+                "reference": "c6174523c2a69231df55bdc65b61655e72876d76"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/d9dedb0413f678b4d03cbc2279a48f91592c97c4",
-                "reference": "d9dedb0413f678b4d03cbc2279a48f91592c97c4",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/c6174523c2a69231df55bdc65b61655e72876d76",
+                "reference": "c6174523c2a69231df55bdc65b61655e72876d76",
                 "shasum": ""
             },
             "require": {
@@ -344,7 +344,7 @@
             "conflict": {
                 "phpstan/phpstan-shim": "*"
             },
-            "time": "2023-10-17T15:46:26+00:00",
+            "time": "2023-11-05T12:57:57+00:00",
             "bin": [
                 "phpstan",
                 "phpstan.phar"
@@ -547,17 +547,17 @@
         },
         {
             "name": "rector/rector",
-            "version": "0.18.6",
-            "version_normalized": "0.18.6.0",
+            "version": "0.18.8",
+            "version_normalized": "0.18.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rectorphp/rector.git",
-                "reference": "02041b220704b9cbe075f0310d0954b2fda5c40c"
+                "reference": "374bab157a41f6849556edc53125f856eb6c1c8c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rectorphp/rector/zipball/02041b220704b9cbe075f0310d0954b2fda5c40c",
-                "reference": "02041b220704b9cbe075f0310d0954b2fda5c40c",
+                "url": "https://api.github.com/repos/rectorphp/rector/zipball/374bab157a41f6849556edc53125f856eb6c1c8c",
+                "reference": "374bab157a41f6849556edc53125f856eb6c1c8c",
                 "shasum": ""
             },
             "require": {
@@ -570,7 +570,7 @@
                 "rector/rector-phpunit": "*",
                 "rector/rector-symfony": "*"
             },
-            "time": "2023-10-24T15:00:59+00:00",
+            "time": "2023-11-14T15:30:19+00:00",
             "bin": [
                 "bin/rector"
             ],
@@ -594,7 +594,7 @@
             ],
             "support": {
                 "issues": "https://github.com/rectorphp/rector/issues",
-                "source": "https://github.com/rectorphp/rector/tree/0.18.6"
+                "source": "https://github.com/rectorphp/rector/tree/0.18.8"
             },
             "funding": [
                 {
@@ -719,17 +719,17 @@
         },
         {
             "name": "symfony/console",
-            "version": "v5.4.28",
-            "version_normalized": "5.4.28.0",
+            "version": "v5.4.31",
+            "version_normalized": "5.4.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "f4f71842f24c2023b91237c72a365306f3c58827"
+                "reference": "11ac5f154e0e5c4c77af83ad11ead9165280b92a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/f4f71842f24c2023b91237c72a365306f3c58827",
-                "reference": "f4f71842f24c2023b91237c72a365306f3c58827",
+                "url": "https://api.github.com/repos/symfony/console/zipball/11ac5f154e0e5c4c77af83ad11ead9165280b92a",
+                "reference": "11ac5f154e0e5c4c77af83ad11ead9165280b92a",
                 "shasum": ""
             },
             "require": {
@@ -767,7 +767,7 @@
                 "symfony/lock": "",
                 "symfony/process": ""
             },
-            "time": "2023-08-07T06:12:30+00:00",
+            "time": "2023-10-31T07:58:33+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -801,7 +801,7 @@
                 "terminal"
             ],
             "support": {
-                "source": "https://github.com/symfony/console/tree/v5.4.28"
+                "source": "https://github.com/symfony/console/tree/v5.4.31"
             },
             "funding": [
                 {
@@ -2074,17 +2074,17 @@
         },
         {
             "name": "symfony/string",
-            "version": "v5.4.29",
-            "version_normalized": "5.4.29.0",
+            "version": "v5.4.31",
+            "version_normalized": "5.4.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/string.git",
-                "reference": "e41bdc93def20eaf3bfc1537c4e0a2b0680a152d"
+                "reference": "2765096c03f39ddf54f6af532166e42aaa05b24b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/string/zipball/e41bdc93def20eaf3bfc1537c4e0a2b0680a152d",
-                "reference": "e41bdc93def20eaf3bfc1537c4e0a2b0680a152d",
+                "url": "https://api.github.com/repos/symfony/string/zipball/2765096c03f39ddf54f6af532166e42aaa05b24b",
+                "reference": "2765096c03f39ddf54f6af532166e42aaa05b24b",
                 "shasum": ""
             },
             "require": {
@@ -2104,7 +2104,7 @@
                 "symfony/translation-contracts": "^1.1|^2",
                 "symfony/var-exporter": "^4.4|^5.0|^6.0"
             },
-            "time": "2023-09-13T11:47:41+00:00",
+            "time": "2023-11-09T08:19:44+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -2143,7 +2143,7 @@
                 "utf8"
             ],
             "support": {
-                "source": "https://github.com/symfony/string/tree/v5.4.29"
+                "source": "https://github.com/symfony/string/tree/v5.4.31"
             },
             "funding": [
                 {
