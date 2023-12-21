@@ -4,8 +4,10 @@ declare (strict_types=1);
 namespace Rector\Transform\Rector\Attribute;
 
 use PhpParser\Node;
+use PhpParser\Node\Arg;
 use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr\ArrowFunction;
+use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Param;
@@ -20,7 +22,7 @@ use Rector\Core\Rector\AbstractRector;
 use Rector\Transform\ValueObject\AttributeKeyToClassConstFetch;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202311\Webmozart\Assert\Assert;
+use RectorPrefix202312\Webmozart\Assert\Assert;
 /**
  * @changelog https://github.com/doctrine/dbal/blob/3.1.x/src/Types/Types.php
  *
@@ -116,16 +118,25 @@ CODE_SAMPLE
                 if (!$this->isName($argName, $attributeKeyToClassConstFetch->getAttributeKey())) {
                     continue;
                 }
-                $value = $this->valueResolver->getValue($arg->value);
-                $constName = $attributeKeyToClassConstFetch->getValuesToConstantsMap()[$value] ?? null;
-                if ($constName === null) {
-                    continue;
+                if ($this->processArg($arg, $attributeKeyToClassConstFetch)) {
+                    $hasChanged = \true;
                 }
-                $arg->value = $this->nodeFactory->createClassConstFetch($attributeKeyToClassConstFetch->getConstantClass(), $constName);
-                $hasChanged = \true;
-                continue 2;
             }
         }
         return $hasChanged;
+    }
+    private function processArg(Arg $arg, AttributeKeyToClassConstFetch $attributeKeyToClassConstFetch) : bool
+    {
+        $value = $this->valueResolver->getValue($arg->value);
+        $constName = $attributeKeyToClassConstFetch->getValuesToConstantsMap()[$value] ?? null;
+        if ($constName === null) {
+            return \false;
+        }
+        $newValue = $this->nodeFactory->createClassConstFetch($attributeKeyToClassConstFetch->getConstantClass(), $constName);
+        if ($arg->value instanceof ClassConstFetch && $this->getName($arg->value) === $this->getName($newValue)) {
+            return \false;
+        }
+        $arg->value = $newValue;
+        return \true;
     }
 }

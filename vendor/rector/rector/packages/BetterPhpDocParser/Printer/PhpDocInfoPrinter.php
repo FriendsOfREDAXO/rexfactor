@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\BetterPhpDocParser\Printer;
 
-use RectorPrefix202311\Nette\Utils\Strings;
+use RectorPrefix202312\Nette\Utils\Strings;
 use PhpParser\Comment;
 use PhpParser\Node\Stmt\InlineHTML;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
@@ -221,7 +221,7 @@ final class PhpDocInfoPrinter
             $lastTokenPosition = $this->currentTokenPosition;
         }
         if ($lastTokenPosition === 0) {
-            $lastTokenPosition = 1;
+            return $output . "\n */";
         }
         return $this->addTokensFromTo($output, $lastTokenPosition, $this->tokenCount, \true);
     }
