@@ -5,6 +5,7 @@ namespace Rector\DeadCode\Rector\If_;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\Instanceof_;
@@ -12,6 +13,7 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeTraverser;
 use PHPStan\Type\MixedType;
@@ -97,6 +99,10 @@ CODE_SAMPLE
         }
         if ($this->shouldSkipFromNotTypedParam($instanceof)) {
             return null;
+        }
+        if ($instanceof->expr instanceof Assign) {
+            $assignExpression = new Expression($instanceof->expr);
+            return \array_merge([$assignExpression], $if->stmts);
         }
         if ($if->cond !== $instanceof) {
             return NodeTraverser::REMOVE_NODE;

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\NodeAnalyzer;
 
-use RectorPrefix202311\Nette\Utils\Strings;
+use RectorPrefix202312\Nette\Utils\Strings;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\GroupUse;
@@ -71,6 +71,11 @@ final class UseImportNameMatcher
             throw new ShouldNotHappenException();
         }
         if (!$originalUseUseNode->alias instanceof Identifier) {
+            $lastName = $originalUseUseNode->name->getLast();
+            if (\strncmp($tag, $lastName . '\\', \strlen($lastName . '\\')) === 0) {
+                $tagName = Strings::after($tag, '\\');
+                return $prefix . $originalUseUseNode->name->toString() . '\\' . $tagName;
+            }
             return $prefix . $originalUseUseNode->name->toString();
         }
         $unaliasedShortClass = Strings::substring($tag, \strlen($originalUseUseNode->alias->toString()));
