@@ -1,16 +1,14 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\DependencyInjection;
+namespace Rector\DependencyInjection;
 
-use RectorPrefix202312\Doctrine\Inflector\Inflector;
-use RectorPrefix202312\Doctrine\Inflector\Rules\English\InflectorFactory;
-use RectorPrefix202312\Illuminate\Container\Container;
+use RectorPrefix202402\Doctrine\Inflector\Inflector;
+use RectorPrefix202402\Doctrine\Inflector\Rules\English\InflectorFactory;
+use RectorPrefix202402\Illuminate\Container\Container;
 use PhpParser\Lexer;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPStan\Analyser\ScopeFactory;
-use PHPStan\Collectors\Collector;
-use PHPStan\Collectors\Registry;
 use PHPStan\File\FileHelper;
 use PHPStan\Parser\Parser;
 use PHPStan\PhpDoc\TypeNodeResolver;
@@ -18,6 +16,8 @@ use PHPStan\PhpDocParser\Parser\ConstExprParser;
 use PHPStan\PhpDocParser\Parser\TypeParser;
 use PHPStan\Reflection\BetterReflection\SourceLocator\CachingVisitor;
 use PHPStan\Reflection\ReflectionProvider;
+use Rector\Application\ChangedNodeScopeRefresher;
+use Rector\Application\FileProcessor;
 use Rector\BetterPhpDocParser\Contract\BasePhpDocNodeVisitorInterface;
 use Rector\BetterPhpDocParser\Contract\PhpDocParser\PhpDocNodeDecoratorInterface;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
@@ -46,28 +46,20 @@ use Rector\CodingStyle\ClassNameImport\ClassNameImportSkipVoter\FullyQualifiedNa
 use Rector\CodingStyle\ClassNameImport\ClassNameImportSkipVoter\UsesClassNameImportSkipVoter;
 use Rector\CodingStyle\Contract\ClassNameImport\ClassNameImportSkipVoterInterface;
 use Rector\Config\RectorConfig;
-use Rector\Core\Application\ChangedNodeScopeRefresher;
-use Rector\Core\Application\FileProcessor;
-use Rector\Core\Collector\ParentClassCollector;
-use Rector\Core\Configuration\ConfigInitializer;
-use Rector\Core\Configuration\RenamedClassesDataCollector;
-use Rector\Core\Console\Command\ListRulesCommand;
-use Rector\Core\Console\Command\ProcessCommand;
-use Rector\Core\Console\Command\SetupCICommand;
-use Rector\Core\Console\Command\WorkerCommand;
-use Rector\Core\Console\ConsoleApplication;
-use Rector\Core\Console\Output\OutputFormatterCollector;
-use Rector\Core\Console\Style\RectorStyle;
-use Rector\Core\Console\Style\SymfonyStyleFactory;
-use Rector\Core\Contract\DependencyInjection\ResetableInterface;
-use Rector\Core\Contract\Rector\CollectorRectorInterface;
-use Rector\Core\Contract\Rector\RectorInterface;
-use Rector\Core\NodeDecorator\CreatedByRuleDecorator;
-use Rector\Core\PhpParser\Comparing\NodeComparator;
-use Rector\Core\PhpParser\Node\NodeFactory;
-use Rector\Core\PhpParser\NodeTraverser\RectorNodeTraverser;
-use Rector\Core\Provider\CurrentFileProvider;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Configuration\ConfigInitializer;
+use Rector\Configuration\RenamedClassesDataCollector;
+use Rector\Console\Command\CustomRuleCommand;
+use Rector\Console\Command\ListRulesCommand;
+use Rector\Console\Command\ProcessCommand;
+use Rector\Console\Command\SetupCICommand;
+use Rector\Console\Command\WorkerCommand;
+use Rector\Console\ConsoleApplication;
+use Rector\Console\Output\OutputFormatterCollector;
+use Rector\Console\Style\RectorStyle;
+use Rector\Console\Style\SymfonyStyleFactory;
+use Rector\Contract\DependencyInjection\ResetableInterface;
+use Rector\Contract\Rector\RectorInterface;
+use Rector\NodeDecorator\CreatedByRuleDecorator;
 use Rector\NodeNameResolver\Contract\NodeNameResolverInterface;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeNameResolver\NodeNameResolver\ClassConstFetchNameResolver;
@@ -118,6 +110,9 @@ use Rector\PhpAttribute\AnnotationToAttributeMapper\StringAnnotationToAttributeM
 use Rector\PhpAttribute\AnnotationToAttributeMapper\StringNodeAnnotationToAttributeMapper;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
+use Rector\PhpParser\Comparing\NodeComparator;
+use Rector\PhpParser\Node\NodeFactory;
+use Rector\PhpParser\NodeTraverser\RectorNodeTraverser;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
 use Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\AccessoryLiteralStringTypeMapper;
@@ -155,10 +150,11 @@ use Rector\PHPStanStaticTypeMapper\TypeMapper\ThisTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\TypeWithClassNameTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\VoidTypeMapper;
 use Rector\PostRector\Application\PostFileProcessor;
+use Rector\Provider\CurrentFileProvider;
+use Rector\Rector\AbstractRector;
 use Rector\Skipper\Contract\SkipVoterInterface;
 use Rector\Skipper\Skipper\Skipper;
 use Rector\Skipper\SkipVoter\ClassSkipVoter;
-use Rector\Skipper\SkipVoter\PathSkipVoter;
 use Rector\StaticTypeMapper\Contract\PhpDocParser\PhpDocTypeMapperInterface;
 use Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface;
 use Rector\StaticTypeMapper\Mapper\PhpParserNodeMapper;
@@ -179,10 +175,10 @@ use Rector\StaticTypeMapper\PhpParser\UnionTypeNodeMapper;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\Utils\Command\MissingInSetCommand;
 use Rector\Utils\Command\OutsideAnySetCommand;
-use RectorPrefix202312\Symfony\Component\Console\Application;
-use RectorPrefix202312\Symfony\Component\Console\Command\Command;
-use RectorPrefix202312\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use RectorPrefix202402\Symfony\Component\Console\Application;
+use RectorPrefix202402\Symfony\Component\Console\Command\Command;
+use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 final class LazyContainerFactory
 {
     /**
@@ -236,7 +232,7 @@ final class LazyContainerFactory
     /**
      * @var array<class-string<SkipVoterInterface>>
      */
-    private const SKIP_VOTER_CLASSES = [ClassSkipVoter::class, PathSkipVoter::class];
+    private const SKIP_VOTER_CLASSES = [ClassSkipVoter::class];
     /**
      * @api used as next rectorConfig factory
      */
@@ -244,10 +240,6 @@ final class LazyContainerFactory
     {
         $rectorConfig = new RectorConfig();
         $rectorConfig->import(__DIR__ . '/../../config/config.php');
-        // rector collectors
-        $rectorConfig->when(Registry::class)->needs('$collectors')->giveTagged(Collector::class);
-        // @todo collectors - just for testing purpose
-        $rectorConfig->collector(ParentClassCollector::class);
         $rectorConfig->singleton(Application::class, static function (Container $container) : Application {
             $application = $container->make(ConsoleApplication::class);
             $commandNamesToHide = ['list', 'completion', 'help', 'worker'];
@@ -262,15 +254,16 @@ final class LazyContainerFactory
             $inflectorFactory = new InflectorFactory();
             return $inflectorFactory->build();
         });
-        $rectorConfig->tag(ProcessCommand::class, Command::class);
-        $rectorConfig->tag(WorkerCommand::class, Command::class);
-        $rectorConfig->tag(SetupCICommand::class, Command::class);
-        $rectorConfig->tag(ListRulesCommand::class, Command::class);
+        $rectorConfig->singleton(ProcessCommand::class);
+        $rectorConfig->singleton(WorkerCommand::class);
+        $rectorConfig->singleton(SetupCICommand::class);
+        $rectorConfig->singleton(ListRulesCommand::class);
+        $rectorConfig->singleton(CustomRuleCommand::class);
         $rectorConfig->when(ListRulesCommand::class)->needs('$rectors')->giveTagged(RectorInterface::class);
         // dev
         if (\class_exists(MissingInSetCommand::class)) {
-            $rectorConfig->tag(MissingInSetCommand::class, Command::class);
-            $rectorConfig->tag(OutsideAnySetCommand::class, Command::class);
+            $rectorConfig->singleton(MissingInSetCommand::class);
+            $rectorConfig->singleton(OutsideAnySetCommand::class);
         }
         $rectorConfig->alias(TypeParser::class, BetterTypeParser::class);
         $rectorConfig->singleton(FileProcessor::class);
@@ -280,7 +273,6 @@ final class LazyContainerFactory
         $rectorConfig->when(ConstExprParser::class)->needs('$usedAttributes')->give(['lines' => \true, 'indexes' => \true]);
         $rectorConfig->alias(TypeParser::class, BetterTypeParser::class);
         $rectorConfig->when(RectorNodeTraverser::class)->needs('$rectors')->giveTagged(RectorInterface::class);
-        $rectorConfig->when(RectorNodeTraverser::class)->needs('$collectorRectors')->giveTagged(CollectorRectorInterface::class);
         $rectorConfig->when(ConfigInitializer::class)->needs('$rectors')->giveTagged(RectorInterface::class);
         $rectorConfig->when(ClassNameImportSkipper::class)->needs('$classNameImportSkipVoters')->giveTagged(ClassNameImportSkipVoterInterface::class);
         $rectorConfig->singleton(DynamicSourceLocatorProvider::class, static function (Container $container) : DynamicSourceLocatorProvider {

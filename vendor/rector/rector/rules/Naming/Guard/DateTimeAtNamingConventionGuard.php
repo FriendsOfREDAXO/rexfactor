@@ -5,10 +5,10 @@ namespace Rector\Naming\Guard;
 
 use DateTimeInterface;
 use PHPStan\Type\TypeWithClassName;
-use Rector\Core\Util\StringUtils;
 use Rector\Naming\ValueObject\PropertyRename;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\PHPStanStaticTypeMapper\Utils\TypeUnwrapper;
+use Rector\Util\StringUtils;
 final class DateTimeAtNamingConventionGuard
 {
     /**
@@ -36,6 +36,6 @@ final class DateTimeAtNamingConventionGuard
         if (!\is_a($type->getClassName(), DateTimeInterface::class, \true)) {
             return \false;
         }
-        return StringUtils::isMatch($propertyRename->getCurrentName(), \Rector\Naming\Guard\BreakingVariableRenameGuard::AT_NAMING_REGEX . '');
+        return StringUtils::isMatch($propertyRename->getCurrentName(), \Rector\Naming\Guard\BreakingVariableRenameGuard::AT_NAMING_REGEX);
     }
 }

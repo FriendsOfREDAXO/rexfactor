@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\Input;
+namespace RectorPrefix202402\Symfony\Component\Console\Input;
 
-use RectorPrefix202312\Symfony\Component\Console\Command\Command;
-use RectorPrefix202312\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202312\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202312\Symfony\Component\Console\Completion\Suggestion;
-use RectorPrefix202312\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202312\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202402\Symfony\Component\Console\Command\Command;
+use RectorPrefix202402\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202402\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202402\Symfony\Component\Console\Completion\Suggestion;
+use RectorPrefix202402\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202402\Symfony\Component\Console\Exception\LogicException;
 /**
  * Represents a command line argument.
  *
@@ -55,7 +55,7 @@ class InputArgument
      *
      * @throws InvalidArgumentException When argument mode is not valid
      */
-    public function __construct(string $name, int $mode = null, string $description = '', $default = null, $suggestedValues = [])
+    public function __construct(string $name, ?int $mode = null, string $description = '', $default = null, $suggestedValues = [])
     {
         if (null === $mode) {
             $mode = self::OPTIONAL;
@@ -99,12 +99,12 @@ class InputArgument
      * @return void
      *
      * @throws LogicException When incorrect default value is given
-     * @param string|bool|int|float|mixed[] $default
+     * @param string|bool|int|float|mixed[]|null $default
      */
     public function setDefault($default = null)
     {
         if (1 > \func_num_args()) {
-            // \trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+            trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
         }
         if ($this->isRequired() && null !== $default) {
             throw new LogicException('Cannot set a default value except for InputArgument::OPTIONAL mode.');

@@ -8,16 +8,16 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\DataCollector;
+namespace RectorPrefix202402\Symfony\Component\Console\DataCollector;
 
-use RectorPrefix202312\Symfony\Component\Console\Command\Command;
-use RectorPrefix202312\Symfony\Component\Console\Debug\CliRequest;
-use RectorPrefix202312\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202312\Symfony\Component\Console\SignalRegistry\SignalMap;
-use RectorPrefix202312\Symfony\Component\HttpFoundation\Request;
-use RectorPrefix202312\Symfony\Component\HttpFoundation\Response;
-use RectorPrefix202312\Symfony\Component\HttpKernel\DataCollector\DataCollector;
-use RectorPrefix202312\Symfony\Component\VarDumper\Cloner\Data;
+use RectorPrefix202402\Symfony\Component\Console\Command\Command;
+use RectorPrefix202402\Symfony\Component\Console\Debug\CliRequest;
+use RectorPrefix202402\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202402\Symfony\Component\Console\SignalRegistry\SignalMap;
+use RectorPrefix202402\Symfony\Component\HttpFoundation\Request;
+use RectorPrefix202402\Symfony\Component\HttpFoundation\Response;
+use RectorPrefix202402\Symfony\Component\HttpKernel\DataCollector\DataCollector;
+use RectorPrefix202402\Symfony\Component\VarDumper\Cloner\Data;
 /**
  * @internal
  *
@@ -25,7 +25,7 @@ use RectorPrefix202312\Symfony\Component\VarDumper\Cloner\Data;
  */
 final class CommandDataCollector extends DataCollector
 {
-    public function collect(Request $request, Response $response, \Throwable $exception = null) : void
+    public function collect(Request $request, Response $response, ?\Throwable $exception = null) : void
     {
         if (!$request instanceof CliRequest) {
             return;

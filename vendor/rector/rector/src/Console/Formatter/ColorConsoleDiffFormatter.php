@@ -1,15 +1,15 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Console\Formatter;
+namespace Rector\Console\Formatter;
 
-use RectorPrefix202312\Nette\Utils\Strings;
-use RectorPrefix202312\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202402\Nette\Utils\Strings;
+use RectorPrefix202402\Symfony\Component\Console\Formatter\OutputFormatter;
 /**
  * Inspired by @see https://github.com/FriendsOfPHP/PHP-CS-Fixer/blob/master/src/Differ/DiffConsoleFormatter.php to be
  * used as standalone class, without need to require whole package by Dariusz Rumiński <dariusz.ruminski@gmail.com>
  *
- * @see \Rector\Core\Tests\Console\Formatter\ColorConsoleDiffFormatterTest
+ * @see \Rector\Tests\Console\Formatter\ColorConsoleDiffFormatterTest
  */
 final class ColorConsoleDiffFormatter
 {

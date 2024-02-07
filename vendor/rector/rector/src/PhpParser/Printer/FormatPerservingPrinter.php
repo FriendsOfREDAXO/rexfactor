@@ -1,30 +1,24 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\PhpParser\Printer;
+namespace Rector\PhpParser\Printer;
 
+use RectorPrefix202402\Nette\Utils\FileSystem;
 use PhpParser\Node;
-use Rector\Core\ValueObject\Application\File;
-use RectorPrefix202312\Symfony\Component\Filesystem\Filesystem;
+use Rector\ValueObject\Application\File;
 /**
- * @see \Rector\Core\Tests\PhpParser\Printer\FormatPerservingPrinterTest
+ * @see \Rector\Tests\PhpParser\Printer\FormatPerservingPrinterTest
  */
 final class FormatPerservingPrinter
 {
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Printer\BetterStandardPrinter
+     * @var \Rector\PhpParser\Printer\BetterStandardPrinter
      */
     private $betterStandardPrinter;
-    /**
-     * @readonly
-     * @var \Symfony\Component\Filesystem\Filesystem
-     */
-    private $filesystem;
-    public function __construct(\Rector\Core\PhpParser\Printer\BetterStandardPrinter $betterStandardPrinter, Filesystem $filesystem)
+    public function __construct(\Rector\PhpParser\Printer\BetterStandardPrinter $betterStandardPrinter)
     {
         $this->betterStandardPrinter = $betterStandardPrinter;
-        $this->filesystem = $filesystem;
     }
     /**
      * @api tests
@@ -45,6 +39,6 @@ final class FormatPerservingPrinter
     }
     public function dumpFile(string $filePath, string $newContent) : void
     {
-        $this->filesystem->dumpFile($filePath, $newContent);
+        FileSystem::write($filePath, $newContent, null);
     }
 }

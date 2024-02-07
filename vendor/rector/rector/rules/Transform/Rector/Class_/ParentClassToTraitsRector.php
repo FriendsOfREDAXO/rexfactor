@@ -8,13 +8,13 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\TraitUse;
-use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
-use Rector\Core\NodeAnalyzer\ClassAnalyzer;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Contract\Rector\ConfigurableRectorInterface;
+use Rector\NodeAnalyzer\ClassAnalyzer;
+use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\ParentClassToTraits;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 /**
  * Can handle cases like:
  * - https://doc.nette.org/en/2.4/migration-2-4#toc-nette-smartobject
@@ -26,7 +26,7 @@ final class ParentClassToTraitsRector extends AbstractRector implements Configur
 {
     /**
      * @readonly
-     * @var \Rector\Core\NodeAnalyzer\ClassAnalyzer
+     * @var \Rector\NodeAnalyzer\ClassAnalyzer
      */
     private $classAnalyzer;
     /**

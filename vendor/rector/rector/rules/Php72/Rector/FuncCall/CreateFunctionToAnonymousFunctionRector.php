@@ -16,12 +16,12 @@ use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
-use Rector\Core\Exception\ShouldNotHappenException;
-use Rector\Core\Php\ReservedKeywordAnalyzer;
-use Rector\Core\PhpParser\Parser\InlineCodeParser;
-use Rector\Core\Rector\AbstractRector;
-use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\Exception\ShouldNotHappenException;
+use Rector\Php\ReservedKeywordAnalyzer;
 use Rector\Php72\NodeFactory\AnonymousFunctionFactory;
+use Rector\PhpParser\Parser\InlineCodeParser;
+use Rector\Rector\AbstractRector;
+use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -34,7 +34,7 @@ final class CreateFunctionToAnonymousFunctionRector extends AbstractRector imple
 {
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Parser\InlineCodeParser
+     * @var \Rector\PhpParser\Parser\InlineCodeParser
      */
     private $inlineCodeParser;
     /**
@@ -44,7 +44,7 @@ final class CreateFunctionToAnonymousFunctionRector extends AbstractRector imple
     private $anonymousFunctionFactory;
     /**
      * @readonly
-     * @var \Rector\Core\Php\ReservedKeywordAnalyzer
+     * @var \Rector\Php\ReservedKeywordAnalyzer
      */
     private $reservedKeywordAnalyzer;
     public function __construct(InlineCodeParser $inlineCodeParser, AnonymousFunctionFactory $anonymousFunctionFactory, ReservedKeywordAnalyzer $reservedKeywordAnalyzer)
@@ -126,7 +126,7 @@ CODE_SAMPLE
     {
         $content = $this->inlineCodeParser->stringify($expr);
         $content = '<?php $value = function(' . $content . ') {};';
-        $nodes = $this->inlineCodeParser->parse($content);
+        $nodes = $this->inlineCodeParser->parseString($content);
         /** @var Expression $expression */
         $expression = $nodes[0];
         /** @var Assign $assign */
@@ -146,8 +146,8 @@ CODE_SAMPLE
             // special case of code elsewhere
             return [$this->createEval($expr)];
         }
-        $expr = $this->inlineCodeParser->stringify($expr);
-        return $this->inlineCodeParser->parse($expr);
+        $content = $this->inlineCodeParser->stringify($expr);
+        return $this->inlineCodeParser->parseString($content);
     }
     private function createEval(Expr $expr) : Expression
     {

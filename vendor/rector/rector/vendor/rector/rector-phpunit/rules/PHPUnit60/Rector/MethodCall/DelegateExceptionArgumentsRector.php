@@ -8,10 +8,10 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Expression;
-use Rector\Core\Contract\PhpParser\Node\StmtsAwareInterface;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
 use Rector\PHPUnit\NodeFactory\AssertCallFactory;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -86,7 +86,7 @@ CODE_SAMPLE
         }
         $hasChanged = \false;
         $oldMethodNames = \array_keys(self::OLD_TO_NEW_METHOD);
-        foreach ($node->stmts as $stmt) {
+        foreach ($node->stmts as $key => $stmt) {
             if (!$stmt instanceof Expression) {
                 continue;
             }
@@ -97,17 +97,17 @@ CODE_SAMPLE
             if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($call, $oldMethodNames)) {
                 continue;
             }
-            if (isset($call->args[1])) {
-                $extraCall = $this->createFirstArgExtraMethodCall($call);
-                $node->stmts[] = new Expression($extraCall);
-                unset($call->args[1]);
-            }
             // add exception code method call
             if (isset($call->args[2])) {
                 $extraCall = $this->assertCallFactory->createCallWithName($call, 'expectExceptionCode');
                 $extraCall->args[] = $call->args[2];
-                $node->stmts[] = new Expression($extraCall);
+                \array_splice($node->stmts, $key + 1, 0, [new Expression($extraCall)]);
                 unset($call->args[2]);
+            }
+            if (isset($call->args[1])) {
+                $extraCall = $this->createFirstArgExtraMethodCall($call);
+                \array_splice($node->stmts, $key + 1, 0, [new Expression($extraCall)]);
+                unset($call->args[1]);
             }
             $hasChanged = \true;
             $call->name = new Identifier('expectException');

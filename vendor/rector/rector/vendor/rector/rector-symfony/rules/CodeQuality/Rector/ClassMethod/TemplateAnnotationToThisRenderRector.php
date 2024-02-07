@@ -22,9 +22,9 @@ use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
-use Rector\Core\Contract\PhpParser\Node\StmtsAwareInterface;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
+use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\Rector\AbstractRector;
 use Rector\Symfony\Annotation\AnnotationAnalyzer;
 use Rector\Symfony\Enum\SymfonyAnnotation;
 use Rector\Symfony\Enum\SymfonyClass;
@@ -79,7 +79,7 @@ final class TemplateAnnotationToThisRenderRector extends AbstractRector
     private $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
     /**
@@ -169,7 +169,7 @@ CODE_SAMPLE
     private function refactorClassMethod(ClassMethod $classMethod, DoctrineAnnotationTagValueNode $templateDoctrineAnnotationTagValueNode) : ?ClassMethod
     {
         $hasThisRenderOrReturnsResponse = $this->hasLastReturnResponse($classMethod);
-        $this->traverseNodesWithCallable($classMethod, function (Node $node) use($templateDoctrineAnnotationTagValueNode, $hasThisRenderOrReturnsResponse, $classMethod) {
+        $this->traverseNodesWithCallable($classMethod, function (Node $node) use($templateDoctrineAnnotationTagValueNode, $hasThisRenderOrReturnsResponse, $classMethod) : ?int {
             // keep as similar type
             if ($node instanceof Closure || $node instanceof Function_) {
                 return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;

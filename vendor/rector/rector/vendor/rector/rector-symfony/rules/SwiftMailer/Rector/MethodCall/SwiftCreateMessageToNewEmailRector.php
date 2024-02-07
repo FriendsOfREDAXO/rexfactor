@@ -11,7 +11,7 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Property;
 use PHPStan\Type\ObjectType;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -42,7 +42,7 @@ CODE_SAMPLE
     public function refactor(Node $node) : ?Node
     {
         $hasChanged = \false;
-        $this->traverseNodesWithCallable($node->getMethods(), function (Node $subNode) use($node, &$hasChanged) {
+        $this->traverseNodesWithCallable($node->getMethods(), function (Node $subNode) use($node, &$hasChanged) : ?New_ {
             if (!$subNode instanceof MethodCall) {
                 return null;
             }

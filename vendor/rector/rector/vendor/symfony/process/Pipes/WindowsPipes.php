@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Process\Pipes;
+namespace RectorPrefix202402\Symfony\Component\Process\Pipes;
 
-use RectorPrefix202312\Symfony\Component\Process\Exception\RuntimeException;
-use RectorPrefix202312\Symfony\Component\Process\Process;
+use RectorPrefix202402\Symfony\Component\Process\Exception\RuntimeException;
+use RectorPrefix202402\Symfony\Component\Process\Process;
 /**
  * WindowsPipes implementation uses temporary files as handles.
  *
@@ -130,7 +130,7 @@ class WindowsPipes extends AbstractPipes
             if ($w) {
                 @\stream_select($r, $w, $e, 0, Process::TIMEOUT_PRECISION * 1000000.0);
             } elseif ($this->fileHandles) {
-                \usleep(Process::TIMEOUT_PRECISION * 1000000.0);
+                \usleep((int) (Process::TIMEOUT_PRECISION * 1000000.0));
             }
         }
         foreach ($this->fileHandles as $type => $fileHandle) {

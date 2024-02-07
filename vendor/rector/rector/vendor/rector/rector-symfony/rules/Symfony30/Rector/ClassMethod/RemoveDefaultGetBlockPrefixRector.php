@@ -3,15 +3,15 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Symfony30\Rector\ClassMethod;
 
-use RectorPrefix202312\Nette\Utils\Strings;
+use RectorPrefix202402\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Return_;
-use Rector\Core\PhpParser\Node\Value\ValueResolver;
-use Rector\Core\Rector\AbstractRector;
+use Rector\PhpParser\Node\Value\ValueResolver;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -23,7 +23,7 @@ final class RemoveDefaultGetBlockPrefixRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\Value\ValueResolver
+     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
     private $valueResolver;
     public function __construct(ValueResolver $valueResolver)

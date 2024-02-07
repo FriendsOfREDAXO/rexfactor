@@ -13,17 +13,17 @@ use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\UnionType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
-use Rector\Core\PhpParser\Node\Value\ValueResolver;
-use Rector\Core\Rector\AbstractRector;
-use Rector\Core\Reflection\ReflectionResolver;
-use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\DeadCode\PhpDoc\TagRemover\VarTagRemover;
 use Rector\Php74\Guard\MakePropertyTypedGuard;
+use Rector\PhpParser\Node\Value\ValueResolver;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Rector\Rector\AbstractRector;
+use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\TypeDeclaration\NodeTypeAnalyzer\PropertyTypeDecorator;
 use Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\AllAssignNodePropertyTypeInferer;
+use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -54,7 +54,7 @@ final class TypedPropertyFromAssignsRector extends AbstractRector implements Min
     private $makePropertyTypedGuard;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\ReflectionResolver
+     * @var \Rector\Reflection\ReflectionResolver
      */
     private $reflectionResolver;
     /**
@@ -64,7 +64,7 @@ final class TypedPropertyFromAssignsRector extends AbstractRector implements Min
     private $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\Value\ValueResolver
+     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
     private $valueResolver;
     /**
@@ -160,7 +160,7 @@ CODE_SAMPLE
             if (!$this->makePropertyTypedGuard->isLegal($property, $classReflection, $this->inlinePublic)) {
                 continue;
             }
-            $inferredType = $this->allAssignNodePropertyTypeInferer->inferProperty($property, $classReflection);
+            $inferredType = $this->allAssignNodePropertyTypeInferer->inferProperty($property, $classReflection, $this->file);
             if (!$inferredType instanceof Type) {
                 continue;
             }

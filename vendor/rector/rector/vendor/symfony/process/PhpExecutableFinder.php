@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Process;
+namespace RectorPrefix202402\Symfony\Component\Process;
 
 /**
  * An executable finder specifically designed for the PHP executable.
@@ -34,7 +34,7 @@ class PhpExecutableFinder
     {
         if ($php = \getenv('PHP_BINARY')) {
             if (!\is_executable($php)) {
-                $command = '\\' === \DIRECTORY_SEPARATOR ? 'where' : 'command -v';
+                $command = '\\' === \DIRECTORY_SEPARATOR ? 'where' : 'command -v --';
                 if (\function_exists('exec') && ($php = \strtok(\exec($command . ' ' . \escapeshellarg($php)), \PHP_EOL))) {
                     if (!\is_executable($php)) {
                         return \false;

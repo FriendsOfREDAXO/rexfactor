@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\ProcessAnalyzer;
+namespace Rector\ProcessAnalyzer;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
-use Rector\Core\Contract\Rector\RectorInterface;
+use Rector\Contract\Rector\RectorInterface;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 /**
  * This service verify if the Node:
@@ -67,7 +67,7 @@ final class RectifiedAnalyzer
             return \true;
         }
         if ($node instanceof Stmt) {
-            return \array_keys($node->getAttributes()) === [AttributeKey::STMT_KEY];
+            return !\in_array(AttributeKey::SCOPE, \array_keys($node->getAttributes()), \true);
         }
         return $node->getAttributes() === [];
     }

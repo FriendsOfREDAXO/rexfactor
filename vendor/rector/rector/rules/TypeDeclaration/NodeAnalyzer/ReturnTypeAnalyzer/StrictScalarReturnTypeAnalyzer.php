@@ -5,9 +5,12 @@ namespace Rector\TypeDeclaration\NodeAnalyzer\ReturnTypeAnalyzer;
 
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Expr\ConstFetch;
+use PhpParser\Node\Expr\UnaryMinus;
+use PhpParser\Node\Expr\UnaryPlus;
+use PhpParser\Node\Scalar;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use PHPStan\Analyser\Scope;
 use PHPStan\Type\Type;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\TypeDeclaration\TypeAnalyzer\AlwaysStrictScalarExprAnalyzer;
@@ -37,16 +40,19 @@ final class StrictScalarReturnTypeAnalyzer
     /**
      * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Expr\Closure|\PhpParser\Node\Stmt\Function_ $functionLike
      */
-    public function matchAlwaysScalarReturnType($functionLike, Scope $scope) : ?Type
+    public function matchAlwaysScalarReturnType($functionLike, bool $hardCodedOnly = \false) : ?Type
     {
         $returns = $this->alwaysStrictReturnAnalyzer->matchAlwaysStrictReturns($functionLike);
-        if ($returns === null) {
+        if ($returns === []) {
             return null;
         }
         $scalarTypes = [];
         foreach ($returns as $return) {
             // we need exact expr return
             if (!$return->expr instanceof Expr) {
+                return null;
+            }
+            if ($hardCodedOnly && !$this->isHardCodedExpression($return->expr)) {
                 return null;
             }
             $scalarType = $this->alwaysStrictScalarExprAnalyzer->matchStrictScalarExpr($return->expr);
@@ -56,5 +62,18 @@ final class StrictScalarReturnTypeAnalyzer
             $scalarTypes[] = $scalarType;
         }
         return $this->typeFactory->createMixedPassedOrUnionType($scalarTypes);
+    }
+    private function isHardCodedExpression(Expr $expr) : bool
+    {
+        // Normal scalar values like strings, integers and floats
+        if ($expr instanceof Scalar) {
+            return \true;
+        }
+        // true / false / null are constants
+        if ($expr instanceof ConstFetch && \in_array($expr->name->toLowerString(), ['true', 'false', 'null'], \true)) {
+            return \true;
+        }
+        // Negative numbers are wrapped in UnaryMinus, so check expression inside it
+        return ($expr instanceof UnaryMinus || $expr instanceof UnaryPlus) && $expr->expr instanceof Scalar;
     }
 }

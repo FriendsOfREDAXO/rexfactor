@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Process;
+namespace RectorPrefix202402\Symfony\Component\Process;
 
-use RectorPrefix202312\Symfony\Component\Process\Exception\LogicException;
-use RectorPrefix202312\Symfony\Component\Process\Exception\RuntimeException;
+use RectorPrefix202402\Symfony\Component\Process\Exception\LogicException;
+use RectorPrefix202402\Symfony\Component\Process\Exception\RuntimeException;
 /**
  * PhpSubprocess runs a PHP command as a subprocess while keeping the original php.ini settings.
  *
@@ -49,7 +49,7 @@ class PhpSubprocess extends Process
      * @param int         $timeout The timeout in seconds
      * @param array|null  $php     Path to the PHP binary to use with any additional arguments
      */
-    public function __construct(array $command, string $cwd = null, array $env = null, int $timeout = 60, array $php = null)
+    public function __construct(array $command, ?string $cwd = null, ?array $env = null, int $timeout = 60, ?array $php = null)
     {
         if (null === $php) {
             $executableFinder = new PhpExecutableFinder();
@@ -69,11 +69,11 @@ class PhpSubprocess extends Process
      * @param mixed $input
      * @return static
      */
-    public static function fromShellCommandline(string $command, string $cwd = null, array $env = null, $input = null, ?float $timeout = 60)
+    public static function fromShellCommandline(string $command, ?string $cwd = null, ?array $env = null, $input = null, ?float $timeout = 60)
     {
         throw new LogicException(\sprintf('The "%s()" method cannot be called when using "%s".', __METHOD__, self::class));
     }
-    public function start(callable $callback = null, array $env = []) : void
+    public function start(?callable $callback = null, array $env = []) : void
     {
         if (null === $this->getCommandLine()) {
             throw new RuntimeException('Unable to find the PHP executable.');

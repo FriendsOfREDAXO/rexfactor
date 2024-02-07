@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\PhpParser\Printer;
+namespace Rector\PhpParser\Printer;
 
-use RectorPrefix202312\Nette\Utils\Strings;
+use RectorPrefix202402\Nette\Utils\Strings;
 use PhpParser\Comment;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
@@ -12,8 +12,6 @@ use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Yield_;
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Param;
 use PhpParser\Node\Scalar\DNumber;
 use PhpParser\Node\Scalar\EncapsedStringPart;
@@ -23,15 +21,14 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Declare_;
 use PhpParser\Node\Stmt\Nop;
-use PhpParser\Node\Stmt\Use_;
 use PhpParser\PrettyPrinter\Standard;
 use PHPStan\Node\Expr\AlwaysRememberedExpr;
-use Rector\Core\Configuration\Option;
-use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
-use Rector\Core\PhpParser\Node\CustomNode\FileWithoutNamespace;
+use Rector\Configuration\Option;
+use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
 /**
- * @see \Rector\Core\Tests\PhpParser\Printer\BetterStandardPrinterTest
+ * @see \Rector\Tests\PhpParser\Printer\BetterStandardPrinterTest
  *
  * @property array<string, array{string, bool, string, null}> $insertionMap
  */
@@ -160,9 +157,9 @@ final class BetterStandardPrinter extends Standard
     protected function outdent() : void
     {
         if ($this->getIndentCharacter() === ' ') {
-            // - 4 spaces
-            \assert($this->indentLevel >= 4);
-            $this->indentLevel -= 4;
+            $indentSize = SimpleParameterProvider::provideIntParameter(Option::INDENT_SIZE);
+            \assert($this->indentLevel >= $indentSize);
+            $this->indentLevel -= $indentSize;
         } else {
             // - 1 tab
             \assert($this->indentLevel >= 1);
@@ -302,22 +299,6 @@ final class BetterStandardPrinter extends Standard
             return '(' . $pExprTernary . ')';
         }
         return parent::pExpr_Ternary($ternary);
-    }
-    /**
-     * Remove extra \\ from FQN use imports, for easier use in the code
-     */
-    protected function pStmt_Use(Use_ $use) : string
-    {
-        if ($use->type !== Use_::TYPE_NORMAL) {
-            return parent::pStmt_Use($use);
-        }
-        foreach ($use->uses as $useUse) {
-            if (!$useUse->name instanceof FullyQualified) {
-                continue;
-            }
-            $useUse->name = new Name($useUse->name->toString());
-        }
-        return parent::pStmt_Use($use);
     }
     protected function pScalar_EncapsedStringPart(EncapsedStringPart $encapsedStringPart) : string
     {

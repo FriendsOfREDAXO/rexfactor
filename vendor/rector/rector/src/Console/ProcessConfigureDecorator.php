@@ -1,13 +1,13 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Console;
+namespace Rector\Console;
 
 use Rector\ChangesReporting\Output\ConsoleOutputFormatter;
-use Rector\Core\Configuration\Option;
-use RectorPrefix202312\Symfony\Component\Console\Command\Command;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputOption;
+use Rector\Configuration\Option;
+use RectorPrefix202402\Symfony\Component\Console\Command\Command;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputOption;
 final class ProcessConfigureDecorator
 {
     public static function decorate(Command $command) : void
@@ -23,5 +23,6 @@ final class ProcessConfigureDecorator
         $command->addOption(Option::CLEAR_CACHE, null, InputOption::VALUE_NONE, 'Clear unchanged files cache');
         $command->addOption(Option::PARALLEL_PORT, null, InputOption::VALUE_REQUIRED);
         $command->addOption(Option::PARALLEL_IDENTIFIER, null, InputOption::VALUE_REQUIRED);
+        $command->addOption(Option::XDEBUG, null, InputOption::VALUE_NONE, 'Display xdebug output.');
     }
 }

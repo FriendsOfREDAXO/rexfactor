@@ -8,8 +8,9 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Type\Constant\ConstantIntegerType;
-use Rector\Core\Rector\AbstractRector;
+use PHPStan\Type\ObjectType;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -104,6 +105,13 @@ CODE_SAMPLE
     private function matchResponseExpr(Expr $expr) : ?Expr
     {
         if (!$expr instanceof MethodCall) {
+            return null;
+        }
+        $varType = $this->nodeTypeResolver->getType($expr->var);
+        if (!$varType instanceof ObjectType) {
+            return null;
+        }
+        if (!$varType->isInstanceof('Symfony\\Component\\HttpFoundation\\Response')->yes()) {
             return null;
         }
         // must be status method call

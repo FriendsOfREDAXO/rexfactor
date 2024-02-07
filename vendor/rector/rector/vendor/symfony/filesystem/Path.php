@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Filesystem;
+namespace RectorPrefix202402\Symfony\Component\Filesystem;
 
-use RectorPrefix202312\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
-use RectorPrefix202312\Symfony\Component\Filesystem\Exception\RuntimeException;
+use RectorPrefix202402\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
+use RectorPrefix202402\Symfony\Component\Filesystem\Exception\RuntimeException;
 /**
  * Contains utility methods for handling path strings.
  *
@@ -223,7 +223,7 @@ final class Path
      * @param string|null $extension if specified, only that extension is cut
      *                               off (may contain leading dot)
      */
-    public static function getFilenameWithoutExtension(string $path, string $extension = null) : string
+    public static function getFilenameWithoutExtension(string $path, ?string $extension = null) : string
     {
         if ('' === $path) {
             return '';

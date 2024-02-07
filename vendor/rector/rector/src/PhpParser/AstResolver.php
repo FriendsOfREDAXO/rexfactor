@@ -1,12 +1,13 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\PhpParser;
+namespace Rector\PhpParser;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt;
@@ -23,17 +24,18 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\FunctionReflection;
 use PHPStan\Reflection\MethodReflection;
+use PHPStan\Reflection\Php\PhpFunctionReflection;
 use PHPStan\Reflection\Php\PhpPropertyReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\TypeWithClassName;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
-use Rector\Core\Reflection\MethodReflectionResolver;
-use Rector\Core\ValueObject\MethodName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeScopeAndMetadataDecorator;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\PhpDocParser\PhpParser\SmartPhpParser;
+use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\Reflection\MethodReflectionResolver;
+use Rector\ValueObject\MethodName;
 use Throwable;
 /**
  * The nodes provided by this resolver is for read-only analysis only!
@@ -73,12 +75,12 @@ final class AstResolver
     private $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\MethodReflectionResolver
+     * @var \Rector\Reflection\MethodReflectionResolver
      */
     private $methodReflectionResolver;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
     /**
@@ -149,6 +151,9 @@ final class AstResolver
     }
     public function resolveFunctionFromFunctionReflection(FunctionReflection $functionReflection) : ?Function_
     {
+        if (!$functionReflection instanceof PhpFunctionReflection) {
+            return null;
+        }
         $fileName = $functionReflection->getFileName();
         $nodes = $this->parseFileNameToDecoratedNodes($fileName);
         $functionName = $functionReflection->getName();
@@ -182,11 +187,11 @@ final class AstResolver
         return $classMethod;
     }
     /**
-     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $call
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\NullsafeMethodCall $call
      */
     public function resolveClassMethodFromCall($call) : ?ClassMethod
     {
-        $callerStaticType = $call instanceof MethodCall ? $this->nodeTypeResolver->getType($call->var) : $this->nodeTypeResolver->getType($call->class);
+        $callerStaticType = $call instanceof MethodCall || $call instanceof NullsafeMethodCall ? $this->nodeTypeResolver->getType($call->var) : $this->nodeTypeResolver->getType($call->class);
         if (!$callerStaticType instanceof TypeWithClassName) {
             return null;
         }

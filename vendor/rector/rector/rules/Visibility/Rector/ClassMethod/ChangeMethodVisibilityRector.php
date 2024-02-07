@@ -6,15 +6,15 @@ namespace Rector\Visibility\Rector\ClassMethod;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Analyser\Scope;
-use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
-use Rector\Core\Rector\AbstractScopeAwareRector;
-use Rector\Core\ValueObject\Visibility;
+use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\NodeCollector\ScopeResolver\ParentClassScopeResolver;
 use Rector\Privatization\NodeManipulator\VisibilityManipulator;
+use Rector\Rector\AbstractScopeAwareRector;
+use Rector\ValueObject\Visibility;
 use Rector\Visibility\ValueObject\ChangeMethodVisibility;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Visibility\Rector\ClassMethod\ChangeMethodVisibilityRector\ChangeMethodVisibilityRectorTest
  */

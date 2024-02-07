@@ -3,9 +3,9 @@
 declare (strict_types=1);
 namespace Rector\Strict\Rector;
 
-use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
-use Rector\Core\Rector\AbstractScopeAwareRector;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use Rector\Contract\Rector\ConfigurableRectorInterface;
+use Rector\Rector\AbstractScopeAwareRector;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Strict\Rector\BooleanNot\BooleanInBooleanNotRuleFixerRector\BooleanInBooleanNotRuleFixerRectorTest
  *

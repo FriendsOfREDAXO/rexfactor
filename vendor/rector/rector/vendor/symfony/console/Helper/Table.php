@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\Helper;
+namespace RectorPrefix202402\Symfony\Component\Console\Helper;
 
-use RectorPrefix202312\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202312\Symfony\Component\Console\Exception\RuntimeException;
-use RectorPrefix202312\Symfony\Component\Console\Formatter\OutputFormatter;
-use RectorPrefix202312\Symfony\Component\Console\Formatter\WrappableOutputFormatterInterface;
-use RectorPrefix202312\Symfony\Component\Console\Output\ConsoleSectionOutput;
-use RectorPrefix202312\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202402\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202402\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202402\Symfony\Component\Console\Formatter\WrappableOutputFormatterInterface;
+use RectorPrefix202402\Symfony\Component\Console\Output\ConsoleSectionOutput;
+use RectorPrefix202402\Symfony\Component\Console\Output\OutputInterface;
 /**
  * Provides helpers to display a table.
  *
@@ -431,7 +431,7 @@ class Table
      *
      *     +-----+-----------+-------+
      */
-    private function renderRowSeparator(int $type = self::SEPARATOR_MID, string $title = null, string $titleFormat = null) : void
+    private function renderRowSeparator(int $type = self::SEPARATOR_MID, ?string $title = null, ?string $titleFormat = null) : void
     {
         if (!($count = $this->numberOfColumns)) {
             return;
@@ -487,7 +487,7 @@ class Table
      *
      *     | 9971-5-0210-0 | A Tale of Two Cities  | Charles Dickens  |
      */
-    private function renderRow(array $row, string $cellFormat, string $firstCellFormat = null) : void
+    private function renderRow(array $row, string $cellFormat, ?string $firstCellFormat = null) : void
     {
         $rowContent = $this->renderColumnSeparator(self::BORDER_OUTSIDE);
         $columns = $this->getRowColumns($row);

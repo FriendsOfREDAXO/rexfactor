@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202312;
+namespace RectorPrefix202402;
 
 use Rector\Arguments\Rector\ClassMethod\ArgumentAdderRector;
 use Rector\Arguments\ValueObject\ArgumentAdder;
@@ -46,7 +46,6 @@ return static function (RectorConfig $rectorConfig) : void {
         'Symfony\\Component\\Cache\\Simple\\RedisCache' => 'Symfony\\Component\\Cache\\Adapter\\RedisAdapter',
         'Symfony\\Component\\Cache\\Simple\\TraceableCache' => 'Symfony\\Component\\Cache\\Adapter\\TraceableAdapterCache',
         'Symfony\\Component\\Cache\\Simple\\Psr6Cache' => 'Symfony\\Component\\Cache\\Psr16Cache',
-        'Psr\\SimpleCache\\CacheInterface' => 'Symfony\\Contracts\\Cache\\CacheInterface',
         # EventDispatcher
         'Symfony\\Component\\HttpKernel\\Event\\FilterControllerArgumentsEvent' => 'Symfony\\Component\\HttpKernel\\Event\\ControllerArgumentsEvent',
         'Symfony\\Component\\HttpKernel\\Event\\FilterControllerEvent' => 'Symfony\\Component\\HttpKernel\\Event\\ControllerEvent',

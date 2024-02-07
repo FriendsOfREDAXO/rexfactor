@@ -1,33 +1,33 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Console\Command;
+namespace Rector\Console\Command;
 
+use Rector\Application\ApplicationFileProcessor;
+use Rector\Autoloading\AdditionalAutoloader;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ChangesReporting\Output\JsonOutputFormatter;
-use Rector\Core\Application\ApplicationFileProcessor;
-use Rector\Core\Autoloading\AdditionalAutoloader;
-use Rector\Core\Configuration\ConfigInitializer;
-use Rector\Core\Configuration\ConfigurationFactory;
-use Rector\Core\Configuration\Option;
-use Rector\Core\Console\ExitCode;
-use Rector\Core\Console\Output\OutputFormatterCollector;
-use Rector\Core\Console\ProcessConfigureDecorator;
-use Rector\Core\Exception\ShouldNotHappenException;
-use Rector\Core\StaticReflection\DynamicSourceLocatorDecorator;
-use Rector\Core\Util\MemoryLimiter;
-use Rector\Core\ValueObject\Configuration;
-use Rector\Core\ValueObject\ProcessResult;
-use RectorPrefix202312\Symfony\Component\Console\Application;
-use RectorPrefix202312\Symfony\Component\Console\Command\Command;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Style\SymfonyStyle;
+use Rector\Configuration\ConfigInitializer;
+use Rector\Configuration\ConfigurationFactory;
+use Rector\Configuration\Option;
+use Rector\Console\ExitCode;
+use Rector\Console\Output\OutputFormatterCollector;
+use Rector\Console\ProcessConfigureDecorator;
+use Rector\Exception\ShouldNotHappenException;
+use Rector\StaticReflection\DynamicSourceLocatorDecorator;
+use Rector\Util\MemoryLimiter;
+use Rector\ValueObject\Configuration;
+use Rector\ValueObject\ProcessResult;
+use RectorPrefix202402\Symfony\Component\Console\Application;
+use RectorPrefix202402\Symfony\Component\Console\Command\Command;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
 final class ProcessCommand extends Command
 {
     /**
      * @readonly
-     * @var \Rector\Core\Autoloading\AdditionalAutoloader
+     * @var \Rector\Autoloading\AdditionalAutoloader
      */
     private $additionalAutoloader;
     /**
@@ -37,22 +37,22 @@ final class ProcessCommand extends Command
     private $changedFilesDetector;
     /**
      * @readonly
-     * @var \Rector\Core\Configuration\ConfigInitializer
+     * @var \Rector\Configuration\ConfigInitializer
      */
     private $configInitializer;
     /**
      * @readonly
-     * @var \Rector\Core\Application\ApplicationFileProcessor
+     * @var \Rector\Application\ApplicationFileProcessor
      */
     private $applicationFileProcessor;
     /**
      * @readonly
-     * @var \Rector\Core\StaticReflection\DynamicSourceLocatorDecorator
+     * @var \Rector\StaticReflection\DynamicSourceLocatorDecorator
      */
     private $dynamicSourceLocatorDecorator;
     /**
      * @readonly
-     * @var \Rector\Core\Console\Output\OutputFormatterCollector
+     * @var \Rector\Console\Output\OutputFormatterCollector
      */
     private $outputFormatterCollector;
     /**
@@ -62,12 +62,12 @@ final class ProcessCommand extends Command
     private $symfonyStyle;
     /**
      * @readonly
-     * @var \Rector\Core\Util\MemoryLimiter
+     * @var \Rector\Util\MemoryLimiter
      */
     private $memoryLimiter;
     /**
      * @readonly
-     * @var \Rector\Core\Configuration\ConfigurationFactory
+     * @var \Rector\Configuration\ConfigurationFactory
      */
     private $configurationFactory;
     public function __construct(AdditionalAutoloader $additionalAutoloader, ChangedFilesDetector $changedFilesDetector, ConfigInitializer $configInitializer, ApplicationFileProcessor $applicationFileProcessor, DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator, OutputFormatterCollector $outputFormatterCollector, SymfonyStyle $symfonyStyle, MemoryLimiter $memoryLimiter, ConfigurationFactory $configurationFactory)
@@ -115,21 +115,8 @@ final class ProcessCommand extends Command
         // MAIN PHASE
         // 2. run Rector
         $processResult = $this->applicationFileProcessor->run($configuration, $input);
-        // 3. collectors phase
-        if ($processResult->getCollectedData() !== []) {
-            $this->symfonyStyle->newLine(2);
-            $this->symfonyStyle->title('Running 2nd time with collectors data');
-            $configuration->setCollectedData($processResult->getCollectedData());
-            $configuration->enableSecondRun();
-            // reset rules in Rector traverser
-            $nextProcessResult = $this->applicationFileProcessor->run($configuration, $input);
-            // @todo merge results here
-            $this->symfonyStyle->newLine(3);
-            // unset all rectors that are not collector
-            // set new collector rectors - have a custom tag? yes
-        }
         // REPORTING PHASE
-        // 4. reporting phaseRunning 2nd time with collectors data
+        // 3. reporting phaseRunning 2nd time with collectors data
         // report diffs and errors
         $outputFormat = $configuration->getOutputFormat();
         $outputFormatter = $this->outputFormatterCollector->getByName($outputFormat);

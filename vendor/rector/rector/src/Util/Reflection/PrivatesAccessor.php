@@ -1,14 +1,14 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Util\Reflection;
+namespace Rector\Util\Reflection;
 
-use Rector\Core\Exception\Reflection\MissingPrivatePropertyException;
+use Rector\Exception\Reflection\MissingPrivatePropertyException;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 /**
- * @see \Rector\Core\Tests\Util\Reflection\PrivatesAccessorTest
+ * @see \Rector\Tests\Util\Reflection\PrivatesAccessorTest
  */
 final class PrivatesAccessor
 {
@@ -57,8 +57,7 @@ final class PrivatesAccessor
     }
     private function createAccessibleMethodReflection(object $object, string $methodName) : ReflectionMethod
     {
-        $reflectionClass = new ReflectionClass(\get_class($object));
-        $reflectionMethod = $reflectionClass->getMethod($methodName);
+        $reflectionMethod = new ReflectionMethod($object, $methodName);
         $reflectionMethod->setAccessible(\true);
         return $reflectionMethod;
     }

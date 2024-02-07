@@ -1,19 +1,19 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Console;
+namespace Rector\Console;
 
-use RectorPrefix202312\Composer\XdebugHandler\XdebugHandler;
+use RectorPrefix202402\Composer\XdebugHandler\XdebugHandler;
+use Rector\Application\VersionResolver;
 use Rector\ChangesReporting\Output\ConsoleOutputFormatter;
-use Rector\Core\Application\VersionResolver;
-use Rector\Core\Configuration\Option;
-use RectorPrefix202312\Symfony\Component\Console\Application;
-use RectorPrefix202312\Symfony\Component\Console\Command\Command;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputDefinition;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202312\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use Rector\Configuration\Option;
+use RectorPrefix202402\Symfony\Component\Console\Application;
+use RectorPrefix202402\Symfony\Component\Console\Command\Command;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputDefinition;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202402\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 final class ConsoleApplication extends Application
 {
     /**
@@ -34,10 +34,10 @@ final class ConsoleApplication extends Application
     }
     public function doRun(InputInterface $input, OutputInterface $output) : int
     {
-        // @fixes https://github.com/rectorphp/rector/issues/2205
         $isXdebugAllowed = $input->hasParameterOption('--xdebug');
         if (!$isXdebugAllowed) {
             $xdebugHandler = new XdebugHandler('rector');
+            $xdebugHandler->setPersistent();
             $xdebugHandler->check();
             unset($xdebugHandler);
         }

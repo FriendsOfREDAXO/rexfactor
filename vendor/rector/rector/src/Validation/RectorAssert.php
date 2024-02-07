@@ -1,12 +1,12 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Validation;
+namespace Rector\Validation;
 
-use Rector\Core\Util\StringUtils;
-use RectorPrefix202312\Webmozart\Assert\InvalidArgumentException;
+use Rector\Util\StringUtils;
+use RectorPrefix202402\Webmozart\Assert\InvalidArgumentException;
 /**
- * @see \Rector\Core\Tests\Validation\RectorAssertTest
+ * @see \Rector\Tests\Validation\RectorAssertTest
  */
 final class RectorAssert
 {

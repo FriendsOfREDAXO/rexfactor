@@ -3,8 +3,8 @@
 declare (strict_types=1);
 namespace Rector\Symfony\ValueObject;
 
-use Rector\Core\Validation\RectorAssert;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use Rector\Validation\RectorAssert;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 final class IntlBundleClassToNewClass
 {
     /**

@@ -1,19 +1,18 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202312;
+namespace RectorPrefix202402;
 
-use RectorPrefix202312\OndraM\CiDetector\CiDetector;
+use RectorPrefix202402\OndraM\CiDetector\CiDetector;
+use Rector\Bootstrap\ExtensionConfigResolver;
 use Rector\Caching\ValueObject\Storage\MemoryCacheStorage;
 use Rector\Config\RectorConfig;
-use Rector\Core\Bootstrap\ExtensionConfigResolver;
 return static function (RectorConfig $rectorConfig) : void {
     $rectorConfig->paths([]);
     $rectorConfig->skip([]);
     $rectorConfig->autoloadPaths([]);
     $rectorConfig->bootstrapFiles([]);
     $rectorConfig->parallel();
-    $rectorConfig->disableCollectors();
     // to avoid autoimporting out of the box
     $rectorConfig->importNames(\false, \false);
     $rectorConfig->removeUnusedImports(\false);

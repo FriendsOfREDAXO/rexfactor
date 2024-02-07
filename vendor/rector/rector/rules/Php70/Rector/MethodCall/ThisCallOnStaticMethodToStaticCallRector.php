@@ -8,15 +8,17 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\Php\PhpMethodReflection;
-use Rector\Core\Enum\ObjectReference;
-use Rector\Core\Rector\AbstractScopeAwareRector;
-use Rector\Core\Reflection\ReflectionResolver;
-use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\Enum\ObjectReference;
 use Rector\NodeCollector\StaticAnalyzer;
+use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Reflection\ReflectionResolver;
+use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -33,9 +35,13 @@ final class ThisCallOnStaticMethodToStaticCallRector extends AbstractScopeAwareR
     private $staticAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\ReflectionResolver
+     * @var \Rector\Reflection\ReflectionResolver
      */
     private $reflectionResolver;
+    /**
+     * @var bool
+     */
+    private $hasChanged = \false;
     public function __construct(StaticAnalyzer $staticAnalyzer, ReflectionResolver $reflectionResolver)
     {
         $this->staticAnalyzer = $staticAnalyzer;
@@ -95,8 +101,19 @@ CODE_SAMPLE
         if ($classReflection->isSubclassOf('PHPUnit\\Framework\\TestCase')) {
             return null;
         }
-        $hasChanged = \false;
-        $this->traverseNodesWithCallable($node, function (Node $subNode) use($node, $classReflection, &$hasChanged) : ?StaticCall {
+        $this->hasChanged = \false;
+        $this->processThisToStatic($node, $classReflection);
+        if ($this->hasChanged) {
+            return $node;
+        }
+        return null;
+    }
+    private function processThisToStatic(Class_ $class, ClassReflection $classReflection) : void
+    {
+        $this->traverseNodesWithCallable($class, function (Node $subNode) use($class, $classReflection) {
+            if ($subNode instanceof Encapsed) {
+                return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+            }
             if (!$subNode instanceof MethodCall) {
                 return null;
             }
@@ -113,21 +130,17 @@ CODE_SAMPLE
             if ($methodName === null) {
                 return null;
             }
-            $isStaticMethod = $this->staticAnalyzer->isStaticMethod($classReflection, $methodName, $node);
+            $isStaticMethod = $this->staticAnalyzer->isStaticMethod($classReflection, $methodName, $class);
             if (!$isStaticMethod) {
                 return null;
             }
             if ($subNode->isFirstClassCallable()) {
                 return null;
             }
-            $hasChanged = \true;
+            $this->hasChanged = \true;
             $objectReference = $this->resolveClassSelf($classReflection, $subNode);
             return $this->nodeFactory->createStaticCall($objectReference, $methodName, $subNode->args);
         });
-        if ($hasChanged) {
-            return $node;
-        }
-        return null;
     }
     /**
      * @return ObjectReference::STATIC|ObjectReference::SELF

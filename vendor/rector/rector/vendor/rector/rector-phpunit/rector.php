@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202312;
+namespace RectorPrefix202402;
 
 use Rector\Config\RectorConfig;
 use Rector\Php55\Rector\String_\StringClassNameToClassConstantRector;
@@ -18,9 +18,9 @@ return static function (RectorConfig $rectorConfig) : void {
         '*/Fixture/*',
         '*/Expected/*',
         // object types
-        StringClassNameToClassConstantRector::class => [__DIR__ . '/src/Rector/Class_/TestListenerToHooksRector.php', __DIR__ . '/src/NodeAnalyzer/TestsNodeAnalyzer.php', __DIR__ . '/config'],
+        StringClassNameToClassConstantRector::class => [__DIR__ . '/src/Rector/Class_/TestListenerToHooksRector.php', __DIR__ . '/src/NodeAnalyzer/TestsNodeAnalyzer.php', __DIR__ . '/config', __DIR__ . '/src/NodeFinder/DataProviderClassMethodFinder.php'],
     ]);
-    $rectorConfig->sets([LevelSetList::UP_TO_PHP_81, SetList::DEAD_CODE, PHPUnitSetList::PHPUNIT_100, PHPUnitSetList::PHPUNIT_CODE_QUALITY, SetList::CODE_QUALITY, SetList::CODING_STYLE, SetList::EARLY_RETURN, SetList::NAMING, SetList::TYPE_DECLARATION, SetList::PRIVATIZATION]);
+    $rectorConfig->sets([LevelSetList::UP_TO_PHP_82, SetList::DEAD_CODE, PHPUnitSetList::PHPUNIT_100, PHPUnitSetList::PHPUNIT_CODE_QUALITY, SetList::CODE_QUALITY, SetList::CODING_STYLE, SetList::EARLY_RETURN, SetList::NAMING, SetList::TYPE_DECLARATION, SetList::PRIVATIZATION]);
     $rectorConfig->ruleWithConfiguration(StringClassNameToClassConstantRector::class, [
         // keep unprefixed to protected from downgrade
         'PHPUnit\\Framework\\*',
