@@ -4,15 +4,14 @@ declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Function_;
-use PHPStan\Reflection\ClassReflection;
-use Rector\Core\Rector\AbstractRector;
-use Rector\Core\Reflection\ReflectionResolver;
-use Rector\Core\ValueObject\PhpVersionFeature;
+use PhpParser\Node\Stmt\Throw_;
+use Rector\NodeAnalyzer\MagicClassMethodAnalyzer;
+use Rector\Rector\AbstractRector;
+use Rector\Reflection\ClassModifierChecker;
 use Rector\TypeDeclaration\TypeInferer\SilentVoidResolver;
+use Rector\ValueObject\PhpVersionFeature;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnVendorLockResolver;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -34,14 +33,20 @@ final class AddVoidReturnTypeWhereNoReturnRector extends AbstractRector implemen
     private $classMethodReturnVendorLockResolver;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\ReflectionResolver
+     * @var \Rector\NodeAnalyzer\MagicClassMethodAnalyzer
      */
-    private $reflectionResolver;
-    public function __construct(SilentVoidResolver $silentVoidResolver, ClassMethodReturnVendorLockResolver $classMethodReturnVendorLockResolver, ReflectionResolver $reflectionResolver)
+    private $magicClassMethodAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\Reflection\ClassModifierChecker
+     */
+    private $classModifierChecker;
+    public function __construct(SilentVoidResolver $silentVoidResolver, ClassMethodReturnVendorLockResolver $classMethodReturnVendorLockResolver, MagicClassMethodAnalyzer $magicClassMethodAnalyzer, ClassModifierChecker $classModifierChecker)
     {
         $this->silentVoidResolver = $silentVoidResolver;
         $this->classMethodReturnVendorLockResolver = $classMethodReturnVendorLockResolver;
-        $this->reflectionResolver = $reflectionResolver;
+        $this->magicClassMethodAnalyzer = $magicClassMethodAnalyzer;
+        $this->classModifierChecker = $classModifierChecker;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -72,14 +77,15 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [ClassMethod::class, Function_::class, Closure::class];
+        return [ClassMethod::class];
     }
     /**
-     * @param ClassMethod|Function_|Closure $node
+     * @param ClassMethod $node
      */
     public function refactor(Node $node) : ?Node
     {
-        if ($node->returnType !== null) {
+        // already has return type → skip
+        if ($node->returnType instanceof Node) {
             return null;
         }
         if ($this->shouldSkipClassMethod($node)) {
@@ -88,7 +94,7 @@ CODE_SAMPLE
         if (!$this->silentVoidResolver->hasExclusiveVoid($node)) {
             return null;
         }
-        if ($node instanceof ClassMethod && $this->classMethodReturnVendorLockResolver->isVendorLocked($node)) {
+        if ($this->classMethodReturnVendorLockResolver->isVendorLocked($node)) {
             return null;
         }
         $node->returnType = new Identifier('void');
@@ -98,39 +104,43 @@ CODE_SAMPLE
     {
         return PhpVersionFeature::VOID_TYPE;
     }
-    /**
-     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $functionLike
-     */
-    private function shouldSkipClassMethod($functionLike) : bool
+    private function shouldSkipClassMethod(ClassMethod $classMethod) : bool
     {
-        if (!$functionLike instanceof ClassMethod) {
-            return \false;
-        }
-        if ($functionLike->isMagic()) {
+        if ($this->magicClassMethodAnalyzer->isUnsafeOverridden($classMethod)) {
             return \true;
         }
-        if ($functionLike->isAbstract()) {
+        if ($classMethod->isAbstract()) {
             return \true;
         }
-        if ($functionLike->isProtected()) {
-            return !$this->isInsideFinalClass($functionLike);
+        // is not final and has only exception? possibly implemented by child
+        if ($this->isNotFinalAndHasExceptionOnly($classMethod)) {
+            return \true;
         }
-        return $this->isInsideAbstractClass($functionLike) && $functionLike->getStmts() === [];
+        // possibly required by child implementation
+        if ($this->isNotFinalAndEmpty($classMethod)) {
+            return \true;
+        }
+        if ($classMethod->isProtected()) {
+            return !$this->classModifierChecker->isInsideFinalClass($classMethod);
+        }
+        return $this->classModifierChecker->isInsideAbstractClass($classMethod) && $classMethod->getStmts() === [];
     }
-    private function isInsideFinalClass(ClassMethod $classMethod) : bool
+    private function isNotFinalAndHasExceptionOnly(ClassMethod $classMethod) : bool
     {
-        $classReflection = $this->reflectionResolver->resolveClassReflection($classMethod);
-        if (!$classReflection instanceof ClassReflection) {
+        if ($this->classModifierChecker->isInsideFinalClass($classMethod)) {
             return \false;
         }
-        return $classReflection->isFinalByKeyword();
-    }
-    private function isInsideAbstractClass(ClassMethod $classMethod) : bool
-    {
-        $classReflection = $this->reflectionResolver->resolveClassReflection($classMethod);
-        if (!$classReflection instanceof ClassReflection) {
+        if (\count((array) $classMethod->stmts) !== 1) {
             return \false;
         }
-        return $classReflection->isAbstract();
+        $onlyStmt = $classMethod->stmts[0] ?? null;
+        return $onlyStmt instanceof Throw_;
+    }
+    private function isNotFinalAndEmpty(ClassMethod $classMethod) : bool
+    {
+        if ($this->classModifierChecker->isInsideFinalClass($classMethod)) {
+            return \false;
+        }
+        return $classMethod->stmts === [];
     }
 }

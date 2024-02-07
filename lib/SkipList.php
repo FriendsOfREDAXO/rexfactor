@@ -2,7 +2,7 @@
 
 namespace rexfactor;
 
-use Rector\Core\Contract\Rector\RectorInterface;
+use Rector\Contract\Rector\RectorInterface;
 
 final class SkipList {
     /**

@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\Output;
+namespace RectorPrefix202402\Symfony\Component\Console\Output;
 
-use RectorPrefix202312\Symfony\Component\Console\Formatter\OutputFormatterInterface;
-use RectorPrefix202312\Symfony\Component\Console\Helper\Helper;
-use RectorPrefix202312\Symfony\Component\Console\Terminal;
+use RectorPrefix202402\Symfony\Component\Console\Formatter\OutputFormatterInterface;
+use RectorPrefix202402\Symfony\Component\Console\Helper\Helper;
+use RectorPrefix202402\Symfony\Component\Console\Terminal;
 /**
  * @author Pierre du Plessis <pdples@gmail.com>
  * @author Gabriel Ostrolucký <gabriel.ostrolucky@gmail.com>
@@ -72,7 +72,7 @@ class ConsoleSectionOutput extends StreamOutput
      *
      * @return void
      */
-    public function clear(int $lines = null)
+    public function clear(?int $lines = null)
     {
         if (empty($this->content) || !$this->isDecorated()) {
             return;

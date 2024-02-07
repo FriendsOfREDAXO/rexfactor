@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Process;
+namespace RectorPrefix202402\Symfony\Component\Process;
 
 /**
  * Generic executable finder.
@@ -47,7 +47,7 @@ class ExecutableFinder
      * @param string|null $default   The default to return if no executable is found
      * @param array       $extraDirs Additional dirs to check into
      */
-    public function find(string $name, string $default = null, array $extraDirs = []) : ?string
+    public function find(string $name, ?string $default = null, array $extraDirs = []) : ?string
     {
         $dirs = \array_merge(\explode(\PATH_SEPARATOR, \getenv('PATH') ?: \getenv('Path')), $extraDirs);
         $suffixes = [''];
@@ -66,7 +66,7 @@ class ExecutableFinder
             }
         }
         $command = '\\' === \DIRECTORY_SEPARATOR ? 'where' : 'command -v';
-        if (\function_exists('exec') && ($executablePath = \strtok(@\exec($command . ' ' . \escapeshellarg($name)), \PHP_EOL)) && \is_executable($executablePath)) {
+        if (\function_exists('exec') && ($executablePath = \strtok(@\exec($command . ' ' . \escapeshellarg($name)), \PHP_EOL)) && @\is_executable($executablePath)) {
             return $executablePath;
         }
         return $default;

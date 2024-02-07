@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\Input;
+namespace RectorPrefix202402\Symfony\Component\Console\Input;
 
-use RectorPrefix202312\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202402\Symfony\Component\Console\Exception\RuntimeException;
 /**
  * ArgvInput represents an input coming from the CLI arguments.
  *
@@ -46,7 +46,7 @@ class ArgvInput extends Input
      * @var mixed[]
      */
     private $parsed;
-    public function __construct(array $argv = null, InputDefinition $definition = null)
+    public function __construct(?array $argv = null, ?InputDefinition $definition = null)
     {
         $argv = $argv ?? $_SERVER['argv'] ?? [];
         // strip the application name

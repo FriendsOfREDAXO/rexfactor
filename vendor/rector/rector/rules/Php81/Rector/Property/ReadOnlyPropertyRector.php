@@ -15,16 +15,16 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
-use Rector\Core\NodeAnalyzer\ParamAnalyzer;
-use Rector\Core\NodeManipulator\PropertyFetchAssignManipulator;
-use Rector\Core\NodeManipulator\PropertyManipulator;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
-use Rector\Core\Rector\AbstractScopeAwareRector;
-use Rector\Core\ValueObject\MethodName;
-use Rector\Core\ValueObject\PhpVersionFeature;
-use Rector\Core\ValueObject\Visibility;
+use Rector\NodeAnalyzer\ParamAnalyzer;
+use Rector\NodeManipulator\PropertyFetchAssignManipulator;
+use Rector\NodeManipulator\PropertyManipulator;
 use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\Privatization\NodeManipulator\VisibilityManipulator;
+use Rector\Rector\AbstractScopeAwareRector;
+use Rector\ValueObject\MethodName;
+use Rector\ValueObject\PhpVersionFeature;
+use Rector\ValueObject\Visibility;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -37,17 +37,17 @@ final class ReadOnlyPropertyRector extends AbstractScopeAwareRector implements M
 {
     /**
      * @readonly
-     * @var \Rector\Core\NodeManipulator\PropertyManipulator
+     * @var \Rector\NodeManipulator\PropertyManipulator
      */
     private $propertyManipulator;
     /**
      * @readonly
-     * @var \Rector\Core\NodeManipulator\PropertyFetchAssignManipulator
+     * @var \Rector\NodeManipulator\PropertyFetchAssignManipulator
      */
     private $propertyFetchAssignManipulator;
     /**
      * @readonly
-     * @var \Rector\Core\NodeAnalyzer\ParamAnalyzer
+     * @var \Rector\NodeAnalyzer\ParamAnalyzer
      */
     private $paramAnalyzer;
     /**
@@ -57,7 +57,7 @@ final class ReadOnlyPropertyRector extends AbstractScopeAwareRector implements M
     private $visibilityManipulator;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
     public function __construct(PropertyManipulator $propertyManipulator, PropertyFetchAssignManipulator $propertyFetchAssignManipulator, ParamAnalyzer $paramAnalyzer, VisibilityManipulator $visibilityManipulator, BetterNodeFinder $betterNodeFinder)
@@ -112,14 +112,10 @@ CODE_SAMPLE
      */
     public function refactorWithScope(Node $node, Scope $scope) : ?Node
     {
+        if ($this->shouldSkip($node)) {
+            return null;
+        }
         $hasChanged = \false;
-        if ($node->isReadonly()) {
-            return null;
-        }
-        // skip "clone $this" cases, as can create unexpected write to local constructor property
-        if ($this->hasCloneThis($node)) {
-            return null;
-        }
         foreach ($node->getMethods() as $classMethod) {
             foreach ($classMethod->params as $param) {
                 $justChanged = $this->refactorParam($node, $classMethod, $param, $scope);
@@ -221,6 +217,18 @@ CODE_SAMPLE
             return null;
         });
         return $isAssigned;
+    }
+    private function shouldSkip(Class_ $class) : bool
+    {
+        if ($class->isReadonly()) {
+            return \true;
+        }
+        // not safe
+        if ($class->getTraitUses() !== []) {
+            return \true;
+        }
+        // skip "clone $this" cases, as can create unexpected write to local constructor property
+        return $this->hasCloneThis($class);
     }
     private function hasCloneThis(Class_ $class) : bool
     {

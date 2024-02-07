@@ -1,11 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Util;
+namespace Rector\Util;
 
-use Rector\Core\Exception\ShouldNotHappenException;
+use Rector\Exception\ShouldNotHappenException;
 /**
- * @see \Rector\Core\Tests\Util\FileHasherTest
+ * @see \Rector\Tests\Util\FileHasherTest
  */
 final class FileHasher
 {

@@ -6,7 +6,7 @@ namespace Rector\Symfony\Configs\Rector\Closure;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Scalar\String_;
-use Rector\Core\Rector\AbstractRector;
+use Rector\Rector\AbstractRector;
 use Rector\Symfony\DataProvider\ServiceNameToTypeUniqueProvider;
 use Rector\Symfony\NodeAnalyzer\SymfonyPhpClosureDetector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -70,7 +70,7 @@ CODE_SAMPLE
         }
         $serviceNamesToType = $this->serviceNameToTypeUniqueProvider->provide();
         $hasChanged = \false;
-        $this->traverseNodesWithCallable($node->stmts, function (Node $node) use($serviceNamesToType, &$hasChanged) {
+        $this->traverseNodesWithCallable($node->stmts, function (Node $node) use($serviceNamesToType, &$hasChanged) : ?String_ {
             if (!$node instanceof String_) {
                 return null;
             }

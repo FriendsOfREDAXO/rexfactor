@@ -26,9 +26,9 @@ use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\Stmt\Switch_;
 use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
-use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Php72\NodeFactory\AnonymousFunctionFactory;
+use Rector\Rector\AbstractScopeAwareRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -100,7 +100,7 @@ CODE_SAMPLE
         $match = null;
         $hasChanged = \false;
         $this->traverseNodesWithCallable($node, function (Node $subNode) use($node, &$match, &$hasChanged, $scope) {
-            if ($subNode instanceof ArrayItem && $subNode->value instanceof Match_ && $this->isEqualScope($subNode->value, $scope)) {
+            if (($subNode instanceof ArrayItem || $subNode instanceof Arg) && $subNode->value instanceof Match_ && $this->isEqualScope($subNode->value, $scope)) {
                 $switchCases = $this->createSwitchCasesFromMatchArms($node, $subNode->value, \true);
                 $switch = new Switch_($subNode->value->cond, $switchCases);
                 $subNode->value = new FuncCall($this->anonymousFunctionFactory->create([], [$switch], null));

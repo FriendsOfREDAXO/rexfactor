@@ -16,9 +16,9 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\UnionType;
 use PHPStan\Analyser\Scope;
-use Rector\Core\PhpParser\Node\BetterNodeFinder;
-use Rector\Core\Rector\AbstractScopeAwareRector;
 use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\Rector\AbstractScopeAwareRector;
 use Rector\TypeDeclaration\Guard\ParamTypeAddGuard;
 use Rector\TypeDeclaration\NodeAnalyzer\CallerParamMatcher;
 use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
@@ -46,7 +46,7 @@ final class ParamTypeByMethodCallTypeRector extends AbstractScopeAwareRector
     private $paramTypeAddGuard;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\Node\BetterNodeFinder
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
     public function __construct(CallerParamMatcher $callerParamMatcher, ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard, ParamTypeAddGuard $paramTypeAddGuard, BetterNodeFinder $betterNodeFinder)
@@ -121,18 +121,9 @@ CODE_SAMPLE
             }
             /** @var array<StaticCall|MethodCall|FuncCall> $callers */
             $callers = $this->betterNodeFinder->findInstancesOf($classMethod, [StaticCall::class, MethodCall::class, FuncCall::class]);
-            foreach ($classMethod->params as $param) {
-                if ($this->shouldSkipParam($param, $classMethod)) {
-                    continue;
-                }
-                foreach ($callers as $caller) {
-                    $paramType = $this->callerParamMatcher->matchCallParamType($caller, $param, $scope);
-                    if ($paramType === null) {
-                        continue;
-                    }
-                    $this->mirrorParamType($param, $paramType);
-                    $hasChanged = \true;
-                }
+            $hasClassMethodChanged = $this->refactorClassMethod($classMethod, $callers, $scope);
+            if ($hasClassMethodChanged) {
+                $hasChanged = \true;
             }
         }
         if ($hasChanged) {
@@ -171,5 +162,26 @@ CODE_SAMPLE
             return \true;
         }
         return !$this->paramTypeAddGuard->isLegal($param, $classMethod);
+    }
+    /**
+     * @param array<StaticCall|MethodCall|FuncCall> $callers
+     */
+    private function refactorClassMethod(ClassMethod $classMethod, array $callers, Scope $scope) : bool
+    {
+        $hasChanged = \false;
+        foreach ($classMethod->params as $param) {
+            if ($this->shouldSkipParam($param, $classMethod)) {
+                continue;
+            }
+            foreach ($callers as $caller) {
+                $paramType = $this->callerParamMatcher->matchCallParamType($caller, $param, $scope);
+                if ($paramType === null) {
+                    continue;
+                }
+                $this->mirrorParamType($param, $paramType);
+                $hasChanged = \true;
+            }
+        }
+        return $hasChanged;
     }
 }

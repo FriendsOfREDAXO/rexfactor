@@ -1,19 +1,19 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202312;
+namespace RectorPrefix202402;
 
-use RectorPrefix202312\Nette\Utils\Json;
+use RectorPrefix202402\Nette\Utils\Json;
+use Rector\Bootstrap\RectorConfigsResolver;
 use Rector\ChangesReporting\Output\JsonOutputFormatter;
-use Rector\Core\Bootstrap\RectorConfigsResolver;
-use Rector\Core\Configuration\Option;
-use Rector\Core\Console\Style\SymfonyStyleFactory;
-use Rector\Core\DependencyInjection\LazyContainerFactory;
-use Rector\Core\DependencyInjection\RectorContainerFactory;
-use Rector\Core\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202312\Symfony\Component\Console\Application;
-use RectorPrefix202312\Symfony\Component\Console\Command\Command;
-use RectorPrefix202312\Symfony\Component\Console\Input\ArgvInput;
+use Rector\Configuration\Option;
+use Rector\Console\Style\SymfonyStyleFactory;
+use Rector\DependencyInjection\LazyContainerFactory;
+use Rector\DependencyInjection\RectorContainerFactory;
+use Rector\Util\Reflection\PrivatesAccessor;
+use RectorPrefix202402\Symfony\Component\Console\Application;
+use RectorPrefix202402\Symfony\Component\Console\Command\Command;
+use RectorPrefix202402\Symfony\Component\Console\Input\ArgvInput;
 // @ intentionally: continue anyway
 @\ini_set('memory_limit', '-1');
 // Performance boost
@@ -93,6 +93,7 @@ final class AutoloadIncluder
         require_once $filePath;
     }
 }
+\class_alias('RectorPrefix202402\\AutoloadIncluder', 'AutoloadIncluder', \false);
 if (\file_exists(__DIR__ . '/../preload.php') && \is_dir(__DIR__ . '/../vendor')) {
     require_once __DIR__ . '/../preload.php';
 }

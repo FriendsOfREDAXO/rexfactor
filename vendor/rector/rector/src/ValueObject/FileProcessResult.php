@@ -1,12 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\ValueObject;
+namespace Rector\ValueObject;
 
-use PHPStan\Collectors\CollectedData;
-use Rector\Core\ValueObject\Error\SystemError;
-use Rector\Core\ValueObject\Reporting\FileDiff;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use Rector\ValueObject\Error\SystemError;
+use Rector\ValueObject\Reporting\FileDiff;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 final class FileProcessResult
 {
     /**
@@ -16,25 +15,17 @@ final class FileProcessResult
     private $systemErrors;
     /**
      * @readonly
-     * @var \Rector\Core\ValueObject\Reporting\FileDiff|null
+     * @var \Rector\ValueObject\Reporting\FileDiff|null
      */
     private $fileDiff;
     /**
-     * @var CollectedData[]
-     * @readonly
-     */
-    private $collectedDatas;
-    /**
      * @param SystemError[] $systemErrors
-     * @param CollectedData[] $collectedDatas
      */
-    public function __construct(array $systemErrors, ?FileDiff $fileDiff, array $collectedDatas)
+    public function __construct(array $systemErrors, ?FileDiff $fileDiff)
     {
         $this->systemErrors = $systemErrors;
         $this->fileDiff = $fileDiff;
-        $this->collectedDatas = $collectedDatas;
         Assert::allIsInstanceOf($systemErrors, SystemError::class);
-        Assert::allIsInstanceOf($collectedDatas, CollectedData::class);
     }
     /**
      * @return SystemError[]
@@ -46,12 +37,5 @@ final class FileProcessResult
     public function getFileDiff() : ?FileDiff
     {
         return $this->fileDiff;
-    }
-    /**
-     * @return CollectedData[]
-     */
-    public function getCollectedData() : array
-    {
-        return $this->collectedDatas;
     }
 }

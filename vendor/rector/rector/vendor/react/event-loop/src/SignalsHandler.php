@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202312\React\EventLoop;
+namespace RectorPrefix202402\React\EventLoop;
 
 /**
  * @internal

@@ -3,11 +3,11 @@
 declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\FuncCall;
 
-use RectorPrefix202312\Nette\Utils\Strings;
+use RectorPrefix202402\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Scalar\String_;
-use Rector\Core\Rector\AbstractRector;
 use Rector\NodeNameResolver\Regex\RegexPatternDetector;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -71,6 +71,9 @@ CODE_SAMPLE
             $originalValue = $node->value;
             $simplifiedValue = Strings::replace($node->value, '#' . \preg_quote($complexPattern, '#') . '#', $simple);
             if ($originalValue === $simplifiedValue) {
+                continue;
+            }
+            if (\strpos($originalValue, '[^' . $complexPattern) !== \false) {
                 continue;
             }
             $node->value = $simplifiedValue;

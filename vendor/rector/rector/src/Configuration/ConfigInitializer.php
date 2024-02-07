@@ -1,15 +1,15 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Configuration;
+namespace Rector\Configuration;
 
-use RectorPrefix202312\Nette\Utils\FileSystem;
-use RectorPrefix202312\Nette\Utils\Strings;
-use Rector\Core\Contract\Rector\RectorInterface;
-use Rector\Core\FileSystem\InitFilePathsResolver;
-use Rector\Core\Php\PhpVersionProvider;
+use RectorPrefix202402\Nette\Utils\FileSystem;
+use RectorPrefix202402\Nette\Utils\Strings;
+use Rector\Contract\Rector\RectorInterface;
+use Rector\FileSystem\InitFilePathsResolver;
+use Rector\Php\PhpVersionProvider;
 use Rector\PostRector\Contract\Rector\PostRectorInterface;
-use RectorPrefix202312\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
 final class ConfigInitializer
 {
     /**
@@ -19,7 +19,7 @@ final class ConfigInitializer
     private $rectors;
     /**
      * @readonly
-     * @var \Rector\Core\FileSystem\InitFilePathsResolver
+     * @var \Rector\FileSystem\InitFilePathsResolver
      */
     private $initFilePathsResolver;
     /**
@@ -29,7 +29,7 @@ final class ConfigInitializer
     private $symfonyStyle;
     /**
      * @readonly
-     * @var \Rector\Core\Php\PhpVersionProvider
+     * @var \Rector\Php\PhpVersionProvider
      */
     private $phpVersionProvider;
     /**
@@ -57,7 +57,7 @@ final class ConfigInitializer
         $configContents = FileSystem::read(__DIR__ . '/../../templates/rector.php.dist');
         $configContents = $this->replacePhpLevelContents($configContents);
         $configContents = $this->replacePathsContents($configContents, $projectDirectory);
-        FileSystem::write($commonRectorConfigPath, $configContents);
+        FileSystem::write($commonRectorConfigPath, $configContents, null);
         $this->symfonyStyle->success('The config is added now. Re-run command to make Rector do the work!');
     }
     public function areSomeRectorsLoaded() : bool

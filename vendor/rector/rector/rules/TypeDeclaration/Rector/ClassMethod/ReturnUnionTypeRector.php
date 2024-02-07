@@ -8,12 +8,18 @@ use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PHPStan\Analyser\Scope;
+use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\UnionType;
-use Rector\Core\Rector\AbstractScopeAwareRector;
-use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
+use Rector\BetterPhpDocParser\ValueObject\Type\BracketsAwareUnionTypeNode;
+use Rector\Comments\NodeDocBlock\DocBlockUpdater;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper;
+use Rector\Rector\AbstractScopeAwareRector;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
+use Rector\ValueObject\PhpVersionFeature;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -38,11 +44,23 @@ final class ReturnUnionTypeRector extends AbstractScopeAwareRector implements Mi
      * @var \Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper
      */
     private $unionTypeMapper;
-    public function __construct(ReturnTypeInferer $returnTypeInferer, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, UnionTypeMapper $unionTypeMapper)
+    /**
+     * @readonly
+     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
+     */
+    private $phpDocInfoFactory;
+    /**
+     * @readonly
+     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
+     */
+    private $docBlockUpdater;
+    public function __construct(ReturnTypeInferer $returnTypeInferer, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, UnionTypeMapper $unionTypeMapper, PhpDocInfoFactory $phpDocInfoFactory, DocBlockUpdater $docBlockUpdater)
     {
         $this->returnTypeInferer = $returnTypeInferer;
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
         $this->unionTypeMapper = $unionTypeMapper;
+        $this->phpDocInfoFactory = $phpDocInfoFactory;
+        $this->docBlockUpdater = $docBlockUpdater;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -115,7 +133,39 @@ CODE_SAMPLE
         if (!$returnType instanceof Node) {
             return null;
         }
+        $this->mapStandaloneSubType($node, $inferReturnType);
         $node->returnType = $returnType;
         return $node;
+    }
+    /**
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $node
+     */
+    private function mapStandaloneSubType($node, UnionType $unionType) : void
+    {
+        $value = null;
+        foreach ($unionType->getTypes() as $type) {
+            if ($type instanceof ConstantBooleanType) {
+                $value = $type->getValue() ? 'true' : 'false';
+                break;
+            }
+        }
+        if ($value === null) {
+            return;
+        }
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
+        $returnType = $phpDocInfo->getReturnTagValue();
+        if (!$returnType instanceof ReturnTagValueNode) {
+            return;
+        }
+        if (!$returnType->type instanceof BracketsAwareUnionTypeNode) {
+            return;
+        }
+        foreach ($returnType->type->types as $key => $type) {
+            if ($type instanceof IdentifierTypeNode && $type->__toString() === 'bool') {
+                $returnType->type->types[$key] = new IdentifierTypeNode($value);
+                $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($node);
+                break;
+            }
+        }
     }
 }

@@ -1,29 +1,29 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Application;
+namespace Rector\Application;
 
-use RectorPrefix202312\Nette\Utils\FileSystem as UtilsFileSystem;
-use PHPStan\Collectors\CollectedData;
+use RectorPrefix202402\Nette\Utils\FileSystem as UtilsFileSystem;
 use Rector\Caching\Detector\ChangedFilesDetector;
-use Rector\Core\Configuration\Option;
-use Rector\Core\Configuration\Parameter\SimpleParameterProvider;
-use Rector\Core\Provider\CurrentFileProvider;
-use Rector\Core\Util\ArrayParametersMerger;
-use Rector\Core\ValueObject\Application\File;
-use Rector\Core\ValueObject\Configuration;
-use Rector\Core\ValueObject\Error\SystemError;
-use Rector\Core\ValueObject\FileProcessResult;
-use Rector\Core\ValueObject\ProcessResult;
-use Rector\Core\ValueObject\Reporting\FileDiff;
-use Rector\Core\ValueObjectFactory\Application\FileFactory;
+use Rector\Configuration\Option;
+use Rector\Configuration\Parameter\SimpleParameterProvider;
+use Rector\Configuration\VendorMissAnalyseGuard;
 use Rector\Parallel\Application\ParallelFileProcessor;
+use Rector\Provider\CurrentFileProvider;
 use Rector\Testing\PHPUnit\StaticPHPUnitEnvironment;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202312\Symplify\EasyParallel\CpuCoreCountProvider;
-use RectorPrefix202312\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
-use RectorPrefix202312\Symplify\EasyParallel\ScheduleFactory;
+use Rector\Util\ArrayParametersMerger;
+use Rector\ValueObject\Application\File;
+use Rector\ValueObject\Configuration;
+use Rector\ValueObject\Error\SystemError;
+use Rector\ValueObject\FileProcessResult;
+use Rector\ValueObject\ProcessResult;
+use Rector\ValueObject\Reporting\FileDiff;
+use Rector\ValueObjectFactory\Application\FileFactory;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202402\Symplify\EasyParallel\CpuCoreCountProvider;
+use RectorPrefix202402\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
+use RectorPrefix202402\Symplify\EasyParallel\ScheduleFactory;
 use Throwable;
 final class ApplicationFileProcessor
 {
@@ -34,7 +34,7 @@ final class ApplicationFileProcessor
     private $symfonyStyle;
     /**
      * @readonly
-     * @var \Rector\Core\ValueObjectFactory\Application\FileFactory
+     * @var \Rector\ValueObjectFactory\Application\FileFactory
      */
     private $fileFactory;
     /**
@@ -59,19 +59,24 @@ final class ApplicationFileProcessor
     private $changedFilesDetector;
     /**
      * @readonly
-     * @var \Rector\Core\Provider\CurrentFileProvider
+     * @var \Rector\Provider\CurrentFileProvider
      */
     private $currentFileProvider;
     /**
      * @readonly
-     * @var \Rector\Core\Application\FileProcessor
+     * @var \Rector\Application\FileProcessor
      */
     private $fileProcessor;
     /**
      * @readonly
-     * @var \Rector\Core\Util\ArrayParametersMerger
+     * @var \Rector\Util\ArrayParametersMerger
      */
     private $arrayParametersMerger;
+    /**
+     * @readonly
+     * @var \Rector\Configuration\VendorMissAnalyseGuard
+     */
+    private $vendorMissAnalyseGuard;
     /**
      * @var string
      */
@@ -80,7 +85,7 @@ final class ApplicationFileProcessor
      * @var SystemError[]
      */
     private $systemErrors = [];
-    public function __construct(SymfonyStyle $symfonyStyle, FileFactory $fileFactory, ParallelFileProcessor $parallelFileProcessor, ScheduleFactory $scheduleFactory, CpuCoreCountProvider $cpuCoreCountProvider, ChangedFilesDetector $changedFilesDetector, CurrentFileProvider $currentFileProvider, \Rector\Core\Application\FileProcessor $fileProcessor, ArrayParametersMerger $arrayParametersMerger)
+    public function __construct(SymfonyStyle $symfonyStyle, FileFactory $fileFactory, ParallelFileProcessor $parallelFileProcessor, ScheduleFactory $scheduleFactory, CpuCoreCountProvider $cpuCoreCountProvider, ChangedFilesDetector $changedFilesDetector, CurrentFileProvider $currentFileProvider, \Rector\Application\FileProcessor $fileProcessor, ArrayParametersMerger $arrayParametersMerger, VendorMissAnalyseGuard $vendorMissAnalyseGuard)
     {
         $this->symfonyStyle = $symfonyStyle;
         $this->fileFactory = $fileFactory;
@@ -91,13 +96,18 @@ final class ApplicationFileProcessor
         $this->currentFileProvider = $currentFileProvider;
         $this->fileProcessor = $fileProcessor;
         $this->arrayParametersMerger = $arrayParametersMerger;
+        $this->vendorMissAnalyseGuard = $vendorMissAnalyseGuard;
     }
     public function run(Configuration $configuration, InputInterface $input) : ProcessResult
     {
         $filePaths = $this->fileFactory->findFilesInPaths($configuration->getPaths(), $configuration);
+        if ($this->vendorMissAnalyseGuard->isVendorAnalyzed($filePaths)) {
+            $this->symfonyStyle->warning(\sprintf('Rector is running on your "/vendor" directory. This is not necessary, as Rector access /vendor by composer autoload. It will cause Rector tu run much slower and possibly with errors.%sRemove "/vendor" from Rector paths and run again.', \PHP_EOL . \PHP_EOL));
+            \sleep(3);
+        }
         // no files found
         if ($filePaths === []) {
-            return new ProcessResult([], [], []);
+            return new ProcessResult([], []);
         }
         $this->configureCustomErrorHandler();
         /**
@@ -142,8 +152,6 @@ final class ApplicationFileProcessor
         $systemErrors = [];
         /** @var FileDiff[] $fileDiffs */
         $fileDiffs = [];
-        /** @var CollectedData[] $collectedData */
-        $collectedData = [];
         foreach ($filePaths as $filePath) {
             if ($preFileCallback !== null) {
                 $preFileCallback($filePath);
@@ -156,7 +164,6 @@ final class ApplicationFileProcessor
                 if ($currentFileDiff instanceof FileDiff) {
                     $fileDiffs[] = $currentFileDiff;
                 }
-                $collectedData = \array_merge($collectedData, $fileProcessResult->getCollectedData());
                 // progress bar on parallel handled on runParallel()
                 if (\is_callable($postFileCallback)) {
                     $postFileCallback(1);
@@ -169,7 +176,7 @@ final class ApplicationFileProcessor
                 $systemErrors[] = $this->resolveSystemError($throwable, $filePath);
             }
         }
-        return new ProcessResult($systemErrors, $fileDiffs, $collectedData);
+        return new ProcessResult($systemErrors, $fileDiffs);
     }
     private function processFile(File $file, Configuration $configuration) : FileProcessResult
     {

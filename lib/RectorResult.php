@@ -4,7 +4,7 @@ namespace rexfactor;
 
 use InvalidArgumentException;
 
-use Rector\Core\Contract\Rector\RectorInterface;
+use Rector\Contract\Rector\RectorInterface;
 use function is_array;
 use function is_string;
 

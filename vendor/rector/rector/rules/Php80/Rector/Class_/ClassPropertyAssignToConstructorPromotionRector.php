@@ -5,6 +5,7 @@ namespace Rector\Php80\Rector\Class_;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\NullableType;
@@ -18,21 +19,21 @@ use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\TypeCombinator;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\Core\Contract\Rector\ConfigurableRectorInterface;
-use Rector\Core\NodeAnalyzer\ParamAnalyzer;
-use Rector\Core\Rector\AbstractRector;
-use Rector\Core\Reflection\ReflectionResolver;
-use Rector\Core\ValueObject\MethodName;
-use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Naming\PropertyRenamer\PropertyPromotionRenamer;
 use Rector\Naming\VariableRenamer;
+use Rector\NodeAnalyzer\ParamAnalyzer;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\TypeComparator\TypeComparator;
 use Rector\Php80\DocBlock\PropertyPromotionDocBlockMerger;
 use Rector\Php80\Guard\MakePropertyPromotionGuard;
 use Rector\Php80\NodeAnalyzer\PromotedPropertyCandidateResolver;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
+use Rector\Rector\AbstractRector;
+use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\StaticTypeMapper;
+use Rector\ValueObject\MethodName;
+use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -55,7 +56,7 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
     private $variableRenamer;
     /**
      * @readonly
-     * @var \Rector\Core\NodeAnalyzer\ParamAnalyzer
+     * @var \Rector\NodeAnalyzer\ParamAnalyzer
      */
     private $paramAnalyzer;
     /**
@@ -75,7 +76,7 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
     private $typeComparator;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\ReflectionResolver
+     * @var \Rector\Reflection\ReflectionResolver
      */
     private $reflectionResolver;
     /**
@@ -99,6 +100,11 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
      */
     public const INLINE_PUBLIC = 'inline_public';
     /**
+     * @api
+     * @var string
+     */
+    public const RENAME_PROPERTY = 'rename_property';
+    /**
      * Default to false, which only apply changes:
      *
      *  – private modifier property
@@ -108,6 +114,11 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
      * @var bool
      */
     private $inlinePublic = \false;
+    /**
+     * Set to false will skip property promotion when parameter and property have different names.
+     * @var bool
+     */
+    private $renameProperty = \true;
     public function __construct(PromotedPropertyCandidateResolver $promotedPropertyCandidateResolver, VariableRenamer $variableRenamer, ParamAnalyzer $paramAnalyzer, PropertyPromotionDocBlockMerger $propertyPromotionDocBlockMerger, MakePropertyPromotionGuard $makePropertyPromotionGuard, TypeComparator $typeComparator, ReflectionResolver $reflectionResolver, PropertyPromotionRenamer $propertyPromotionRenamer, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper)
     {
         $this->promotedPropertyCandidateResolver = $promotedPropertyCandidateResolver;
@@ -126,12 +137,12 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
         return new RuleDefinition('Change simple property init and assign to constructor promotion', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
-    public float $someVariable;
+    public float $price;
 
     public function __construct(
-        float $someVariable = 0.0
+        float $price = 0.0
     ) {
-        $this->someVariable = $someVariable;
+        $this->price = $price;
     }
 }
 CODE_SAMPLE
@@ -139,16 +150,17 @@ CODE_SAMPLE
 class SomeClass
 {
     public function __construct(
-        public float $someVariable = 0.0
+        public float $price = 0.0
     ) {
     }
 }
 CODE_SAMPLE
-, [\Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector::INLINE_PUBLIC => \false])]);
+, [\Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector::INLINE_PUBLIC => \false, \Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector::RENAME_PROPERTY => \true])]);
     }
     public function configure(array $configuration) : void
     {
-        $this->inlinePublic = $configuration[self::INLINE_PUBLIC] ?? (bool) \current($configuration);
+        $this->inlinePublic = $configuration[self::INLINE_PUBLIC] ?? \false;
+        $this->renameProperty = $configuration[self::RENAME_PROPERTY] ?? \true;
     }
     /**
      * @return array<class-string<Node>>
@@ -184,15 +196,18 @@ CODE_SAMPLE
             if (!$this->makePropertyPromotionGuard->isLegal($node, $classReflection, $property, $param, $this->inlinePublic)) {
                 continue;
             }
+            $paramName = $this->getName($param);
+            // rename also following calls
+            $propertyName = $this->getName($property->props[0]);
+            if (!$this->renameProperty && $paramName !== $propertyName) {
+                continue;
+            }
             // remove property from class
             $propertyStmtKey = $property->getAttribute(AttributeKey::STMT_KEY);
             unset($node->stmts[$propertyStmtKey]);
             // remove assign in constructor
             $assignStmtPosition = $promotionCandidate->getStmtPosition();
             unset($constructClassMethod->stmts[$assignStmtPosition]);
-            $paramName = $this->getName($param);
-            // rename also following calls
-            $propertyName = $this->getName($property->props[0]);
             /** @var string $oldName */
             $oldName = $this->getName($param->var);
             $this->variableRenamer->renameVariableInFunctionLike($constructClassMethod, $oldName, $propertyName, null);
@@ -210,6 +225,16 @@ CODE_SAMPLE
             $param->attrGroups = \array_merge($param->attrGroups, $property->attrGroups);
             $this->processUnionType($property, $param);
             $this->propertyPromotionDocBlockMerger->mergePropertyAndParamDocBlocks($property, $param, $paramTagValueNode);
+            // update variable to property fetch references
+            $this->traverseNodesWithCallable((array) $constructClassMethod->stmts, function (Node $node) use($promotionCandidate, $propertyName) : ?PropertyFetch {
+                if (!$node instanceof Variable) {
+                    return null;
+                }
+                if (!$this->isName($node, $promotionCandidate->getParamName())) {
+                    return null;
+                }
+                return new PropertyFetch(new Variable('this'), $propertyName);
+            });
         }
         return $node;
     }

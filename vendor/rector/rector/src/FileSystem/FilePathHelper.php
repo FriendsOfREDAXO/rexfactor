@@ -1,13 +1,14 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\FileSystem;
+namespace Rector\FileSystem;
 
-use RectorPrefix202312\Nette\Utils\Strings;
-use RectorPrefix202312\Symfony\Component\Filesystem\Filesystem;
-use RectorPrefix202312\Webmozart\Assert\Assert;
+use RectorPrefix202402\Nette\Utils\Strings;
+use Rector\Skipper\FileSystem\PathNormalizer;
+use RectorPrefix202402\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202402\Webmozart\Assert\Assert;
 /**
- * @see \Rector\Core\Tests\FileSystem\FilePathHelperTest
+ * @see \Rector\Tests\FileSystem\FilePathHelperTest
  */
 final class FilePathHelper
 {
@@ -55,24 +56,20 @@ final class FilePathHelper
             $scheme = self::SCHEME_UNDEFINED;
             $path = $originalPath;
         }
-        $normalizedPath = \str_replace('\\', '/', (string) $path);
+        $normalizedPath = PathNormalizer::normalize((string) $path);
         $path = Strings::replace($normalizedPath, self::TWO_AND_MORE_SLASHES_REGEX, '/');
         $pathRoot = \strncmp($path, '/', \strlen('/')) === 0 ? $directorySeparator : '';
         $pathParts = \explode('/', \trim($path, '/'));
         $normalizedPathParts = $this->normalizePathParts($pathParts, $scheme);
         $pathStart = $scheme !== self::SCHEME_UNDEFINED ? $scheme . '://' : '';
-        return $pathStart . $pathRoot . \implode($directorySeparator, $normalizedPathParts);
+        return PathNormalizer::normalize($pathStart . $pathRoot . \implode($directorySeparator, $normalizedPathParts));
     }
     private function relativeFilePathFromDirectory(string $fileRealPath, string $directory) : string
     {
         Assert::directory($directory);
-        $normalizedFileRealPath = $this->normalizePath($fileRealPath);
+        $normalizedFileRealPath = PathNormalizer::normalize($fileRealPath);
         $relativeFilePath = $this->filesystem->makePathRelative($normalizedFileRealPath, $directory);
         return \rtrim($relativeFilePath, '/');
-    }
-    private function normalizePath(string $filePath) : string
-    {
-        return \str_replace('\\', '/', $filePath);
     }
     /**
      * @param string[] $pathParts

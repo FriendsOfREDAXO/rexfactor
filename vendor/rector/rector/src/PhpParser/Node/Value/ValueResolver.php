@@ -1,10 +1,11 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\PhpParser\Node\Value;
+namespace Rector\PhpParser\Node\Value;
 
 use PhpParser\ConstExprEvaluationException;
 use PhpParser\ConstExprEvaluator;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -17,19 +18,20 @@ use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\ConstantScalarType;
+use PHPStan\Type\ConstantType;
 use PHPStan\Type\TypeWithClassName;
-use Rector\Core\Enum\ObjectReference;
-use Rector\Core\Exception\ShouldNotHappenException;
-use Rector\Core\NodeAnalyzer\ConstFetchAnalyzer;
-use Rector\Core\Provider\CurrentFileProvider;
-use Rector\Core\Reflection\ClassReflectionAnalyzer;
-use Rector\Core\Reflection\ReflectionResolver;
+use Rector\Enum\ObjectReference;
+use Rector\Exception\ShouldNotHappenException;
+use Rector\NodeAnalyzer\ConstFetchAnalyzer;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
+use Rector\Provider\CurrentFileProvider;
+use Rector\Reflection\ClassReflectionAnalyzer;
+use Rector\Reflection\ReflectionResolver;
 use TypeError;
 /**
- * @see \Rector\Core\Tests\PhpParser\Node\Value\ValueResolverTest
+ * @see \Rector\Tests\PhpParser\Node\Value\ValueResolverTest
  * @todo make use of constant type of $scope->getType()
  */
 final class ValueResolver
@@ -46,7 +48,7 @@ final class ValueResolver
     private $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\Core\NodeAnalyzer\ConstFetchAnalyzer
+     * @var \Rector\NodeAnalyzer\ConstFetchAnalyzer
      */
     private $constFetchAnalyzer;
     /**
@@ -56,17 +58,17 @@ final class ValueResolver
     private $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Core\Provider\CurrentFileProvider
+     * @var \Rector\Provider\CurrentFileProvider
      */
     private $currentFileProvider;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\ReflectionResolver
+     * @var \Rector\Reflection\ReflectionResolver
      */
     private $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\ClassReflectionAnalyzer
+     * @var \Rector\Reflection\ClassReflectionAnalyzer
      */
     private $classReflectionAnalyzer;
     /**
@@ -91,10 +93,14 @@ final class ValueResolver
         return $this->getValue($expr) === $value;
     }
     /**
+     * @param \PhpParser\Node\Arg|\PhpParser\Node\Expr $expr
      * @return mixed
      */
-    public function getValue(Expr $expr, bool $resolvedClassReference = \false)
+    public function getValue($expr, bool $resolvedClassReference = \false)
     {
+        if ($expr instanceof Arg) {
+            $expr = $expr->value;
+        }
         if ($expr instanceof Concat) {
             return $this->processConcat($expr, $resolvedClassReference);
         }
@@ -118,11 +124,8 @@ final class ValueResolver
             return $this->nodeNameResolver->getName($expr);
         }
         $nodeStaticType = $this->nodeTypeResolver->getType($expr);
-        if ($nodeStaticType instanceof ConstantArrayType) {
-            return $this->extractConstantArrayTypeValue($nodeStaticType);
-        }
-        if ($nodeStaticType instanceof ConstantScalarType) {
-            return $nodeStaticType->getValue();
+        if ($nodeStaticType instanceof ConstantType) {
+            return $this->resolveConstantType($nodeStaticType);
         }
         return null;
     }
@@ -237,7 +240,7 @@ final class ValueResolver
     private function resolveDirConstant() : string
     {
         $file = $this->currentFileProvider->getFile();
-        if (!$file instanceof \Rector\Core\ValueObject\Application\File) {
+        if (!$file instanceof \Rector\ValueObject\Application\File) {
             throw new ShouldNotHappenException();
         }
         return \dirname($file->getFilePath());
@@ -245,7 +248,7 @@ final class ValueResolver
     private function resolveFileConstant(File $file) : string
     {
         $file = $this->currentFileProvider->getFile();
-        if (!$file instanceof \Rector\Core\ValueObject\Application\File) {
+        if (!$file instanceof \Rector\ValueObject\Application\File) {
             throw new ShouldNotHappenException();
         }
         return $file->getFilePath();
@@ -317,5 +320,18 @@ final class ValueResolver
             throw new ShouldNotHappenException();
         }
         return $parentClassName;
+    }
+    /**
+     * @return mixed
+     */
+    private function resolveConstantType(ConstantType $constantType)
+    {
+        if ($constantType instanceof ConstantArrayType) {
+            return $this->extractConstantArrayTypeValue($constantType);
+        }
+        if ($constantType instanceof ConstantScalarType) {
+            return $constantType->getValue();
+        }
+        return null;
     }
 }

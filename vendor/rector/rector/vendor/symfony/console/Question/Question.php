@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\Question;
+namespace RectorPrefix202402\Symfony\Component\Console\Question;
 
-use RectorPrefix202312\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202312\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202402\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202402\Symfony\Component\Console\Exception\LogicException;
 /**
  * Represents a Question.
  *
@@ -185,10 +185,10 @@ class Question
      *
      * @return $this
      */
-    public function setAutocompleterCallback(callable $callback = null)
+    public function setAutocompleterCallback(?callable $callback = null)
     {
         if (1 > \func_num_args()) {
-            // \trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+            trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
         }
         if ($this->hidden && null !== $callback) {
             throw new LogicException('A hidden question cannot use the autocompleter.');
@@ -201,10 +201,10 @@ class Question
      *
      * @return $this
      */
-    public function setValidator(callable $validator = null)
+    public function setValidator(?callable $validator = null)
     {
         if (1 > \func_num_args()) {
-            // \trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+            trigger_deprecation('symfony/console', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
         }
         $this->validator = null === $validator ? null : \Closure::fromCallable($validator);
         return $this;

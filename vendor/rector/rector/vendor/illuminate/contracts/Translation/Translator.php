@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202312\Illuminate\Contracts\Translation;
+namespace RectorPrefix202402\Illuminate\Contracts\Translation;
 
 interface Translator
 {
@@ -17,7 +17,7 @@ interface Translator
      * Get a translation according to an integer value.
      *
      * @param  string  $key
-     * @param  \Countable|int|array  $number
+     * @param  \Countable|int|float|array  $number
      * @param  array  $replace
      * @param  string|null  $locale
      * @return string

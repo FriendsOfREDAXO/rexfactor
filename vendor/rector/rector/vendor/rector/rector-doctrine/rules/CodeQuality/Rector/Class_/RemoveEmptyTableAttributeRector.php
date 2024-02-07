@@ -5,8 +5,8 @@ namespace Rector\Doctrine\CodeQuality\Rector\Class_;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
-use Rector\Core\Rector\AbstractRector;
-use Rector\Core\ValueObject\PhpVersionFeature;
+use Rector\Rector\AbstractRector;
+use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -20,25 +20,27 @@ final class RemoveEmptyTableAttributeRector extends AbstractRector implements Mi
         return new RuleDefinition("Remove empty Table attribute on entities because it's useless", [new CodeSample(<<<'CODE_SAMPLE'
 <?php
 
-namespace RectorPrefix202312;
+namespace RectorPrefix202402;
 
-use RectorPrefix202312\Doctrine\ORM\Mapping as ORM;
-#[\Doctrine\ORM\Mapping\Table]
-#[\Doctrine\ORM\Mapping\Entity]
+use RectorPrefix202402\Doctrine\ORM\Mapping as ORM;
+#[ORM\Table]
+#[ORM\Entity]
 class Product
 {
 }
+\class_alias('Product', 'Product', \false);
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
 <?php
 
-namespace RectorPrefix202312;
+namespace RectorPrefix202402;
 
-use RectorPrefix202312\Doctrine\ORM\Mapping as ORM;
-#[\Doctrine\ORM\Mapping\Entity]
+use RectorPrefix202402\Doctrine\ORM\Mapping as ORM;
+#[ORM\Entity]
 class Product
 {
 }
+\class_alias('Product', 'Product', \false);
 CODE_SAMPLE
 )]);
     }

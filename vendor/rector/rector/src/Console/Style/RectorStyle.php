@@ -1,14 +1,14 @@
 <?php
 
 declare (strict_types=1);
-namespace Rector\Core\Console\Style;
+namespace Rector\Console\Style;
 
-use RectorPrefix202312\OndraM\CiDetector\CiDetector;
-use RectorPrefix202312\Symfony\Component\Console\Exception\RuntimeException;
-use RectorPrefix202312\Symfony\Component\Console\Helper\ProgressBar;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202402\OndraM\CiDetector\CiDetector;
+use RectorPrefix202402\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202402\Symfony\Component\Console\Helper\ProgressBar;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
 final class RectorStyle extends SymfonyStyle
 {
     /**

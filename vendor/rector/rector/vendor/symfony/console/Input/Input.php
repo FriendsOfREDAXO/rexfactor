@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\Input;
+namespace RectorPrefix202402\Symfony\Component\Console\Input;
 
-use RectorPrefix202312\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202312\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202402\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202402\Symfony\Component\Console\Exception\RuntimeException;
 /**
  * Input is the base class for all concrete Input classes.
  *
@@ -31,7 +31,7 @@ abstract class Input implements InputInterface, StreamableInputInterface
     protected $options = [];
     protected $arguments = [];
     protected $interactive = \true;
-    public function __construct(InputDefinition $definition = null)
+    public function __construct(?InputDefinition $definition = null)
     {
         if (null === $definition) {
             $this->definition = new InputDefinition();

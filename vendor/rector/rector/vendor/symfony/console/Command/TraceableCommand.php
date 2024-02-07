@@ -8,18 +8,18 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202312\Symfony\Component\Console\Command;
+namespace RectorPrefix202402\Symfony\Component\Console\Command;
 
-use RectorPrefix202312\Symfony\Component\Console\Application;
-use RectorPrefix202312\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202312\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202312\Symfony\Component\Console\Helper\HelperInterface;
-use RectorPrefix202312\Symfony\Component\Console\Helper\HelperSet;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputDefinition;
-use RectorPrefix202312\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Output\ConsoleOutputInterface;
-use RectorPrefix202312\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202312\Symfony\Component\Stopwatch\Stopwatch;
+use RectorPrefix202402\Symfony\Component\Console\Application;
+use RectorPrefix202402\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202402\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202402\Symfony\Component\Console\Helper\HelperInterface;
+use RectorPrefix202402\Symfony\Component\Console\Helper\HelperSet;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputDefinition;
+use RectorPrefix202402\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Output\ConsoleOutputInterface;
+use RectorPrefix202402\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202402\Symfony\Component\Stopwatch\Stopwatch;
 /**
  * @internal
  *
@@ -146,7 +146,7 @@ final class TraceableCommand extends Command implements SignalableCommandInterfa
         $this->command->ignoreValidationErrors();
         parent::ignoreValidationErrors();
     }
-    public function setApplication(Application $application = null) : void
+    public function setApplication(?Application $application = null) : void
     {
         $this->command->setApplication($application);
     }
@@ -215,18 +215,18 @@ final class TraceableCommand extends Command implements SignalableCommandInterfa
      * @param mixed $default
      * @return static
      */
-    public function addArgument(string $name, int $mode = null, string $description = '', $default = null, $suggestedValues = [])
+    public function addArgument(string $name, ?int $mode = null, string $description = '', $default = null, $suggestedValues = [])
     {
         $this->command->addArgument($name, $mode, $description, $default, $suggestedValues);
         return $this;
     }
     /**
-     * @param string|mixed[] $shortcut
+     * @param string|mixed[]|null $shortcut
      * @param mixed[]|\Closure $suggestedValues
      * @param mixed $default
      * @return static
      */
-    public function addOption(string $name, $shortcut = null, int $mode = null, string $description = '', $default = null, $suggestedValues = [])
+    public function addOption(string $name, $shortcut = null, ?int $mode = null, string $description = '', $default = null, $suggestedValues = [])
     {
         $this->command->addOption($name, $shortcut, $mode, $description, $default, $suggestedValues);
         return $this;

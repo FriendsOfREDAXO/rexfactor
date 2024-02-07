@@ -11,11 +11,10 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\PhpDoc\GenericTagValueNode;
 use PHPStan\Reflection\ClassReflection;
-use RectorPrefix202312\PHPUnit\Framework\Attributes\DataProvider;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\Core\PhpParser\AstResolver;
-use Rector\Core\Reflection\ReflectionResolver;
 use Rector\NodeNameResolver\NodeNameResolver;
+use Rector\PhpParser\AstResolver;
+use Rector\Reflection\ReflectionResolver;
 final class DataProviderClassMethodFinder
 {
     /**
@@ -25,12 +24,12 @@ final class DataProviderClassMethodFinder
     private $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\Core\Reflection\ReflectionResolver
+     * @var \Rector\Reflection\ReflectionResolver
      */
     private $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\Core\PhpParser\AstResolver
+     * @var \Rector\PhpParser\AstResolver
      */
     private $astResolver;
     /**
@@ -72,7 +71,7 @@ final class DataProviderClassMethodFinder
      */
     public function findDataProviderNamesForClassMethod(ClassMethod $classMethod) : array
     {
-        $dataProviderAttributes = $this->findAttributesByClass($classMethod, DataProvider::class);
+        $dataProviderAttributes = $this->findAttributesByClass($classMethod, 'PHPUnit\\Framework\\Attributes\\DataProvider');
         if ($dataProviderAttributes !== []) {
             return $this->resolveAttributeMethodNames($dataProviderAttributes);
         }
