@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace PhpCsFixer\RuleSet;
 
 use PhpCsFixer\ConfigurationException\InvalidFixerConfigurationException;
+use PhpCsFixer\Utils;
 
 /**
  * Set of rules to be used by fixer.
@@ -28,10 +29,10 @@ final class RuleSet implements RuleSetInterface
     /**
      * Group of rules generated from input set.
      *
-     * The key is name of rule, value is bool if the rule/set should be used.
+     * The key is name of rule, value is configuration array or true.
      * The key must not point to any set.
      *
-     * @var array<string, array<string, mixed>|bool>
+     * @var array<string, array<string, mixed>|true>
      */
     private array $rules;
 
@@ -122,7 +123,17 @@ final class RuleSet implements RuleSetInterface
      */
     private function resolveSubset(string $setName, bool $setValue): array
     {
-        $rules = RuleSets::getSetDefinition($setName)->getRules();
+        $ruleSet = RuleSets::getSetDefinition($setName);
+
+        if ($ruleSet instanceof DeprecatedRuleSetDescriptionInterface) {
+            $messageEnd = [] === $ruleSet->getSuccessorsNames()
+                ? 'No replacement available'
+                : sprintf('Use %s instead', Utils::naturalLanguageJoin($ruleSet->getSuccessorsNames()));
+
+            Utils::triggerDeprecation(new \RuntimeException("Rule set \"{$setName}\" is deprecated. {$messageEnd}."));
+        }
+
+        $rules = $ruleSet->getRules();
 
         foreach ($rules as $name => $value) {
             if (str_starts_with($name, '@')) {

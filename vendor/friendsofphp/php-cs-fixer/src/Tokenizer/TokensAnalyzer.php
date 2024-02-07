@@ -26,6 +26,8 @@ use PhpCsFixer\Tokenizer\Analyzer\GotoLabelAnalyzer;
  * @author Gregor Harlan <gharlan@web.de>
  *
  * @internal
+ *
+ * @phpstan-type _ClassyElementType 'case'|'const'|'method'|'property'|'trait_import'
  */
 final class TokensAnalyzer
 {
@@ -44,7 +46,7 @@ final class TokensAnalyzer
     /**
      * Get indices of methods and properties in classy code (classes, interfaces and traits).
      *
-     * @return array<int, array{classIndex: int, token: Token, type: string}>
+     * @return array<int, array{classIndex: int, token: Token, type: _ClassyElementType}>
      */
     public function getClassyElements(): array
     {
@@ -552,13 +554,14 @@ final class TokensAnalyzer
             ';',
             '{',
             '}',
+            [T_FN],
             [T_FUNCTION],
             [T_OPEN_TAG],
             [T_OPEN_TAG_WITH_ECHO],
         ];
         $prevToken = $tokens[$tokens->getPrevTokenOfKind($index, $searchTokens)];
 
-        return $prevToken->isGivenKind(T_FUNCTION);
+        return $prevToken->isGivenKind([T_FN, T_FUNCTION]);
     }
 
     /**
@@ -723,7 +726,7 @@ final class TokensAnalyzer
      *
      * @param int $classIndex classy index
      *
-     * @return array{int, array<int, array{classIndex: int, token: Token, type: string}>}
+     * @return array{int, array<int, array{classIndex: int, token: Token, type: _ClassyElementType}>}
      */
     private function findClassyElements(int $classIndex, int $index): array
     {

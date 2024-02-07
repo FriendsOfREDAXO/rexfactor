@@ -15,8 +15,12 @@ declare(strict_types=1);
 namespace PhpCsFixer\Fixer\Whitespace;
 
 use PhpCsFixer\AbstractFixer;
+use PhpCsFixer\Fixer\ConfigurableFixerInterface;
 use PhpCsFixer\Fixer\Indentation;
 use PhpCsFixer\Fixer\WhitespacesAwareFixerInterface;
+use PhpCsFixer\FixerConfiguration\FixerConfigurationResolver;
+use PhpCsFixer\FixerConfiguration\FixerConfigurationResolverInterface;
+use PhpCsFixer\FixerConfiguration\FixerOptionBuilder;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
@@ -26,7 +30,7 @@ use PhpCsFixer\Tokenizer\CT;
 use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 
-final class StatementIndentationFixer extends AbstractFixer implements WhitespacesAwareFixerInterface
+final class StatementIndentationFixer extends AbstractFixer implements ConfigurableFixerInterface, WhitespacesAwareFixerInterface
 {
     use Indentation;
 
@@ -56,6 +60,35 @@ else {
 }
 '
                 ),
+                new CodeSample(
+                    '<?php
+        // foo
+if ($foo) {
+    echo "foo";
+        // this is treated as comment of `if` block, as `stick_comment_to_next_continuous_control_statement` is disabled
+} else {
+    $aaa = 1;
+}
+',
+                    ['stick_comment_to_next_continuous_control_statement' => false]
+                ),
+                new CodeSample(
+                    '<?php
+        // foo
+if ($foo) {
+    echo "foo";
+        // this is treated as comment of `elseif(1)` block, as `stick_comment_to_next_continuous_control_statement` is enabled
+} elseif(1) {
+    echo "bar";
+} elseif(2) {
+        // this is treated as comment of `elseif(2)` block, as the only content of that block
+} elseif(3) {
+    $aaa = 1;
+        // this is treated as comment of `elseif(3)` block, as it is a comment in the final block
+}
+',
+                    ['stick_comment_to_next_continuous_control_statement' => true]
+                ),
             ]
         );
     }
@@ -64,7 +97,7 @@ else {
      * {@inheritdoc}
      *
      * Must run before HeredocIndentationFixer.
-     * Must run after BracesPositionFixer, ClassAttributesSeparationFixer, CurlyBracesPositionFixer, MethodArgumentSpaceFixer, NoUselessElseFixer, YieldFromArrayToYieldsFixer.
+     * Must run after BracesPositionFixer, ClassAttributesSeparationFixer, CurlyBracesPositionFixer, FullyQualifiedStrictTypesFixer, GlobalNamespaceImportFixer, MethodArgumentSpaceFixer, NoUselessElseFixer, YieldFromArrayToYieldsFixer.
      */
     public function getPriority(): int
     {
@@ -74,6 +107,16 @@ else {
     public function isCandidate(Tokens $tokens): bool
     {
         return true;
+    }
+
+    protected function createConfigurationDefinition(): FixerConfigurationResolverInterface
+    {
+        return new FixerConfigurationResolver([
+            (new FixerOptionBuilder('stick_comment_to_next_continuous_control_statement', 'Last comment of code block counts as comment for next block.'))
+                ->setAllowedTypes(['bool'])
+                ->setDefault(false)
+                ->getOption(),
+        ]);
     }
 
     protected function applyFix(\SplFileInfo $file, Tokens $tokens): void
@@ -88,6 +131,7 @@ else {
             T_FOR,
             T_FOREACH,
             T_WHILE,
+            T_DO,
             T_SWITCH,
             T_CASE,
             T_DEFAULT,
@@ -97,6 +141,15 @@ else {
             T_TRAIT,
             T_EXTENDS,
             T_IMPLEMENTS,
+        ];
+        $controlStructurePossibiblyWithoutBracesTokens = [
+            T_IF,
+            T_ELSE,
+            T_ELSEIF,
+            T_FOR,
+            T_FOREACH,
+            T_WHILE,
+            T_DO,
         ];
         if (\defined('T_MATCH')) { // @TODO: drop condition when PHP 8.0+ is required
             $blockSignatureFirstTokens[] = T_MATCH;
@@ -155,11 +208,24 @@ else {
 
         $previousLineInitialIndent = '';
         $previousLineNewIndent = '';
+        $noBracesBlockStarts = [];
         $alternativeBlockStarts = [];
         $caseBlockStarts = [];
 
         foreach ($tokens as $index => $token) {
             $currentScope = \count($scopes) - 1;
+
+            if (isset($noBracesBlockStarts[$index])) {
+                $scopes[] = [
+                    'type' => 'block',
+                    'skip' => false,
+                    'end_index' => $this->findStatementEndIndex($tokens, $index, \count($tokens) - 1),
+                    'end_index_inclusive' => true,
+                    'initial_indent' => $this->getLineIndentationWithBracesCompatibility($tokens, $index, $lastIndent),
+                    'is_indented_block' => true,
+                ];
+                ++$currentScope;
+            }
 
             if (
                 $token->equalsAny($blockFirstTokens)
@@ -228,23 +294,48 @@ else {
             }
 
             if ($token->isGivenKind($blockSignatureFirstTokens)) {
+                $lastWhitespaceIndex = null;
+                $closingParenthesisIndex = null;
+
                 for ($endIndex = $index + 1, $max = \count($tokens); $endIndex < $max; ++$endIndex) {
-                    if ($tokens[$endIndex]->equals('(')) {
-                        $endIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $endIndex);
+                    $endToken = $tokens[$endIndex];
+
+                    if ($endToken->equals('(')) {
+                        $closingParenthesisIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $endIndex);
+                        $endIndex = $closingParenthesisIndex;
 
                         continue;
                     }
 
-                    if ($tokens[$endIndex]->equalsAny(['{', ';', [T_DOUBLE_ARROW], [T_IMPLEMENTS]])) {
+                    if ($endToken->equalsAny(['{', ';', [T_DOUBLE_ARROW], [T_IMPLEMENTS]])) {
                         break;
                     }
 
-                    if ($tokens[$endIndex]->equals(':')) {
+                    if ($endToken->equals(':')) {
                         if ($token->isGivenKind([T_CASE, T_DEFAULT])) {
                             $caseBlockStarts[$endIndex] = $index;
                         } else {
                             $alternativeBlockStarts[$endIndex] = $index;
                         }
+
+                        break;
+                    }
+
+                    if (!$token->isGivenKind($controlStructurePossibiblyWithoutBracesTokens)) {
+                        continue;
+                    }
+
+                    if ($endToken->isWhitespace()) {
+                        $lastWhitespaceIndex = $endIndex;
+
+                        continue;
+                    }
+
+                    if (!$endToken->isComment()) {
+                        $noBraceBlockStartIndex = $lastWhitespaceIndex ?? $endIndex;
+                        $noBracesBlockStarts[$noBraceBlockStartIndex] = true;
+
+                        $endIndex = $closingParenthesisIndex ?? $index;
 
                         break;
                     }
@@ -383,7 +474,7 @@ else {
                                     $nextNextIndex = $tokens->getNextMeaningfulToken($nextIndex);
 
                                     if (null !== $nextNextIndex && $tokens[$nextNextIndex]->isGivenKind([T_ELSE, T_ELSEIF])) {
-                                        $indent = false;
+                                        $indent = true !== $this->configuration['stick_comment_to_next_continuous_control_statement'];
                                     } else {
                                         $indent = true;
                                     }
@@ -486,8 +577,25 @@ else {
     {
         $endIndex = null;
 
+        $ifLevel = 0;
+        $doWhileLevel = 0;
         for ($searchEndIndex = $index; $searchEndIndex <= $parentScopeEndIndex; ++$searchEndIndex) {
             $searchEndToken = $tokens[$searchEndIndex];
+
+            if (
+                $searchEndToken->isGivenKind(T_IF)
+                && !$tokens[$tokens->getPrevMeaningfulToken($searchEndIndex)]->isGivenKind(T_ELSE)
+            ) {
+                ++$ifLevel;
+
+                continue;
+            }
+
+            if ($searchEndToken->isGivenKind(T_DO)) {
+                ++$doWhileLevel;
+
+                continue;
+            }
 
             if ($searchEndToken->equalsAny(['(', '{', [CT::T_ARRAY_SQUARE_BRACE_OPEN]])) {
                 if ($searchEndToken->equals('(')) {
@@ -499,15 +607,46 @@ else {
                 }
 
                 $searchEndIndex = $tokens->findBlockEnd($blockType, $searchEndIndex);
+                $searchEndToken = $tokens[$searchEndIndex];
+            }
+
+            if (!$searchEndToken->equalsAny([';', ',', '}', [T_CLOSE_TAG]])) {
+                continue;
+            }
+
+            $controlStructureContinuationIndex = $tokens->getNextMeaningfulToken($searchEndIndex);
+
+            if (
+                $ifLevel > 0
+                && null !== $controlStructureContinuationIndex
+                && $tokens[$controlStructureContinuationIndex]->isGivenKind([T_ELSE, T_ELSEIF])
+            ) {
+                if (
+                    $tokens[$controlStructureContinuationIndex]->isGivenKind(T_ELSE)
+                    && !$tokens[$tokens->getNextMeaningfulToken($controlStructureContinuationIndex)]->isGivenKind(T_IF)
+                ) {
+                    --$ifLevel;
+                }
+
+                $searchEndIndex = $controlStructureContinuationIndex;
 
                 continue;
             }
 
-            if ($searchEndToken->equalsAny([';', ',', '}', [T_CLOSE_TAG]])) {
-                $endIndex = $tokens->getPrevNonWhitespace($searchEndIndex);
+            if (
+                $doWhileLevel > 0
+                && null !== $controlStructureContinuationIndex
+                && $tokens[$controlStructureContinuationIndex]->isGivenKind([T_WHILE])
+            ) {
+                --$doWhileLevel;
+                $searchEndIndex = $controlStructureContinuationIndex;
 
-                break;
+                continue;
             }
+
+            $endIndex = $tokens->getPrevNonWhitespace($searchEndIndex);
+
+            break;
         }
 
         return $endIndex ?? $tokens->getPrevMeaningfulToken($parentScopeEndIndex);
