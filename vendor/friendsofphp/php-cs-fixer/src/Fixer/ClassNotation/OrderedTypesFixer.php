@@ -74,7 +74,7 @@ interface Foo
     public function foo(\Stringable&\Countable $obj): int;
 }
 ',
-                    new VersionSpecification(80100),
+                    new VersionSpecification(8_01_00),
                     ['null_adjustment' => 'always_last']
                 ),
                 new VersionSpecificCodeSample(
@@ -84,7 +84,7 @@ interface Bar
     public function bar(null|string|int $foo): string|int;
 }
 ',
-                    new VersionSpecification(80000),
+                    new VersionSpecification(8_00_00),
                     [
                         'sort_algorithm' => 'none',
                         'null_adjustment' => 'always_last',
@@ -308,7 +308,7 @@ interface Bar
      */
     private function collectDisjunctiveNormalFormTypes(string $type): array
     {
-        $types = array_map(static function ($subType) {
+        $types = array_map(static function (string $subType) {
             if (str_starts_with($subType, '(')) {
                 return explode('&', trim($subType, '()'));
             }
@@ -369,7 +369,7 @@ interface Bar
             }
 
             if ('alpha' === $this->configuration['sort_algorithm']) {
-                return $this->configuration['case_sensitive'] ? strcmp($a, $b) : strcasecmp($a, $b);
+                return true === $this->configuration['case_sensitive'] ? $a <=> $b : strcasecmp($a, $b);
             }
 
             return 0;

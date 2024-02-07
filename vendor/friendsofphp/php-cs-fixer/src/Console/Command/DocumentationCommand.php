@@ -16,7 +16,6 @@ namespace PhpCsFixer\Console\Command;
 
 use PhpCsFixer\Documentation\DocumentationLocator;
 use PhpCsFixer\Documentation\FixerDocumentGenerator;
-use PhpCsFixer\Documentation\ListDocumentGenerator;
 use PhpCsFixer\Documentation\RuleSetDocumentationGenerator;
 use PhpCsFixer\FixerFactory;
 use PhpCsFixer\RuleSet\RuleSets;
@@ -57,7 +56,6 @@ final class DocumentationCommand extends Command
 
         $fixerDocumentGenerator = new FixerDocumentGenerator($locator);
         $ruleSetDocumentationGenerator = new RuleSetDocumentationGenerator($locator);
-        $listDocumentGenerator = new ListDocumentGenerator($locator);
 
         // Array of existing fixer docs.
         // We first override existing files, and then we will delete files that are no longer needed.
@@ -100,7 +98,7 @@ final class DocumentationCommand extends Command
 
         foreach ($setDefinitions as $name => $definition) {
             $path = $locator->getRuleSetsDocumentationFilePath($name);
-            $paths[$name] = $path;
+            $paths[$path] = $definition;
             $filesystem->dumpFile($path, $ruleSetDocumentationGenerator->generateRuleSetsDocumentation($definition, $fixers));
         }
 
@@ -109,13 +107,6 @@ final class DocumentationCommand extends Command
         $filesystem->dumpFile(
             $locator->getRuleSetsDocumentationIndexFilePath(),
             $ruleSetDocumentationGenerator->generateRuleSetsDocumentationIndex($paths)
-        );
-
-        // List file / Appendix
-
-        $filesystem->dumpFile(
-            $locator->getListingFilePath(),
-            $listDocumentGenerator->generateListingDocumentation($fixers)
         );
 
         $output->writeln('Docs updated.');

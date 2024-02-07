@@ -53,7 +53,7 @@ final class BacktickToShellExecFixer extends AbstractFixer
     /**
      * {@inheritdoc}
      *
-     * Must run before EscapeImplicitBackslashesFixer, ExplicitStringVariableFixer, NativeFunctionInvocationFixer, SingleQuoteFixer.
+     * Must run before EscapeImplicitBackslashesFixer, ExplicitStringVariableFixer, NativeFunctionInvocationFixer, SingleQuoteFixer, StringImplicitBackslashesFixer.
      */
     public function getPriority(): int
     {
@@ -95,9 +95,8 @@ final class BacktickToShellExecFixer extends AbstractFixer
     {
         // Track indices for final override
         ksort($backtickTokens);
-        $openingBacktickIndex = key($backtickTokens);
-        end($backtickTokens);
-        $closingBacktickIndex = key($backtickTokens);
+        $openingBacktickIndex = array_key_first($backtickTokens);
+        $closingBacktickIndex = array_key_last($backtickTokens);
 
         // Strip enclosing backticks
         array_shift($backtickTokens);

@@ -20,6 +20,8 @@ use PhpCsFixer\Tokenizer\Analyzer\Analysis\NamespaceUseAnalysis;
 use PhpCsFixer\Utils;
 
 /**
+ * @author Michael Vorisek <https://github.com/mvorisek>
+ *
  * @internal
  */
 final class TypeExpression
@@ -210,7 +212,7 @@ final class TypeExpression
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getTypes(): array
     {
@@ -239,7 +241,7 @@ final class TypeExpression
      */
     public function walkTypes(\Closure $callback): void
     {
-        foreach ($this->innerTypeExpressions as [
+        foreach (array_reverse($this->innerTypeExpressions) as [
             'start_index' => $startIndex,
             'expression' => $inner,
         ]) {
@@ -594,7 +596,7 @@ final class TypeExpression
     }
 
     /**
-     * @return array<string,string>
+     * @return array<string, string>
      */
     private function getAliases(): array
     {

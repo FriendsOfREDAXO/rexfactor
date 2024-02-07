@@ -58,7 +58,7 @@ final class FinalInternalClassFixer extends AbstractFixer implements Configurabl
     {
         parent::__construct();
 
-        $this->checkAttributes = \PHP_VERSION_ID >= 80000;
+        $this->checkAttributes = \PHP_VERSION_ID >= 8_00_00;
     }
 
     public function configure(array $configuration): void
@@ -249,7 +249,7 @@ final class FinalInternalClassFixer extends AbstractFixer implements Configurabl
         }
 
         return \in_array(true, $decisions, true)
-            || ([] === $decisions && $this->configuration['consider_absent_docblock_as_internal_class']);
+            || ([] === $decisions && true === $this->configuration['consider_absent_docblock_as_internal_class']);
     }
 
     private function isClassCandidateBasedOnPhpDoc(Tokens $tokens, int $index): ?bool

@@ -23,6 +23,7 @@ use PhpCsFixer\FixerConfiguration\FixerOptionBuilder;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
+use PhpCsFixer\Tokenizer\CT;
 use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 use PhpCsFixer\Tokenizer\TokensAnalyzer;
@@ -189,7 +190,7 @@ $foo = new class(){};
             $end = $tokens->getPrevNonWhitespace($classDefInfo['open']);
         }
 
-        if ($classDefInfo['anonymousClass'] && !$this->configuration['inline_constructor_arguments']) {
+        if ($classDefInfo['anonymousClass'] && false === $this->configuration['inline_constructor_arguments']) {
             if (!$tokens[$end]->equals(')')) { // anonymous class with `extends` and/or `implements`
                 $start = $tokens->getPrevMeaningfulToken($end);
                 $this->makeClassyDefinitionSingleLine($tokens, $start, $end);
@@ -306,11 +307,11 @@ $foo = new class(){};
 
         if (!$tokens[$classyIndex]->isGivenKind(T_TRAIT)) {
             $extends = $tokens->findGivenKind(T_EXTENDS, $classyIndex, $openIndex);
-            $def['extends'] = [] !== $extends ? $this->getClassyInheritanceInfo($tokens, key($extends), 'numberOfExtends') : false;
+            $def['extends'] = [] !== $extends ? $this->getClassyInheritanceInfo($tokens, array_key_first($extends), 'numberOfExtends') : false;
 
             if (!$tokens[$classyIndex]->isGivenKind(T_INTERFACE)) {
                 $implements = $tokens->findGivenKind(T_IMPLEMENTS, $classyIndex, $openIndex);
-                $def['implements'] = [] !== $implements ? $this->getClassyInheritanceInfo($tokens, key($implements), 'numberOfImplements') : false;
+                $def['implements'] = [] !== $implements ? $this->getClassyInheritanceInfo($tokens, array_key_first($implements), 'numberOfImplements') : false;
                 $def['anonymousClass'] = $tokensAnalyzer->isAnonymousClass($classyIndex);
             }
         }
@@ -362,15 +363,37 @@ $foo = new class(){};
     {
         for ($i = $endIndex; $i >= $startIndex; --$i) {
             if ($tokens[$i]->isWhitespace()) {
-                if ($tokens[$i - 1]->isComment() || $tokens[$i + 1]->isComment()) {
-                    $content = $tokens[$i - 1]->getContent();
-
-                    if (!('#' === $content || str_starts_with($content, '//'))) {
-                        $content = $tokens[$i + 1]->getContent();
-
-                        if (!('#' === $content || str_starts_with($content, '//'))) {
-                            $tokens[$i] = new Token([T_WHITESPACE, ' ']);
+                if (str_contains($tokens[$i]->getContent(), "\n")) {
+                    if (\defined('T_ATTRIBUTE')) { // @TODO: drop condition and else when PHP 8.0+ is required
+                        if ($tokens[$i - 1]->isGivenKind(CT::T_ATTRIBUTE_CLOSE) || $tokens[$i + 1]->isGivenKind(T_ATTRIBUTE)) {
+                            continue;
                         }
+                    } else {
+                        if (($tokens[$i - 1]->isComment() && str_ends_with($tokens[$i - 1]->getContent(), ']'))
+                            || ($tokens[$i + 1]->isComment() && str_starts_with($tokens[$i + 1]->getContent(), '#['))
+                        ) {
+                            continue;
+                        }
+                    }
+
+                    if ($tokens[$i - 1]->isGivenKind(T_DOC_COMMENT) || $tokens[$i + 1]->isGivenKind(T_DOC_COMMENT)) {
+                        continue;
+                    }
+                }
+
+                if ($tokens[$i - 1]->isComment()) {
+                    $content = $tokens[$i - 1]->getContent();
+                    if (!str_starts_with($content, '//') && !str_starts_with($content, '#')) {
+                        $tokens[$i] = new Token([T_WHITESPACE, ' ']);
+                    }
+
+                    continue;
+                }
+
+                if ($tokens[$i + 1]->isComment()) {
+                    $content = $tokens[$i + 1]->getContent();
+                    if (!str_starts_with($content, '//')) {
+                        $tokens[$i] = new Token([T_WHITESPACE, ' ']);
                     }
 
                     continue;
