@@ -55,21 +55,29 @@ CODE_SAMPLE
     public function refactor(Node $node) : ?Node
     {
         $leftStaticType = $this->nodeTypeResolver->getNativeType($node->left);
-        // objects can be different by content
-        if ($leftStaticType instanceof ObjectType) {
-            return null;
-        }
-        if ($leftStaticType instanceof MixedType) {
-            return null;
-        }
         $rightStaticType = $this->nodeTypeResolver->getNativeType($node->right);
-        if ($rightStaticType instanceof MixedType) {
+        // objects can be different by content
+        if ($leftStaticType instanceof ObjectType || $rightStaticType instanceof ObjectType) {
             return null;
+        }
+        if ($leftStaticType instanceof MixedType || $rightStaticType instanceof MixedType) {
+            return null;
+        }
+        if ($leftStaticType->isString()->yes() && $rightStaticType->isString()->yes()) {
+            return $this->processIdenticalOrNotIdentical($node);
         }
         // different types
         if (!$leftStaticType->equals($rightStaticType)) {
             return null;
         }
+        return $this->processIdenticalOrNotIdentical($node);
+    }
+    /**
+     * @param \PhpParser\Node\Expr\BinaryOp\Equal|\PhpParser\Node\Expr\BinaryOp\NotEqual $node
+     * @return \PhpParser\Node\Expr\BinaryOp\Identical|\PhpParser\Node\Expr\BinaryOp\NotIdentical
+     */
+    private function processIdenticalOrNotIdentical($node)
+    {
         if ($node instanceof Equal) {
             return new Identical($node->left, $node->right);
         }

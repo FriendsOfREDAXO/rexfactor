@@ -60,7 +60,8 @@ use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\PHPStan\NodeVisitor\ExprScopeFromStmtNodeVisitor;
 use Rector\PHPStan\NodeVisitor\WrappedNodeRestoringNodeVisitor;
 use Rector\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202402\Webmozart\Assert\Assert;
+use Throwable;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 /**
  * @inspired by https://github.com/silverstripe/silverstripe-upgrader/blob/532182b23e854d02e0b27e68ebc394f436de0682/src/UpgradeRule/PHP/Visitor/PHPStanScopeVisitor.php
  * - https://github.com/silverstripe/silverstripe-upgrader/pull/57/commits/e5c7cfa166ad940d9d4ff69537d9f7608e992359#diff-5e0807bb3dc03d6a8d8b6ad049abd774
@@ -143,7 +144,7 @@ final class PHPStanNodeScopeResolver
         $nodeCallback = function (Node $node, MutatingScope $mutatingScope) use(&$nodeCallback, $filePath) : void {
             if ($node instanceof FileWithoutNamespace) {
                 $node->setAttribute(AttributeKey::SCOPE, $mutatingScope);
-                $this->nodeScopeResolver->processNodes($node->stmts, $mutatingScope, $nodeCallback);
+                $this->nodeScopeResolverProcessNodes($node->stmts, $mutatingScope, $nodeCallback);
                 return;
             }
             if (($node instanceof Expression || $node instanceof Return_ || $node instanceof EnumCase || $node instanceof Cast) && $node->expr instanceof Expr) {
@@ -208,7 +209,7 @@ final class PHPStanNodeScopeResolver
                 $node->setAttribute(AttributeKey::SCOPE, $mutatingScope);
             }
         };
-        $this->nodeScopeResolver->processNodes($stmts, $scope, $nodeCallback);
+        $this->nodeScopeResolverProcessNodes($stmts, $scope, $nodeCallback);
         $nodeTraverser = new NodeTraverser();
         $nodeTraverser->addVisitor(new WrappedNodeRestoringNodeVisitor());
         $nodeTraverser->addVisitor(new ExprScopeFromStmtNodeVisitor($this, $filePath, $scope));
@@ -222,6 +223,20 @@ final class PHPStanNodeScopeResolver
     public function resetHasUnreachableStatementNode() : void
     {
         $this->hasUnreachableStatementNode = \false;
+    }
+    /**
+     * @param Stmt[] $stmts
+     * @param callable(Node $node, MutatingScope $scope): void $nodeCallback
+     */
+    private function nodeScopeResolverProcessNodes(array $stmts, MutatingScope $mutatingScope, callable $nodeCallback) : void
+    {
+        try {
+            $this->nodeScopeResolver->processNodes($stmts, $mutatingScope, $nodeCallback);
+        } catch (Throwable $throwable) {
+            if ($throwable->getMessage() !== 'Internal error.') {
+                throw $throwable;
+            }
+        }
     }
     private function processCallike(CallLike $callLike, MutatingScope $mutatingScope) : void
     {
@@ -377,7 +392,7 @@ final class PHPStanNodeScopeResolver
         $this->privatesAccessor->setPrivateProperty($traitContext, 'classReflection', $traitClassReflection);
         $this->privatesAccessor->setPrivateProperty($traitScope, self::CONTEXT, $traitContext);
         $trait->setAttribute(AttributeKey::SCOPE, $traitScope);
-        $this->nodeScopeResolver->processNodes($trait->stmts, $traitScope, $nodeCallback);
+        $this->nodeScopeResolverProcessNodes($trait->stmts, $traitScope, $nodeCallback);
         $this->decorateTraitAttrGroups($trait, $traitScope);
     }
 }

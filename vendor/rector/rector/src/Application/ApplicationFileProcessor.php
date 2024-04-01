@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Application;
 
-use RectorPrefix202402\Nette\Utils\FileSystem as UtilsFileSystem;
+use RectorPrefix202403\Nette\Utils\FileSystem as UtilsFileSystem;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
@@ -19,11 +19,11 @@ use Rector\ValueObject\FileProcessResult;
 use Rector\ValueObject\ProcessResult;
 use Rector\ValueObject\Reporting\FileDiff;
 use Rector\ValueObjectFactory\Application\FileFactory;
-use RectorPrefix202402\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202402\Symplify\EasyParallel\CpuCoreCountProvider;
-use RectorPrefix202402\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
-use RectorPrefix202402\Symplify\EasyParallel\ScheduleFactory;
+use RectorPrefix202403\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202403\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202403\Symplify\EasyParallel\CpuCoreCountProvider;
+use RectorPrefix202403\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
+use RectorPrefix202403\Symplify\EasyParallel\ScheduleFactory;
 use Throwable;
 final class ApplicationFileProcessor
 {
@@ -102,7 +102,7 @@ final class ApplicationFileProcessor
     {
         $filePaths = $this->fileFactory->findFilesInPaths($configuration->getPaths(), $configuration);
         if ($this->vendorMissAnalyseGuard->isVendorAnalyzed($filePaths)) {
-            $this->symfonyStyle->warning(\sprintf('Rector is running on your "/vendor" directory. This is not necessary, as Rector access /vendor by composer autoload. It will cause Rector tu run much slower and possibly with errors.%sRemove "/vendor" from Rector paths and run again.', \PHP_EOL . \PHP_EOL));
+            $this->symfonyStyle->warning(\sprintf('Rector has detected a "/vendor" directory in your configured paths. If this is Composer\'s vendor directory, this is not necessary as it will be autoloaded. Scanning the Composer vendor directory will cause Rector to run much slower and possibly with errors.%sRemove "/vendor" from Rector paths and run again.', \PHP_EOL . \PHP_EOL));
             \sleep(3);
         }
         // no files found

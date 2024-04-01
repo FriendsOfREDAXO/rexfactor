@@ -3,11 +3,12 @@
 declare (strict_types=1);
 namespace Rector\Config;
 
-use RectorPrefix202402\Illuminate\Container\Container;
+use RectorPrefix202403\Illuminate\Container\Container;
 use Rector\Caching\Contract\ValueObject\Storage\CacheStorageInterface;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Configuration\RectorConfigBuilder;
+use Rector\Contract\DependencyInjection\RelatedConfigInterface;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Contract\Rector\RectorInterface;
 use Rector\DependencyInjection\Laravel\ContainerMemento;
@@ -16,11 +17,11 @@ use Rector\Skipper\SkipCriteriaResolver\SkippedClassResolver;
 use Rector\Validation\RectorConfigValidator;
 use Rector\ValueObject\PhpVersion;
 use Rector\ValueObject\PolyfillPackage;
-use RectorPrefix202402\Symfony\Component\Console\Command\Command;
-use RectorPrefix202402\Symfony\Component\Console\Input\ArrayInput;
-use RectorPrefix202402\Symfony\Component\Console\Output\ConsoleOutput;
-use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202402\Webmozart\Assert\Assert;
+use RectorPrefix202403\Symfony\Component\Console\Command\Command;
+use RectorPrefix202403\Symfony\Component\Console\Input\ArrayInput;
+use RectorPrefix202403\Symfony\Component\Console\Output\ConsoleOutput;
+use RectorPrefix202403\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 /**
  * @api
  */
@@ -151,8 +152,7 @@ final class RectorConfig extends Container
         Assert::isAOf($rectorClass, ConfigurableRectorInterface::class);
         // store configuration to cache
         $this->ruleConfigurations[$rectorClass] = \array_merge($this->ruleConfigurations[$rectorClass] ?? [], $configuration);
-        $this->singleton($rectorClass);
-        $this->tag($rectorClass, RectorInterface::class);
+        $this->rule($rectorClass);
         $this->afterResolving($rectorClass, function (ConfigurableRectorInterface $configurableRector) use($rectorClass) : void {
             $ruleConfiguration = $this->ruleConfigurations[$rectorClass];
             $configurableRector->configure($ruleConfiguration);
@@ -171,6 +171,11 @@ final class RectorConfig extends Container
         $this->tag($rectorClass, RectorInterface::class);
         // for cache invalidation in case of change
         SimpleParameterProvider::addParameter(Option::REGISTERED_RECTOR_RULES, $rectorClass);
+        if (\is_a($rectorClass, RelatedConfigInterface::class, \true)) {
+            $configFile = $rectorClass::getConfigFile();
+            Assert::file($configFile, \sprintf('The config path "%s" in "%s::getConfigFile()" could not be found', $configFile, $rectorClass));
+            $this->import($configFile);
+        }
     }
     /**
      * @param class-string<Command> $commandClass

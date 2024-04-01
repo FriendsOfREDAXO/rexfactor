@@ -17,6 +17,7 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\NodeTraverser;
+use PHPStan\Type\UnionType;
 use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\PhpParser\NodeFinder\PropertyFetchFinder;
 use Rector\Rector\AbstractRector;
@@ -180,10 +181,17 @@ CODE_SAMPLE
      */
     private function refactorAssign(Assign $assign, $node) : ?Assign
     {
+        if (!$assign->var instanceof Variable) {
+            return null;
+        }
         if (!$this->isEmptyString($assign->expr)) {
             return null;
         }
-        if (!$assign->var instanceof Variable) {
+        $type = $this->nodeTypeResolver->getNativeType($assign->var);
+        if ($type->isArray()->yes()) {
+            return null;
+        }
+        if ($type instanceof UnionType) {
             return null;
         }
         $variableAssignArrayDimFetches = $this->findSameNamedVariableAssigns($assign->var, $node);

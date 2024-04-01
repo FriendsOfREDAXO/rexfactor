@@ -37,7 +37,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202402\Webmozart\Assert\Assert;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 /**
  * @changelog https://wiki.php.net/rfc/attributes_v2
  * @changelog https://wiki.php.net/rfc/new_in_initializers
@@ -110,7 +110,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class SymfonyRoute
 {
     /**
-     * @Route("/path", name="action")
+     * @Route("/path", name="action") api route
      */
     public function action()
     {
@@ -122,7 +122,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class SymfonyRoute
 {
-    #[Route(path: '/path', name: 'action')]
+    #[Route(path: '/path', name: 'action')] // api route
     public function action()
     {
     }
@@ -150,7 +150,7 @@ CODE_SAMPLE
             return null;
         }
         $uses = $this->useImportsResolver->resolveBareUses();
-        // 1. bare tags without annotation class, e.g. "@inject"
+        // 1. bare tags without annotation class, e.g. "@require"
         $genericAttributeGroups = $this->processGenericTags($phpDocInfo);
         // 2. Doctrine annotation classes
         $annotationAttributeGroups = $this->processDoctrineAnnotationClasses($phpDocInfo, $uses);
