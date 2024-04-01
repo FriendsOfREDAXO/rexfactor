@@ -18,6 +18,7 @@ use PhpCsFixer\Console\Command\HelpCommand;
 use PhpCsFixer\Differ\FullDiffer;
 use PhpCsFixer\Fixer\ConfigurableFixerInterface;
 use PhpCsFixer\Fixer\DeprecatedFixerInterface;
+use PhpCsFixer\Fixer\ExperimentalFixerInterface;
 use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerConfiguration\AliasedFixerOption;
 use PhpCsFixer\FixerConfiguration\AllowedValueSubset;
@@ -89,6 +90,19 @@ final class FixerDocumentGenerator
             }
         }
 
+        $experimentalDescription = '';
+
+        if ($fixer instanceof ExperimentalFixerInterface) {
+            $experimentalDescriptionRaw = RstUtils::toRst('Rule is not covered with backward compatibility promise, use it at your own risk. Rule\'s behaviour may be changed at any point, including rule\'s name; its options\' names, availability and allowed values; its default configuration. Rule may be even removed without prior notice. Feel free to provide feedback and help with determining final state of the rule.', 0);
+            $experimentalDescription = <<<RST
+
+                This rule is experimental
+                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                {$experimentalDescriptionRaw}
+                RST;
+        }
+
         $riskyDescription = '';
         $riskyDescriptionRaw = $definition->getRiskyDescription();
 
@@ -115,6 +129,7 @@ final class FixerDocumentGenerator
                 $warningsHeader,
                 $warningsHeaderLine,
                 $deprecationDescription,
+                $experimentalDescription,
                 $riskyDescription,
             ]));
         }
@@ -203,15 +218,7 @@ final class FixerDocumentGenerator
             }
         }
 
-        $ruleSetConfigs = [];
-
-        foreach (RuleSets::getSetDefinitionNames() as $set) {
-            $ruleSet = new RuleSet([$set => true]);
-
-            if ($ruleSet->hasRule($name)) {
-                $ruleSetConfigs[$set] = $ruleSet->getRuleConfiguration($name);
-            }
-        }
+        $ruleSetConfigs = self::getSetsOfRule($name);
 
         if ([] !== $ruleSetConfigs) {
             $plural = 1 !== \count($ruleSetConfigs) ? 's' : '';
@@ -243,17 +250,46 @@ final class FixerDocumentGenerator
         $fileName = $reflectionObject->getFileName();
         $fileName = str_replace('\\', '/', $fileName);
         $fileName = substr($fileName, strrpos($fileName, '/src/Fixer/') + 1);
-        $fileName = "`{$className} <./../{$fileName}>`_";
+        $fileName = "`{$className} <./../../../{$fileName}>`_";
+
+        $testFileName = Preg::replace('~.*\K/src/(?=Fixer/)~', '/tests/', $fileName);
+        $testFileName = Preg::replace('~PhpCsFixer\\\\\\\\\K(?=Fixer\\\\\\\\)~', 'Tests\\\\\\\\', $testFileName);
+        $testFileName = Preg::replace('~(?= <|\.php>)~', 'Test', $testFileName);
 
         $doc .= <<<RST
 
-            Source class
-            ------------
+            References
+            ----------
 
-            {$fileName}
+            - Fixer class: {$fileName}
+            - Test class: {$testFileName}
+
+            The test class defines officially supported behaviour. Each test case is a part of our backward compatibility promise.
             RST;
 
+        $doc = str_replace("\t", '<TAB>', $doc);
+
         return "{$doc}\n";
+    }
+
+    /**
+     * @internal
+     *
+     * @return array<string, null|array<string, mixed>>
+     */
+    public static function getSetsOfRule(string $ruleName): array
+    {
+        $ruleSetConfigs = [];
+
+        foreach (RuleSets::getSetDefinitionNames() as $set) {
+            $ruleSet = new RuleSet([$set => true]);
+
+            if ($ruleSet->hasRule($ruleName)) {
+                $ruleSetConfigs[$set] = $ruleSet->getRuleConfiguration($ruleName);
+            }
+        }
+
+        return $ruleSetConfigs;
     }
 
     /**
@@ -267,7 +303,7 @@ final class FixerDocumentGenerator
             'Phpdoc' => 'PHPDoc',
         ];
 
-        usort($fixers, static fn (FixerInterface $a, FixerInterface $b): int => strcmp(\get_class($a), \get_class($b)));
+        usort($fixers, static fn (FixerInterface $a, FixerInterface $b): int => \get_class($a) <=> \get_class($b));
 
         $documentation = <<<'RST'
             =======================
@@ -294,6 +330,10 @@ final class FixerDocumentGenerator
 
             if ($fixer instanceof DeprecatedFixerInterface) {
                 $attributes[] = 'deprecated';
+            }
+
+            if ($fixer instanceof ExperimentalFixerInterface) {
+                $attributes[] = 'experimental';
             }
 
             if ($fixer->isRisky()) {

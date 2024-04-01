@@ -164,7 +164,7 @@ function m($a, array $b, Foo $c) {}
      * @param Token[]      $funcParamNames
      * @param Annotation[] $paramAnnotations
      *
-     * @return string[]
+     * @return list<string>
      */
     private function sortParamAnnotations(array $funcParamNames, array $paramAnnotations): array
     {
@@ -199,7 +199,7 @@ function m($a, array $b, Foo $c) {}
      *
      * @param Annotation[] $paramAnnotations
      *
-     * @return string[]
+     * @return list<string>
      */
     private function getOtherAnnotationsBetweenParams(DocBlock $doc, array $paramAnnotations): array
     {
@@ -229,7 +229,7 @@ function m($a, array $b, Foo $c) {}
      *
      * @param Annotation[] $paramAnnotations
      *
-     * @return null|array<int>
+     * @return ?list<int>
      */
     private function findParamAnnotationByIdentifier(array $paramAnnotations, string $identifier): ?array
     {
@@ -237,7 +237,7 @@ function m($a, array $b, Foo $c) {}
         $blockMatch = false;
         $blockIndices = [];
 
-        $paramRegex = '/\*\s*@param\s*(?:|'.TypeExpression::REGEX_TYPES.'\s*)&?(?=\$\b)'.preg_quote($identifier).'\b/';
+        $paramRegex = '/\*\h*@param\h*(?:|'.TypeExpression::REGEX_TYPES.'\h*)&?(?=\$\b)'.preg_quote($identifier).'\b/';
 
         foreach ($paramAnnotations as $i => $param) {
             $blockStart = Preg::match('/\s*{\s*/', $param->getContent());

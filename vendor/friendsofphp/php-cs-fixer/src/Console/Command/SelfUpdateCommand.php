@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Console\Command;
 
+use PhpCsFixer\Console\Application;
 use PhpCsFixer\Console\SelfUpdate\NewVersionCheckerInterface;
 use PhpCsFixer\PharCheckerInterface;
 use PhpCsFixer\Preg;
@@ -36,6 +37,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'self-update')]
 final class SelfUpdateCommand extends Command
 {
+    /** @var string */
     protected static $defaultName = 'self-update';
 
     private NewVersionCheckerInterface $versionChecker;
@@ -81,9 +83,9 @@ final class SelfUpdateCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity() && $output instanceof ConsoleOutputInterface) {
+        if ($output instanceof ConsoleOutputInterface) {
             $stdErr = $output->getErrorOutput();
-            $stdErr->writeln($this->getApplication()->getLongVersion());
+            $stdErr->writeln(Application::getAboutWithRuntime(true));
         }
 
         if (!$this->toolInfo->isInstalledAsPhar()) {
@@ -134,7 +136,11 @@ final class SelfUpdateCommand extends Command
             $remoteTag = $latestVersionOfCurrentMajor;
         }
 
-        $localFilename = realpath($_SERVER['argv'][0]) ?: $_SERVER['argv'][0];
+        $localFilename = $_SERVER['argv'][0];
+        $realPath = realpath($localFilename);
+        if (false !== $realPath) {
+            $localFilename = $realPath;
+        }
 
         if (!is_writable($localFilename)) {
             $output->writeln(sprintf('<error>No permission to update</error> "%s" <error>file.</error>', $localFilename));

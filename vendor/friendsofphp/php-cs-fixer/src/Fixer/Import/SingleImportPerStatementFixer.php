@@ -84,7 +84,7 @@ use Space\Models\ {
             $groupClose = $tokens->getPrevMeaningfulToken($endIndex);
 
             if ($tokens[$groupClose]->isGivenKind(CT::T_GROUP_IMPORT_BRACE_CLOSE)) {
-                if ($this->configuration['group_to_single_imports']) {
+                if (true === $this->configuration['group_to_single_imports']) {
                     $this->fixGroupUse($tokens, $index, $endIndex);
                 }
             } else {
@@ -103,6 +103,9 @@ use Space\Models\ {
         ]);
     }
 
+    /**
+     * @return array{string, ?int, int, string}
+     */
     private function getGroupDeclaration(Tokens $tokens, int $index): array
     {
         $groupPrefix = '';
@@ -143,7 +146,7 @@ use Space\Models\ {
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     private function getGroupStatements(Tokens $tokens, string $groupPrefix, int $groupOpenIndex, int $groupCloseIndex, string $comment): array
     {

@@ -42,7 +42,6 @@ use PhpCsFixer\ToolInfoInterface;
 use PhpCsFixer\Utils;
 use PhpCsFixer\WhitespacesFixerConfig;
 use PhpCsFixer\WordMatcher;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder as SymfonyFinder;
 
@@ -402,18 +401,18 @@ final class ConfigurationResolver
     public function getProgressType(): string
     {
         if (null === $this->progress) {
-            if (OutputInterface::VERBOSITY_VERBOSE <= $this->options['verbosity'] && 'txt' === $this->getFormat()) {
+            if ('txt' === $this->getFormat()) {
                 $progressType = $this->options['show-progress'];
 
                 if (null === $progressType) {
                     $progressType = $this->getConfig()->getHideProgress()
                         ? ProgressOutputType::NONE
-                        : ProgressOutputType::DOTS;
-                } elseif (!\in_array($progressType, ProgressOutputType::AVAILABLE, true)) {
+                        : ProgressOutputType::BAR;
+                } elseif (!\in_array($progressType, ProgressOutputType::all(), true)) {
                     throw new InvalidConfigurationException(sprintf(
                         'The progress type "%s" is not defined, supported are %s.',
                         $progressType,
-                        Utils::naturalLanguageJoin(ProgressOutputType::AVAILABLE)
+                        Utils::naturalLanguageJoin(ProgressOutputType::all())
                     ));
                 }
 
@@ -480,7 +479,7 @@ final class ConfigurationResolver
             }
         }
 
-        $this->usingCache = $this->usingCache && ($this->toolInfo->isInstalledAsPhar() || $this->toolInfo->isInstalledByComposer());
+        $this->usingCache = $this->usingCache && $this->isCachingAllowedForRuntime();
 
         return $this->usingCache;
     }
@@ -531,7 +530,7 @@ final class ConfigurationResolver
     /**
      * Compute file candidates for config file.
      *
-     * @return string[]
+     * @return list<string>
      */
     private function computeConfigFiles(): array
     {
@@ -631,7 +630,7 @@ final class ConfigurationResolver
     }
 
     /**
-     * @return array<mixed>
+     * @return array<string, mixed>
      */
     private function parseRules(): array
     {
@@ -674,7 +673,7 @@ final class ConfigurationResolver
     }
 
     /**
-     * @param array<mixed> $rules
+     * @param array<string, mixed> $rules
      *
      * @throws InvalidConfigurationException
      */
@@ -949,5 +948,12 @@ final class ConfigurationResolver
         }
 
         return $config;
+    }
+
+    private function isCachingAllowedForRuntime(): bool
+    {
+        return $this->toolInfo->isInstalledAsPhar()
+            || $this->toolInfo->isInstalledByComposer()
+            || $this->toolInfo->isRunInsideDocker();
     }
 }

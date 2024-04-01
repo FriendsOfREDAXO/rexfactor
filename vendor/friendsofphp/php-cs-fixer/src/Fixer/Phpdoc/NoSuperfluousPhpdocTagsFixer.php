@@ -34,8 +34,21 @@ use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 use PhpCsFixer\Tokenizer\TokensAnalyzer;
 
+/**
+ * @phpstan-type _TypeInfo array{
+ *   types: list<string>,
+ *   allows_null: bool,
+ * }
+ * @phpstan-type _DocumentElement array{
+ *   index: int,
+ *   type: 'classy'|'function'|'property',
+ *   modifiers: array<int, Token>,
+ *   types: array<int, Token>,
+ * }
+ */
 final class NoSuperfluousPhpdocTagsFixer extends AbstractFixer implements ConfigurableFixerInterface
 {
+    /** @var _TypeInfo */
     private const NO_TYPE_INFO = [
         'types' => [],
         'allows_null' => true,
@@ -46,7 +59,8 @@ final class NoSuperfluousPhpdocTagsFixer extends AbstractFixer implements Config
         return new FixerDefinition(
             'Removes `@param`, `@return` and `@var` tags that don\'t provide any useful information.',
             [
-                new CodeSample('<?php
+                new CodeSample(
+                    '<?php
 class Foo {
     /**
      * @param Bar $bar
@@ -56,8 +70,10 @@ class Foo {
      */
     public function doFoo(Bar $bar, $baz): Baz {}
 }
-'),
-                new CodeSample('<?php
+',
+                ),
+                new CodeSample(
+                    '<?php
 class Foo {
     /**
      * @param Bar $bar
@@ -65,25 +81,48 @@ class Foo {
      */
     public function doFoo(Bar $bar, $baz) {}
 }
-', ['allow_mixed' => true]),
-                new CodeSample('<?php
+',
+                    ['allow_mixed' => true],
+                ),
+                new CodeSample(
+                    '<?php
 class Foo {
     /**
      * @inheritDoc
      */
     public function doFoo(Bar $bar, $baz) {}
 }
-', ['remove_inheritdoc' => true]),
-                new CodeSample('<?php
+',
+                    ['remove_inheritdoc' => true],
+                ),
+                new CodeSample(
+                    '<?php
 class Foo {
     /**
      * @param Bar $bar
      * @param mixed $baz
      * @param string|int|null $qux
+     * @param mixed $foo
      */
     public function doFoo(Bar $bar, $baz /*, $qux = null */) {}
 }
-', ['allow_unused_params' => true]),
+',
+                    ['allow_hidden_params' => true],
+                ),
+                new CodeSample(
+                    '<?php
+class Foo {
+    /**
+     * @param Bar $bar
+     * @param mixed $baz
+     * @param string|int|null $qux
+     * @param mixed $foo
+     */
+    public function doFoo(Bar $bar, $baz /*, $qux = null */) {}
+}
+',
+                    ['allow_unused_params' => true],
+                ),
             ]
         );
     }
@@ -196,6 +235,10 @@ class Foo {
                 ->setAllowedTypes(['bool'])
                 ->setDefault(false)
                 ->getOption(),
+            (new FixerOptionBuilder('allow_hidden_params', 'Whether `param` annotation for hidden params in method signature are allowed.'))
+                ->setAllowedTypes(['bool'])
+                ->setDefault(false) // @TODO set to `true` on 4.0
+                ->getOption(),
             (new FixerOptionBuilder('allow_unused_params', 'Whether `param` annotation without actual signature is allowed (`true`) or considered superfluous (`false`).'))
                 ->setAllowedTypes(['bool'])
                 ->setDefault(false)
@@ -204,12 +247,7 @@ class Foo {
     }
 
     /**
-     * @return null|array{
-     *       index: int,
-     *       type: 'classy'|'function'|'property',
-     *       modifiers: array<int, Token>,
-     *       types: array<int, Token>,
-     * }
+     * @return null|_DocumentElement
      */
     private function findDocumentedElement(Tokens $tokens, int $docCommentIndex): ?array
     {
@@ -262,7 +300,7 @@ class Foo {
                 return $element;
             }
 
-            if ($tokens[$index]->isGivenKind(T_FUNCTION)) {
+            if ($tokens[$index]->isGivenKind([T_FUNCTION, T_FN])) {
                 $element['index'] = $index;
                 $element['type'] = 'function';
 
@@ -291,14 +329,9 @@ class Foo {
     }
 
     /**
-     * @param array{
-     *       index: int,
-     *       type: 'function',
-     *       modifiers: array<int, Token>,
-     *       types: array<int, Token>,
-     * } $element
-     * @param null|non-empty-string $namespace
-     * @param array<string, string> $shortNames
+     * @param _DocumentElement&array{type: 'function'} $element
+     * @param null|non-empty-string                    $namespace
+     * @param array<string, string>                    $shortNames
      */
     private function fixFunctionDocComment(
         string $content,
@@ -353,14 +386,9 @@ class Foo {
     }
 
     /**
-     * @param array{
-     *       index: int,
-     *       type: 'property',
-     *       modifiers: array<int, Token>,
-     *       types: array<int, Token>,
-     * } $element
-     * @param null|non-empty-string $namespace
-     * @param array<string, string> $shortNames
+     * @param _DocumentElement&array{type: 'property'} $element
+     * @param null|non-empty-string                    $namespace
+     * @param array<string, string>                    $shortNames
      */
     private function fixPropertyDocComment(
         string $content,
@@ -388,12 +416,7 @@ class Foo {
     }
 
     /**
-     * @param array{
-     *       index: int,
-     *       type: 'classy',
-     *       modifiers: array<int, Token>,
-     *       types: array<int, Token>,
-     * } $element
+     * @param _DocumentElement&array{type: 'classy'} $element
      */
     private function fixClassDocComment(string $content, array $element): string
     {
@@ -405,7 +428,7 @@ class Foo {
     }
 
     /**
-     * @return array<string, array{types: list<string>, allows_null: bool}>
+     * @return array<non-empty-string, _TypeInfo>
      */
     private function getArgumentsInfo(Tokens $tokens, int $start, int $end): array
     {
@@ -440,11 +463,20 @@ class Foo {
             $argumentsInfo[$token->getContent()] = $info;
         }
 
+        // virtualise "hidden params" as if they would be regular ones
+        if (true === $this->configuration['allow_hidden_params']) {
+            $paramsString = $tokens->generatePartialCode($start, $end);
+            Preg::matchAll('|/\*[^$]*(\$\w+)[^*]*\*/|', $paramsString, $matches);
+            foreach ($matches[1] as $match) {
+                $argumentsInfo[$match] = self::NO_TYPE_INFO; // HINT: one could try to extract actual type for hidden param, for now we only indicate it's existence
+            }
+        }
+
         return $argumentsInfo;
     }
 
     /**
-     * @return array{types: list<string>, allows_null: bool}
+     * @return _TypeInfo
      */
     private function getReturnTypeInfo(Tokens $tokens, int $closingParenthesisIndex): array
     {
@@ -458,7 +490,7 @@ class Foo {
     /**
      * @param int $index The index of the first token of the type hint
      *
-     * @return array{types: list<string>, allows_null: bool}
+     * @return _TypeInfo
      */
     private function parseTypeHint(Tokens $tokens, int $index): array
     {
@@ -509,6 +541,7 @@ class Foo {
     }
 
     /**
+     * @param _TypeInfo             $info
      * @param null|non-empty-string $namespace
      * @param array<string, string> $symbolShortNames
      */
@@ -520,11 +553,11 @@ class Foo {
         array $symbolShortNames
     ): bool {
         if ('param' === $annotation->getTag()->getName()) {
-            $regex = '{@param(?:\s+'.TypeExpression::REGEX_TYPES.')?(?!\S)(?:\s+(?:\&\s*)?(?:\.{3}\s*)?\$\S+)?(?:\s+(?<description>(?!\*+\/)\S+))?}s';
+            $regex = '{\*\h*@param(?:\h+'.TypeExpression::REGEX_TYPES.')?(?!\S)(?:\h+(?:\&\h*)?(?:\.{3}\h*)?\$\S+)?(?:\s+(?<description>(?!\*+\/)\S+))?}s';
         } elseif ('var' === $annotation->getTag()->getName()) {
-            $regex = '{@var(?:\s+'.TypeExpression::REGEX_TYPES.')?(?!\S)(?:\s+\$\S+)?(?:\s+(?<description>(?!\*\/)\S+))?}s';
+            $regex = '{\*\h*@var(?:\h+'.TypeExpression::REGEX_TYPES.')?(?!\S)(?:\h+\$\S+)?(?:\s+(?<description>(?!\*\/)\S+))?}s';
         } else {
-            $regex = '{@return(?:\s+'.TypeExpression::REGEX_TYPES.')?(?!\S)(?:\s+(?<description>(?!\*\/)\S+))?}s';
+            $regex = '{\*\h*@return(?:\h+'.TypeExpression::REGEX_TYPES.')?(?!\S)(?:\s+(?<description>(?!\*\/)\S+))?}s';
         }
 
         if (!Preg::match($regex, $annotation->getContent(), $matches)) {
@@ -575,11 +608,11 @@ class Foo {
      * Converts given types to lowercase, replaces imports aliases with
      * their matching FQCN, and finally sorts the result.
      *
-     * @param string[]              $types            The types to normalize
+     * @param list<string>          $types            The types to normalize
      * @param null|non-empty-string $namespace
      * @param array<string, string> $symbolShortNames The imports aliases
      *
-     * @return array The normalized types
+     * @return list<string> The normalized types
      */
     private function toComparableNames(array $types, ?string $namespace, ?string $currentSymbol, array $symbolShortNames): array
     {
@@ -672,6 +705,9 @@ class Foo {
         ~ix', '$1$2', $docComment);
     }
 
+    /**
+     * @param _DocumentElement $element
+     */
     private function removeSuperfluousModifierAnnotation(DocBlock $docBlock, array $element): void
     {
         foreach (['abstract' => T_ABSTRACT, 'final' => T_FINAL] as $annotationType => $modifierToken) {

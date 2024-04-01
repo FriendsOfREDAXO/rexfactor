@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Doctrine\Annotation;
 
-use PhpCsFixer\Doctrine\Annotation\Token as AnnotationToken;
 use PhpCsFixer\Preg;
 use PhpCsFixer\Tokenizer\Token as PhpToken;
 
@@ -103,7 +102,7 @@ final class Tokens extends \SplFixedArray
                 $lastTokenEndIndex = 0;
                 foreach (\array_slice($scannedTokens, 0, $nbScannedTokensToUse) as $token) {
                     if ($token->isType(DocLexer::T_STRING)) {
-                        $token = new AnnotationToken(
+                        $token = new Token(
                             $token->getType(),
                             '"'.str_replace('"', '""', $token->getContent()).'"',
                             $token->getPosition()
@@ -139,8 +138,8 @@ final class Tokens extends \SplFixedArray
     /**
      * Create token collection from array.
      *
-     * @param Token[] $array       the array to import
-     * @param ?bool   $saveIndices save the numeric indices used in the original array, default is yes
+     * @param array<int, Token> $array       the array to import
+     * @param ?bool             $saveIndices save the numeric indices used in the original array, default is yes
      */
     public static function fromArray($array, $saveIndices = null): self
     {
