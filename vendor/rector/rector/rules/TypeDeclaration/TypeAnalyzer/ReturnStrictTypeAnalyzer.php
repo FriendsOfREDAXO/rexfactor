@@ -25,6 +25,8 @@ use PHPStan\Type\MixedType;
 use PHPStan\Type\StaticType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeTraverser;
+use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\NodeTypeResolver\PHPStan\ParametersAcceptorSelectorVariantsWrapper;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\StaticTypeMapper;
@@ -98,12 +100,16 @@ final class ReturnStrictTypeAnalyzer
         if ($methodReflection === null) {
             return null;
         }
-        $parametersAcceptor = $methodReflection->getVariants()[0];
-        if ($parametersAcceptor instanceof FunctionVariantWithPhpDocs) {
+        $scope = $call->getAttribute(AttributeKey::SCOPE);
+        if (!$scope instanceof Scope) {
+            return null;
+        }
+        $parametersAcceptorWithPhpDocs = ParametersAcceptorSelectorVariantsWrapper::select($methodReflection, $call, $scope);
+        if ($parametersAcceptorWithPhpDocs instanceof FunctionVariantWithPhpDocs) {
             // native return type is needed, as docblock can be false
-            $returnType = $parametersAcceptor->getNativeReturnType();
+            $returnType = $parametersAcceptorWithPhpDocs->getNativeReturnType();
         } else {
-            $returnType = $parametersAcceptor->getReturnType();
+            $returnType = $parametersAcceptorWithPhpDocs->getReturnType();
         }
         if ($returnType instanceof MixedType) {
             return null;

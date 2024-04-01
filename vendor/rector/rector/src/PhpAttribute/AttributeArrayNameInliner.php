@@ -11,14 +11,15 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Scalar\String_;
 use Rector\Exception\NotImplementedYetException;
-use RectorPrefix202402\Webmozart\Assert\Assert;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 final class AttributeArrayNameInliner
 {
     /**
      * @param Array_|Arg[] $array
+     * @param string[] $classReferenceFields
      * @return Arg[]
      */
-    public function inlineArrayToArgs($array) : array
+    public function inlineArrayToArgs($array, array $classReferenceFields = []) : array
     {
         if (\is_array($array)) {
             return $this->inlineArray($array);

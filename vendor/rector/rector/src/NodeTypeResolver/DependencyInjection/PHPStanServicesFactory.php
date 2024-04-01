@@ -15,7 +15,11 @@ use PHPStan\Reflection\ReflectionProvider;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider;
-use RectorPrefix202402\Webmozart\Assert\Assert;
+use RectorPrefix202403\Symfony\Component\Console\Input\ArrayInput;
+use RectorPrefix202403\Symfony\Component\Console\Output\ConsoleOutput;
+use RectorPrefix202403\Symfony\Component\Console\Style\SymfonyStyle;
+use Throwable;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 /**
  * Factory so Symfony app can use services from PHPStan container
  *
@@ -23,6 +27,18 @@ use RectorPrefix202402\Webmozart\Assert\Assert;
  */
 final class PHPStanServicesFactory
 {
+    /**
+     * @var string
+     */
+    private const INVALID_BLEEDING_EDGE_PATH_MESSAGE = <<<MESSAGE_ERROR
+'%s, use full path bleedingEdge.neon config, eg:
+
+includes:
+    - phar://vendor/phpstan/phpstan/phpstan.phar/conf/bleedingEdge.neon
+
+in your included phpstan configuration.
+
+MESSAGE_ERROR;
     /**
      * @readonly
      * @var \PHPStan\DependencyInjection\Container
@@ -32,7 +48,16 @@ final class PHPStanServicesFactory
     {
         $containerFactory = new ContainerFactory(\getcwd());
         $additionalConfigFiles = $this->resolveAdditionalConfigFiles();
-        $this->container = $containerFactory->create(SimpleParameterProvider::provideStringParameter(Option::CONTAINER_CACHE_DIRECTORY), $additionalConfigFiles, []);
+        try {
+            $this->container = $containerFactory->create(SimpleParameterProvider::provideStringParameter(Option::CONTAINER_CACHE_DIRECTORY), $additionalConfigFiles, []);
+        } catch (Throwable $throwable) {
+            if ($throwable->getMessage() === "File 'phar://phpstan.phar/conf/bleedingEdge.neon' is missing or is not readable.") {
+                $symfonyStyle = new SymfonyStyle(new ArrayInput([]), new ConsoleOutput());
+                $symfonyStyle->error(\sprintf(self::INVALID_BLEEDING_EDGE_PATH_MESSAGE, $throwable->getMessage()));
+                exit(-1);
+            }
+            throw $throwable;
+        }
     }
     /**
      * @api

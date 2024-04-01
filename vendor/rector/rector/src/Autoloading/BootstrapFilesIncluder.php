@@ -3,14 +3,13 @@
 declare (strict_types=1);
 namespace Rector\Autoloading;
 
-use FilesystemIterator;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Exception\ShouldNotHappenException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
-use RectorPrefix202402\Webmozart\Assert\Assert;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Autoloading\BootstrapFilesIncluderTest
  */
@@ -40,7 +39,7 @@ final class BootstrapFilesIncluder
         if ($stubsRectorDirectory === \false) {
             return;
         }
-        $dir = new RecursiveDirectoryIterator($stubsRectorDirectory, RecursiveDirectoryIterator::SKIP_DOTS | FilesystemIterator::SKIP_DOTS);
+        $dir = new RecursiveDirectoryIterator($stubsRectorDirectory, RecursiveDirectoryIterator::SKIP_DOTS);
         /** @var SplFileInfo[] $stubs */
         $stubs = new RecursiveIteratorIterator($dir);
         foreach ($stubs as $stub) {

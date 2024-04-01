@@ -62,6 +62,9 @@ CODE_SAMPLE
             $nodes = $rootStmt->stmts;
             $stmt = $currentStmt;
         }
+        if (!$stmt instanceof Stmt) {
+            return null;
+        }
         if ($this->shouldSkip($stmt)) {
             return null;
         }

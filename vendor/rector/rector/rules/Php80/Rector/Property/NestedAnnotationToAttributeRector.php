@@ -29,7 +29,7 @@ use Rector\ValueObject\PhpVersion;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202402\Webmozart\Assert\Assert;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Php80\Rector\Property\NestedAnnotationToAttributeRector\NestedAnnotationToAttributeRectorTest
  *
@@ -177,8 +177,13 @@ CODE_SAMPLE
     }
     private function matchAnnotationToAttribute(DoctrineAnnotationTagValueNode $doctrineAnnotationTagValueNode) : ?\Rector\Php80\ValueObject\NestedAnnotationToAttribute
     {
+        $doctrineResolvedClass = $doctrineAnnotationTagValueNode->identifierTypeNode->getAttribute(PhpDocAttributeKey::RESOLVED_CLASS);
         foreach ($this->nestedAnnotationsToAttributes as $nestedAnnotationToAttribute) {
-            $doctrineResolvedClass = $doctrineAnnotationTagValueNode->identifierTypeNode->getAttribute(PhpDocAttributeKey::RESOLVED_CLASS);
+            foreach ($nestedAnnotationToAttribute->getAnnotationPropertiesToAttributeClasses() as $annotationClass) {
+                if ($annotationClass->getAttributeClass() === $doctrineResolvedClass) {
+                    return $nestedAnnotationToAttribute;
+                }
+            }
             if ($doctrineResolvedClass !== $nestedAnnotationToAttribute->getTag()) {
                 continue;
             }

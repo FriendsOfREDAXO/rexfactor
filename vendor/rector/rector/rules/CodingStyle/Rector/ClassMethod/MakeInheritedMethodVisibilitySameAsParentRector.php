@@ -85,17 +85,28 @@ CODE_SAMPLE
         if (!$classReflection instanceof ClassReflection) {
             return null;
         }
+        if ($classReflection->isAnonymous()) {
+            return null;
+        }
         $parentClassReflections = $classReflection->getParents();
         if ($parentClassReflections === []) {
             return null;
         }
         $hasChanged = \false;
+        $interfaces = $classReflection->getInterfaces();
         foreach ($node->getMethods() as $classMethod) {
             if ($classMethod->isMagic()) {
                 continue;
             }
             /** @var string $methodName */
             $methodName = $this->getName($classMethod->name);
+            if ($classMethod->isPublic()) {
+                foreach ($interfaces as $interface) {
+                    if ($interface->hasNativeMethod($methodName)) {
+                        continue 2;
+                    }
+                }
+            }
             foreach ($parentClassReflections as $parentClassReflection) {
                 $nativeClassReflection = $parentClassReflection->getNativeReflection();
                 // the class reflection above takes also @method annotations into an account

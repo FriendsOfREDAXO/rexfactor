@@ -3,13 +3,13 @@
 declare (strict_types=1);
 namespace Rector\Configuration;
 
-use RectorPrefix202402\Nette\Utils\FileSystem;
-use RectorPrefix202402\Nette\Utils\Strings;
+use RectorPrefix202403\Nette\Utils\FileSystem;
+use RectorPrefix202403\Nette\Utils\Strings;
 use Rector\Contract\Rector\RectorInterface;
 use Rector\FileSystem\InitFilePathsResolver;
 use Rector\Php\PhpVersionProvider;
 use Rector\PostRector\Contract\Rector\PostRectorInterface;
-use RectorPrefix202402\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202403\Symfony\Component\Console\Style\SymfonyStyle;
 final class ConfigInitializer
 {
     /**
@@ -50,7 +50,8 @@ final class ConfigInitializer
             return;
         }
         $response = $this->symfonyStyle->ask('No "rector.php" config found. Should we generate it for you?', 'yes');
-        if ($response !== 'yes') {
+        // be tolerant about input
+        if (!\in_array($response, ['yes', 'YES', 'y', 'Y'], \true)) {
             // okay, nothing we can do
             return;
         }

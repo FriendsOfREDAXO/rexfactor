@@ -3,9 +3,10 @@
 declare (strict_types=1);
 namespace Rector\PhpParser\Printer;
 
-use RectorPrefix202402\Nette\Utils\Strings;
+use RectorPrefix202403\Nette\Utils\Strings;
 use PhpParser\Comment;
 use PhpParser\Node;
+use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrowFunction;
@@ -112,6 +113,15 @@ final class BetterStandardPrinter extends Standard
         }
         $content = parent::p($node, $parentFormatPreserved);
         return $node->getAttribute(AttributeKey::WRAPPED_IN_PARENTHESES) === \true ? '(' . $content . ')' : $content;
+    }
+    protected function pAttributeGroup(AttributeGroup $attributeGroup) : string
+    {
+        $ret = parent::pAttributeGroup($attributeGroup);
+        $comment = $attributeGroup->getAttribute(AttributeKey::ATTRIBUTE_COMMENT);
+        if (!\in_array($comment, ['', null], \true)) {
+            $ret .= ' // ' . $comment;
+        }
+        return $ret;
     }
     protected function pExpr_ArrowFunction(ArrowFunction $arrowFunction) : string
     {

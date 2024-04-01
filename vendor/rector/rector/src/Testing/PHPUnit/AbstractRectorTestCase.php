@@ -3,10 +3,10 @@
 declare (strict_types=1);
 namespace Rector\Testing\PHPUnit;
 
-use RectorPrefix202402\Illuminate\Container\RewindableGenerator;
+use RectorPrefix202403\Illuminate\Container\RewindableGenerator;
 use Iterator;
-use RectorPrefix202402\Nette\Utils\FileSystem;
-use RectorPrefix202402\Nette\Utils\Strings;
+use RectorPrefix202403\Nette\Utils\FileSystem;
+use RectorPrefix202403\Nette\Utils\Strings;
 use PHPUnit\Framework\ExpectationFailedException;
 use Rector\Application\ApplicationFileProcessor;
 use Rector\Autoloading\AdditionalAutoloader;
@@ -77,7 +77,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
                 /** @var ResetableInterface $resetable */
                 $resetable->reset();
             }
-            $this->forgetRectorsRulesAndCollectors();
+            $this->forgetRectorsRules();
             $rectorConfig->resetRuleConfigurations();
             // this has to be always empty, so we can add new rules with their configuration
             $this->assertEmpty($rectorConfig->tagged(RectorInterface::class));
@@ -136,7 +136,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
         FileSystem::write($inputFilePath, $inputFileContents, null);
         $this->doTestFileMatchesExpectedContent($inputFilePath, $inputFileContents, $expectedFileContents, $fixtureFilePath);
     }
-    protected function forgetRectorsRulesAndCollectors() : void
+    private function forgetRectorsRules() : void
     {
         $rectorConfig = self::getContainer();
         // 1. forget tagged services

@@ -4,10 +4,11 @@ declare (strict_types=1);
 namespace Rector\Configuration;
 
 use Rector\Caching\Contract\ValueObject\Storage\CacheStorageInterface;
+use Rector\Config\Level\DeadCodeLevel;
+use Rector\Config\Level\TypeDeclarationLevel;
 use Rector\Config\RectorConfig;
-use Rector\Configuration\Levels\DeadCodeLevel;
+use Rector\Config\RegisteredService;
 use Rector\Configuration\Levels\LevelRulesResolver;
-use Rector\Configuration\Levels\TypeCoverageLevel;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Contract\Rector\RectorInterface;
 use Rector\Doctrine\Set\DoctrineSetList;
@@ -21,7 +22,8 @@ use Rector\Symfony\Set\JMSSetList;
 use Rector\Symfony\Set\SensiolabsSetList;
 use Rector\Symfony\Set\SymfonySetList;
 use Rector\ValueObject\PhpVersion;
-use RectorPrefix202402\Symfony\Component\Finder\Finder;
+use RectorPrefix202403\Symfony\Component\Finder\Finder;
+use RectorPrefix202403\Webmozart\Assert\Assert;
 /**
  * @api
  */
@@ -64,10 +66,9 @@ final class RectorConfigBuilder
      */
     private $containerCacheDirectory;
     /**
-     * Enabled by default
-     * @var bool
+     * @var bool|null
      */
-    private $parallel = \true;
+    private $parallel;
     /**
      * @var int
      */
@@ -136,12 +137,42 @@ final class RectorConfigBuilder
      * @var string|null
      */
     private $symfonyContainerPhpFile;
+    /**
+     * To make sure type declarations set and level are not duplicated,
+     * as both contain same rules
+     * @var bool
+     */
+    private $isTypeCoverageLevelUsed = \false;
+    /**
+     * @var bool
+     */
+    private $isDeadCodeLevelUsed = \false;
+    /**
+     * @var RegisteredService[]
+     */
+    private $registerServices = [];
     public function __invoke(RectorConfig $rectorConfig) : void
     {
         $uniqueSets = \array_unique($this->sets);
+        if (\in_array(SetList::TYPE_DECLARATION, $uniqueSets, \true) && $this->isTypeCoverageLevelUsed) {
+            throw new InvalidConfigurationException(\sprintf('Your config already enables type declarations set.%sRemove "->withTypeCoverageLevel()" as it only duplicates it, or remove type declaration set.', \PHP_EOL));
+        }
+        if (\in_array(SetList::DEAD_CODE, $uniqueSets, \true) && $this->isDeadCodeLevelUsed) {
+            throw new InvalidConfigurationException(\sprintf('Your config already enables dead code set.%sRemove "->withDeadCodeLevel()" as it only duplicates it, or remove dead code set.', \PHP_EOL));
+        }
         $rectorConfig->sets($uniqueSets);
         if ($this->paths !== []) {
             $rectorConfig->paths($this->paths);
+        }
+        // must be in upper part, as these services might be used by rule registered bellow
+        foreach ($this->registerServices as $registerService) {
+            $rectorConfig->singleton($registerService->getClassName());
+            if ($registerService->getAlias()) {
+                $rectorConfig->alias($registerService->getClassName(), $registerService->getAlias());
+            }
+            if ($registerService->getTag()) {
+                $rectorConfig->tag($registerService->getClassName(), $registerService->getTag());
+            }
         }
         $rectorConfig->skip($this->skip);
         $rectorConfig->rules($this->rules);
@@ -190,10 +221,12 @@ final class RectorConfigBuilder
         if ($this->phpVersion !== null) {
             $rectorConfig->phpVersion($this->phpVersion);
         }
-        if ($this->parallel) {
-            $rectorConfig->parallel($this->parallelTimeoutSeconds, $this->parallelMaxNumberOfProcess, $this->parallelJobSize);
-        } else {
-            $rectorConfig->disableParallel();
+        if ($this->parallel !== null) {
+            if ($this->parallel) {
+                $rectorConfig->parallel($this->parallelTimeoutSeconds, $this->parallelMaxNumberOfProcess, $this->parallelJobSize);
+            } else {
+                $rectorConfig->disableParallel();
+            }
         }
         if ($this->symfonyContainerXmlFile !== null) {
             $rectorConfig->symfonyContainerXml($this->symfonyContainerXmlFile);
@@ -215,8 +248,15 @@ final class RectorConfigBuilder
      */
     public function withSkip(array $skip) : self
     {
-        $this->skip = $skip;
+        $this->skip = \array_merge($this->skip, $skip);
         return $this;
+    }
+    public function withSkipPath(string $skipPath) : self
+    {
+        if (\strpos($skipPath, '*') === \false) {
+            Assert::fileExists($skipPath);
+        }
+        return $this->withSkip([$skipPath]);
     }
     /**
      * Include PHP files from the root directory,
@@ -356,7 +396,7 @@ final class RectorConfigBuilder
      */
     public function withRules(array $rules) : self
     {
-        $this->rules = $rules;
+        $this->rules = \array_merge($this->rules, $rules);
         return $this;
     }
     /**
@@ -477,7 +517,8 @@ final class RectorConfigBuilder
      */
     public function withDeadCodeLevel(int $level) : self
     {
-        $levelRules = LevelRulesResolver::resolve($level, DeadCodeLevel::RULE_LIST, 'RectorConfig::withDeadCodeLevel()');
+        $this->isDeadCodeLevelUsed = \true;
+        $levelRules = LevelRulesResolver::resolve($level, DeadCodeLevel::RULES, 'RectorConfig::withDeadCodeLevel()');
         $this->rules = \array_merge($this->rules, $levelRules);
         return $this;
     }
@@ -487,8 +528,14 @@ final class RectorConfigBuilder
      */
     public function withTypeCoverageLevel(int $level) : self
     {
-        $levelRules = LevelRulesResolver::resolve($level, TypeCoverageLevel::RULE_LIST, 'RectorConfig::withTypeCoverageLevel()');
+        $this->isTypeCoverageLevelUsed = \true;
+        $levelRules = LevelRulesResolver::resolve($level, TypeDeclarationLevel::RULES, 'RectorConfig::withTypeCoverageLevel()');
         $this->rules = \array_merge($this->rules, $levelRules);
+        return $this;
+    }
+    public function registerService(string $className, ?string $alias = null, ?string $tag = null) : self
+    {
+        $this->registerServices[] = new RegisteredService($className, $alias, $tag);
         return $this;
     }
 }
