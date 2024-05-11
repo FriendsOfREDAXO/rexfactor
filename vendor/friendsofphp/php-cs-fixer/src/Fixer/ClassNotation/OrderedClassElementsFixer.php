@@ -25,9 +25,21 @@ use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
 use PhpCsFixer\Tokenizer\CT;
 use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
+use PhpCsFixer\Utils;
 
 /**
  * @author Gregor Harlan <gharlan@web.de>
+ *
+ * @phpstan-type _ClassElement array{
+ *  start: int,
+ *  visibility: string,
+ *  abstract: bool,
+ *  static: bool,
+ *  readonly: bool,
+ *  type: string,
+ *  name: string,
+ *  end: int,
+ * }
  */
 final class OrderedClassElementsFixer extends AbstractFixer implements ConfigurableFixerInterface
 {
@@ -103,10 +115,10 @@ final class OrderedClassElementsFixer extends AbstractFixer implements Configura
         parent::configure($configuration);
 
         $this->typePosition = [];
-        $pos = 0;
+        $position = 0;
 
         foreach ($this->configuration['order'] as $type) {
-            $this->typePosition[$type] = $pos++;
+            $this->typePosition[$type] = $position++;
         }
 
         foreach (self::$typeHierarchy as $type => $parents) {
@@ -320,16 +332,7 @@ Custom values:
     }
 
     /**
-     * @return list<array{
-     *     start: int,
-     *     visibility: string,
-     *     abstract: bool,
-     *     static: bool,
-     *     readonly: bool,
-     *     type: string,
-     *     name: string,
-     *     end: int,
-     * }>
+     * @return list<_ClassElement>
      */
     private function getElements(Tokens $tokens, int $startIndex): array
     {
@@ -407,7 +410,7 @@ Custom values:
     }
 
     /**
-     * @return array<string>|string type or array of type and name
+     * @return list<string>|string type or array of type and name
      */
     private function detectElementType(Tokens $tokens, int $index)
     {
@@ -475,17 +478,9 @@ Custom values:
     }
 
     /**
-     * @return list<array{
-     *     start: int,
-     *     visibility: string,
-     *     abstract: bool,
-     *     static: bool,
-     *     readonly: bool,
-     *     type: string,
-     *     name: string,
-     *     end: int,
-     *     position: int,
-     * }>
+     * @param list<_ClassElement> $elements
+     *
+     * @return list<_ClassElement>
      */
     private function sortElements(array $elements): array
     {
@@ -502,24 +497,22 @@ Custom values:
             'doteardown' => 10,
         ];
 
-        foreach ($elements as &$element) {
+        $getPositionType = function (array $element) use ($phpunitPositions): int {
             $type = $element['type'];
 
             if (\in_array($type, ['method', 'magic', 'phpunit'], true) && isset($this->typePosition["method:{$element['name']}"])) {
-                $element['position'] = $this->typePosition["method:{$element['name']}"];
-
-                continue;
+                return $this->typePosition["method:{$element['name']}"];
             }
 
             if (\array_key_exists($type, self::$specialTypes)) {
                 if (isset($this->typePosition[$type])) {
-                    $element['position'] = $this->typePosition[$type];
+                    $position = $this->typePosition[$type];
 
                     if ('phpunit' === $type) {
-                        $element['position'] += $phpunitPositions[$element['name']];
+                        $position += $phpunitPositions[$element['name']];
                     }
 
-                    continue;
+                    return $position;
                 }
 
                 $type = 'method';
@@ -541,51 +534,34 @@ Custom values:
                 }
             }
 
-            $element['position'] = $this->typePosition[$type];
-        }
+            return $this->typePosition[$type];
+        };
 
-        unset($element);
-
-        usort($elements, function (array $a, array $b): int {
-            if ($a['position'] === $b['position']) {
-                return $this->sortGroupElements($a, $b);
-            }
-
-            return $a['position'] <=> $b['position'];
-        });
-
-        return $elements;
+        return Utils::stableSort(
+            $elements,
+            /**
+             * @return array{element: _ClassElement, position: int}
+             */
+            static fn (array $element): array => ['element' => $element, 'position' => $getPositionType($element)],
+            /**
+             * @param array{element: _ClassElement, position: int} $a
+             * @param array{element: _ClassElement, position: int} $b
+             *
+             * @return -1|0|1
+             */
+            fn (array $a, array $b): int => ($a['position'] === $b['position']) ? $this->sortGroupElements($a['element'], $b['element']) : $a['position'] <=> $b['position'],
+        );
     }
 
     /**
-     * @param array{
-     *     start: int,
-     *     visibility: string,
-     *     abstract: bool,
-     *     static: bool,
-     *     readonly: bool,
-     *     type: string,
-     *     name: string,
-     *     end: int,
-     *     position: int,
-     * } $a
-     * @param array{
-     *     start: int,
-     *     visibility: string,
-     *     abstract: bool,
-     *     static: bool,
-     *     readonly: bool,
-     *     type: string,
-     *     name: string,
-     *     end: int,
-     *     position: int,
-     * } $b
+     * @param _ClassElement $a
+     * @param _ClassElement $b
      */
     private function sortGroupElements(array $a, array $b): int
     {
         if (self::SORT_ALPHA === $this->configuration['sort_algorithm']) {
-            return $this->configuration['case_sensitive']
-                ? strcmp($a['name'], $b['name'])
+            return true === $this->configuration['case_sensitive']
+                ? $a['name'] <=> $b['name']
                 : strcasecmp($a['name'], $b['name']);
         }
 
@@ -593,17 +569,7 @@ Custom values:
     }
 
     /**
-     * @param list<array{
-     *     start: int,
-     *     visibility: string,
-     *     abstract: bool,
-     *     static: bool,
-     *     readonly: bool,
-     *     type: string,
-     *     name: string,
-     *     end: int,
-     *     position: int,
-     * }> $elements
+     * @param list<_ClassElement> $elements
      */
     private function sortTokens(Tokens $tokens, int $startIndex, int $endIndex, array $elements): void
     {

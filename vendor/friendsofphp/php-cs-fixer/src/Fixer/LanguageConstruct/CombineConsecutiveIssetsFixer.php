@@ -104,7 +104,7 @@ final class CombineConsecutiveIssetsFixer extends AbstractFixer
     }
 
     /**
-     * @param int[] $indices
+     * @param list<int> $indices
      */
     private function clearTokens(Tokens $tokens, array $indices): void
     {
@@ -116,7 +116,7 @@ final class CombineConsecutiveIssetsFixer extends AbstractFixer
     /**
      * @param int $index of T_ISSET
      *
-     * @return int[] indices of meaningful tokens belonging to the isset statement
+     * @return list<int> indices of meaningful tokens belonging to the isset statement
      */
     private function getIssetInfo(Tokens $tokens, int $index): array
     {
@@ -146,9 +146,9 @@ final class CombineConsecutiveIssetsFixer extends AbstractFixer
     }
 
     /**
-     * @param int[] $indices
+     * @param list<int> $indices
      *
-     * @return Token[]
+     * @return list<Token>
      */
     private function getTokenClones(Tokens $tokens, array $indices): array
     {

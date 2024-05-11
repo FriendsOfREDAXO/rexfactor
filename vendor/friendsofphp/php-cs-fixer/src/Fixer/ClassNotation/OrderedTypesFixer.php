@@ -74,7 +74,7 @@ interface Foo
     public function foo(\Stringable&\Countable $obj): int;
 }
 ',
-                    new VersionSpecification(80100),
+                    new VersionSpecification(8_01_00),
                     ['null_adjustment' => 'always_last']
                 ),
                 new VersionSpecificCodeSample(
@@ -84,7 +84,7 @@ interface Bar
     public function bar(null|string|int $foo): string|int;
 }
 ',
-                    new VersionSpecification(80000),
+                    new VersionSpecification(8_00_00),
                     [
                         'sort_algorithm' => 'none',
                         'null_adjustment' => 'always_last',
@@ -304,11 +304,11 @@ interface Bar
     }
 
     /**
-     * @return array{0: array<string|string[]>, 1: string}
+     * @return array{0: list<list<string>|string>, 1: string}
      */
     private function collectDisjunctiveNormalFormTypes(string $type): array
     {
-        $types = array_map(static function ($subType) {
+        $types = array_map(static function (string $subType) {
             if (str_starts_with($subType, '(')) {
                 return explode('&', trim($subType, '()'));
             }
@@ -320,7 +320,7 @@ interface Bar
     }
 
     /**
-     * @return array{0: string[], 1: string}
+     * @return array{0: list<string>, 1: string}
      */
     private function collectUnionOrIntersectionTypes(string $type): array
     {
@@ -336,13 +336,13 @@ interface Bar
     }
 
     /**
-     * @param array<string|string[]> $types
+     * @param list<list<string>|string> $types
      *
-     * @return array<string|string[]>
+     * @return ($types is list<string> ? list<string> : list<list<string>>)
      */
     private function runTypesThroughSortingAlgorithm(array $types): array
     {
-        $normalizeType = static fn (string $type): string => Preg::replace('/^\\\\?/', '', $type);
+        $normalizeType = static fn (string $type): string => Preg::replace('/^\\\?/', '', $type);
 
         usort($types, function ($a, $b) use ($normalizeType): int {
             if (\is_array($a)) {
@@ -369,7 +369,7 @@ interface Bar
             }
 
             if ('alpha' === $this->configuration['sort_algorithm']) {
-                return $this->configuration['case_sensitive'] ? strcmp($a, $b) : strcasecmp($a, $b);
+                return true === $this->configuration['case_sensitive'] ? $a <=> $b : strcasecmp($a, $b);
             }
 
             return 0;
@@ -379,9 +379,9 @@ interface Bar
     }
 
     /**
-     * @param array<int, string|string[]> $types
+     * @param list<list<string>|string> $types
      *
-     * @return array<int, Token>
+     * @return list<Token>
      */
     private function createTypeDeclarationTokens(array $types, string $glue, bool $isDisjunctive = false): array
     {

@@ -27,7 +27,7 @@ final class WarningsDetector
     private ToolInfoInterface $toolInfo;
 
     /**
-     * @var string[]
+     * @var list<string>
      */
     private array $warnings = [];
 
@@ -60,7 +60,7 @@ final class WarningsDetector
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getWarnings(): array
     {
@@ -68,9 +68,9 @@ final class WarningsDetector
             return [];
         }
 
-        return array_unique(array_merge(
+        return array_values(array_unique(array_merge(
             $this->warnings,
-            ['If you need help while solving warnings, ask at https://gitter.im/PHP-CS-Fixer, we will help you!']
-        ));
+            ['If you need help while solving warnings, ask at https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/discussions/, we will help you!']
+        )));
     }
 }

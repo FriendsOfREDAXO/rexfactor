@@ -16,6 +16,7 @@ namespace PhpCsFixer;
 
 use PhpCsFixer\DocBlock\Annotation;
 use PhpCsFixer\DocBlock\DocBlock;
+use PhpCsFixer\DocBlock\TypeExpression;
 use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 
@@ -31,7 +32,7 @@ abstract class AbstractPhpdocTypesFixer extends AbstractFixer
     /**
      * The annotation tags search inside.
      *
-     * @var string[]
+     * @var list<string>
      */
     protected array $tags;
 
@@ -93,26 +94,30 @@ abstract class AbstractPhpdocTypesFixer extends AbstractFixer
     }
 
     /**
-     * @param string[] $types
+     * @param list<string> $types
      *
-     * @return string[]
+     * @return list<string>
      */
     private function normalizeTypes(array $types): array
     {
-        foreach ($types as $index => $type) {
-            $types[$index] = $this->normalizeType($type);
-        }
+        return array_map(
+            function (string $type): string {
+                $typeExpression = new TypeExpression($type, null, []);
 
-        return $types;
-    }
+                $typeExpression->walkTypes(function (TypeExpression $type): void {
+                    if (!$type->isUnionType()) {
+                        $value = $this->normalize($type->toString());
 
-    /**
-     * Prepare the type and normalize it.
-     */
-    private function normalizeType(string $type): string
-    {
-        return str_ends_with($type, '[]')
-            ? $this->normalizeType(substr($type, 0, -2)).'[]'
-            : $this->normalize($type);
+                        // TODO TypeExpression should be immutable and walkTypes method should be changed to mapTypes method
+                        \Closure::bind(static function () use ($type, $value): void {
+                            $type->value = $value;
+                        }, null, TypeExpression::class)();
+                    }
+                });
+
+                return $typeExpression->toString();
+            },
+            $types
+        );
     }
 }

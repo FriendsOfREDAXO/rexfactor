@@ -35,7 +35,7 @@ use PhpCsFixer\Utils;
 final class CommentToPhpdocFixer extends AbstractFixer implements ConfigurableFixerInterface, WhitespacesAwareFixerInterface
 {
     /**
-     * @var string[]
+     * @var list<string>
      */
     private array $ignoredTags = [];
 
@@ -52,7 +52,7 @@ final class CommentToPhpdocFixer extends AbstractFixer implements ConfigurableFi
     /**
      * {@inheritdoc}
      *
-     * Must run before GeneralPhpdocAnnotationRemoveFixer, GeneralPhpdocTagRenameFixer, NoBlankLinesAfterPhpdocFixer, NoEmptyPhpdocFixer, NoSuperfluousPhpdocTagsFixer, PhpdocAddMissingParamAnnotationFixer, PhpdocAlignFixer, PhpdocAnnotationWithoutDotFixer, PhpdocInlineTagNormalizerFixer, PhpdocLineSpanFixer, PhpdocNoAccessFixer, PhpdocNoAliasTagFixer, PhpdocNoEmptyReturnFixer, PhpdocNoPackageFixer, PhpdocNoUselessInheritdocFixer, PhpdocOrderByValueFixer, PhpdocOrderFixer, PhpdocParamOrderFixer, PhpdocReadonlyClassCommentToKeywordFixer, PhpdocReturnSelfReferenceFixer, PhpdocSeparationFixer, PhpdocSingleLineVarSpacingFixer, PhpdocSummaryFixer, PhpdocTagCasingFixer, PhpdocTagTypeFixer, PhpdocToCommentFixer, PhpdocToParamTypeFixer, PhpdocToPropertyTypeFixer, PhpdocToReturnTypeFixer, PhpdocTrimConsecutiveBlankLineSeparationFixer, PhpdocTrimFixer, PhpdocTypesOrderFixer, PhpdocVarAnnotationCorrectOrderFixer, PhpdocVarWithoutNameFixer.
+     * Must run before GeneralPhpdocAnnotationRemoveFixer, GeneralPhpdocTagRenameFixer, NoBlankLinesAfterPhpdocFixer, NoEmptyPhpdocFixer, NoSuperfluousPhpdocTagsFixer, PhpdocAddMissingParamAnnotationFixer, PhpdocAlignFixer, PhpdocAnnotationWithoutDotFixer, PhpdocArrayTypeFixer, PhpdocInlineTagNormalizerFixer, PhpdocLineSpanFixer, PhpdocListTypeFixer, PhpdocNoAccessFixer, PhpdocNoAliasTagFixer, PhpdocNoEmptyReturnFixer, PhpdocNoPackageFixer, PhpdocNoUselessInheritdocFixer, PhpdocOrderByValueFixer, PhpdocOrderFixer, PhpdocParamOrderFixer, PhpdocReadonlyClassCommentToKeywordFixer, PhpdocReturnSelfReferenceFixer, PhpdocSeparationFixer, PhpdocSingleLineVarSpacingFixer, PhpdocSummaryFixer, PhpdocTagCasingFixer, PhpdocTagTypeFixer, PhpdocToCommentFixer, PhpdocToParamTypeFixer, PhpdocToPropertyTypeFixer, PhpdocToReturnTypeFixer, PhpdocTrimConsecutiveBlankLineSeparationFixer, PhpdocTrimFixer, PhpdocTypesOrderFixer, PhpdocVarAnnotationCorrectOrderFixer, PhpdocVarWithoutNameFixer.
      * Must run after AlignMultilineCommentFixer.
      */
     public function getPriority(): int
@@ -124,7 +124,7 @@ final class CommentToPhpdocFixer extends AbstractFixer implements ConfigurableFi
     }
 
     /**
-     * @param int[] $indices
+     * @param list<int> $indices
      */
     private function isCommentCandidate(Tokens $tokens, array $indices): bool
     {
@@ -134,7 +134,7 @@ final class CommentToPhpdocFixer extends AbstractFixer implements ConfigurableFi
                 if ($carry) {
                     return true;
                 }
-                if (!Preg::match('~(?:#|//|/\*+|\R(?:\s*\*)?)\s*\@([a-zA-Z0-9_\\\\-]+)(?=\s|\(|$)~', $tokens[$index]->getContent(), $matches)) {
+                if (!Preg::match('~(?:#|//|/\*+|\R(?:\s*\*)?)\s*\@([a-zA-Z0-9_\\\-]+)(?=\s|\(|$)~', $tokens[$index]->getContent(), $matches)) {
                     return false;
                 }
 
@@ -145,12 +145,12 @@ final class CommentToPhpdocFixer extends AbstractFixer implements ConfigurableFi
     }
 
     /**
-     * @param int[] $indices
+     * @param non-empty-list<int> $indices
      */
     private function fixComment(Tokens $tokens, array $indices): void
     {
         if (1 === \count($indices)) {
-            $this->fixCommentSingleLine($tokens, reset($indices));
+            $this->fixCommentSingleLine($tokens, $indices[0]);
         } else {
             $this->fixCommentMultiLine($tokens, $indices);
         }
@@ -172,11 +172,11 @@ final class CommentToPhpdocFixer extends AbstractFixer implements ConfigurableFi
     }
 
     /**
-     * @param int[] $indices
+     * @param non-empty-list<int> $indices
      */
     private function fixCommentMultiLine(Tokens $tokens, array $indices): void
     {
-        $startIndex = reset($indices);
+        $startIndex = $indices[0];
         $indent = Utils::calculateTrailingWhitespaceIndent($tokens[$startIndex - 1]);
 
         $newContent = '/**'.$this->whitespacesConfig->getLineEnding();

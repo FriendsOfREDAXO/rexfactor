@@ -83,25 +83,28 @@ final class FixerFactory
         static $builtInFixers = null;
 
         if (null === $builtInFixers) {
+            /** @var list<class-string<FixerInterface>> */
             $builtInFixers = [];
 
             /** @var SplFileInfo $file */
             foreach (SymfonyFinder::create()->files()->in(__DIR__.'/Fixer')->name('*Fixer.php')->depth(1) as $file) {
                 $relativeNamespace = $file->getRelativePath();
-                $fixerClass = 'PhpCsFixer\\Fixer\\'.('' !== $relativeNamespace ? $relativeNamespace.'\\' : '').$file->getBasename('.php');
+                $fixerClass = 'PhpCsFixer\Fixer\\'.('' !== $relativeNamespace ? $relativeNamespace.'\\' : '').$file->getBasename('.php');
                 $builtInFixers[] = $fixerClass;
             }
         }
 
         foreach ($builtInFixers as $class) {
-            $this->registerFixer(new $class(), false);
+            /** @var FixerInterface */
+            $fixer = new $class();
+            $this->registerFixer($fixer, false);
         }
 
         return $this;
     }
 
     /**
-     * @param FixerInterface[] $fixers
+     * @param iterable<FixerInterface> $fixers
      *
      * @return $this
      */
@@ -195,7 +198,7 @@ final class FixerFactory
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     private function getFixersConflicts(FixerInterface $fixer): array
     {
@@ -214,7 +217,7 @@ final class FixerFactory
     }
 
     /**
-     * @param array<string, string[]> $fixerConflicts
+     * @param array<string, list<string>> $fixerConflicts
      */
     private function generateConflictMessage(array $fixerConflicts): string
     {

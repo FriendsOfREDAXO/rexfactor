@@ -29,7 +29,7 @@ final class Annotation
     /**
      * All the annotation tag names with types.
      *
-     * @var string[]
+     * @var list<string>
      */
     private static array $tags = [
         'method',
@@ -46,7 +46,7 @@ final class Annotation
     /**
      * The lines that make up the annotation.
      *
-     * @var Line[]
+     * @var array<int, Line>
      */
     private array $lines;
 
@@ -81,7 +81,7 @@ final class Annotation
     /**
      * The cached types.
      *
-     * @var null|string[]
+     * @var null|list<string>
      */
     private $types;
 
@@ -91,16 +91,16 @@ final class Annotation
     private $namespace;
 
     /**
-     * @var NamespaceUseAnalysis[]
+     * @var list<NamespaceUseAnalysis>
      */
     private array $namespaceUses;
 
     /**
      * Create a new line instance.
      *
-     * @param Line[]                 $lines
-     * @param null|NamespaceAnalysis $namespace
-     * @param NamespaceUseAnalysis[] $namespaceUses
+     * @param array<int, Line>           $lines
+     * @param null|NamespaceAnalysis     $namespace
+     * @param list<NamespaceUseAnalysis> $namespaceUses
      */
     public function __construct(array $lines, $namespace = null, array $namespaceUses = [])
     {
@@ -108,10 +108,8 @@ final class Annotation
         $this->namespace = $namespace;
         $this->namespaceUses = $namespaceUses;
 
-        $keys = array_keys($lines);
-
-        $this->start = $keys[0];
-        $this->end = end($keys);
+        $this->start = array_key_first($lines);
+        $this->end = array_key_last($lines);
     }
 
     /**
@@ -125,7 +123,7 @@ final class Annotation
     /**
      * Get all the annotation tag names with types.
      *
-     * @return string[]
+     * @return list<string>
      */
     public static function getTagsWithTypes(): array
     {
@@ -192,7 +190,7 @@ final class Annotation
     /**
      * Get the types associated with this annotation.
      *
-     * @return string[]
+     * @return list<string>
      */
     public function getTypes(): array
     {
@@ -209,7 +207,7 @@ final class Annotation
     /**
      * Set the types associated with this annotation.
      *
-     * @param string[] $types
+     * @param list<string> $types
      */
     public function setTypes(array $types): void
     {
@@ -223,7 +221,7 @@ final class Annotation
     /**
      * Get the normalized types associated with this annotation, so they can easily be compared.
      *
-     * @return string[]
+     * @return list<string>
      */
     public function getNormalizedTypes(): array
     {
@@ -290,7 +288,7 @@ final class Annotation
             }
 
             $matchingResult = Preg::match(
-                '{^(?:\s*\*|/\*\*)[\s\*]*@'.$name.'\s+'.TypeExpression::REGEX_TYPES.'(?:(?:[*\h\v]|\&?[\.\$]).*)?\r?$}is',
+                '{^(?:\h*\*|/\*\*)[\h*]*@'.$name.'\h+'.TypeExpression::REGEX_TYPES.'(?:(?:[*\h\v]|\&?[\.\$]).*)?\r?$}is',
                 $this->lines[0]->getContent(),
                 $matches
             );

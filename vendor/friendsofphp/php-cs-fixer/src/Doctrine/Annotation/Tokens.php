@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Doctrine\Annotation;
 
-use PhpCsFixer\Doctrine\Annotation\Token as AnnotationToken;
 use PhpCsFixer\Preg;
 use PhpCsFixer\Tokenizer\Token as PhpToken;
 
@@ -28,7 +27,7 @@ use PhpCsFixer\Tokenizer\Token as PhpToken;
 final class Tokens extends \SplFixedArray
 {
     /**
-     * @param string[] $ignoredTags
+     * @param list<string> $ignoredTags
      *
      * @throws \InvalidArgumentException
      */
@@ -101,14 +100,14 @@ final class Tokens extends \SplFixedArray
                 }
 
                 $lastTokenEndIndex = 0;
-                foreach (\array_slice($scannedTokens, 0, $nbScannedTokensToUse) as $token) {
-                    if ($token->isType(DocLexer::T_STRING)) {
-                        $token = new AnnotationToken(
-                            $token->getType(),
-                            '"'.str_replace('"', '""', $token->getContent()).'"',
-                            $token->getPosition()
-                        );
-                    }
+                foreach (\array_slice($scannedTokens, 0, $nbScannedTokensToUse) as $scannedToken) {
+                    $token = $scannedToken->isType(DocLexer::T_STRING)
+                        ? new Token(
+                            $scannedToken->getType(),
+                            '"'.str_replace('"', '""', $scannedToken->getContent()).'"',
+                            $scannedToken->getPosition()
+                        )
+                        : $scannedToken;
 
                     $missingTextLength = $token->getPosition() - $lastTokenEndIndex;
                     if ($missingTextLength > 0) {
@@ -139,8 +138,8 @@ final class Tokens extends \SplFixedArray
     /**
      * Create token collection from array.
      *
-     * @param Token[] $array       the array to import
-     * @param ?bool   $saveIndices save the numeric indices used in the original array, default is yes
+     * @param array<int, Token> $array       the array to import
+     * @param ?bool             $saveIndices save the numeric indices used in the original array, default is yes
      */
     public static function fromArray($array, $saveIndices = null): self
     {
@@ -247,7 +246,7 @@ final class Tokens extends \SplFixedArray
     public function offsetSet($index, $token): void
     {
         if (null === $token) {
-            throw new \InvalidArgumentException('Token must be an instance of PhpCsFixer\\Doctrine\\Annotation\\Token, "null" given.');
+            throw new \InvalidArgumentException('Token must be an instance of PhpCsFixer\Doctrine\Annotation\Token, "null" given.');
         }
 
         if (!$token instanceof Token) {
@@ -257,7 +256,7 @@ final class Tokens extends \SplFixedArray
                 $type = \get_class($token);
             }
 
-            throw new \InvalidArgumentException(sprintf('Token must be an instance of PhpCsFixer\\Doctrine\\Annotation\\Token, "%s" given.', $type));
+            throw new \InvalidArgumentException(sprintf('Token must be an instance of PhpCsFixer\Doctrine\Annotation\Token, "%s" given.', $type));
         }
 
         parent::offsetSet($index, $token);
