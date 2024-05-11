@@ -38,7 +38,7 @@ final class PhpdocSeparationFixer extends AbstractFixer implements ConfigurableF
     /**
      * @internal
      *
-     * @var string[][]
+     * @var list<list<string>>
      */
     public const OPTION_GROUPS_DEFAULT = [
         ['author', 'copyright', 'license'],
@@ -48,7 +48,7 @@ final class PhpdocSeparationFixer extends AbstractFixer implements ConfigurableF
     ];
 
     /**
-     * @var string[][]
+     * @var list<list<string>>
      */
     private array $groups;
 
@@ -117,7 +117,7 @@ final class PhpdocSeparationFixer extends AbstractFixer implements ConfigurableF
      * {@inheritdoc}
      *
      * Must run before PhpdocAlignFixer.
-     * Must run after AlignMultilineCommentFixer, CommentToPhpdocFixer, GeneralPhpdocAnnotationRemoveFixer, PhpUnitInternalClassFixer, PhpUnitSizeClassFixer, PhpUnitTestClassRequiresCoversFixer, PhpdocIndentFixer, PhpdocNoAccessFixer, PhpdocNoEmptyReturnFixer, PhpdocNoPackageFixer, PhpdocOrderFixer, PhpdocScalarFixer, PhpdocToCommentFixer, PhpdocTypesFixer.
+     * Must run after AlignMultilineCommentFixer, CommentToPhpdocFixer, GeneralPhpdocAnnotationRemoveFixer, PhpUnitAttributesFixer, PhpUnitInternalClassFixer, PhpUnitSizeClassFixer, PhpUnitTestClassRequiresCoversFixer, PhpdocIndentFixer, PhpdocNoAccessFixer, PhpdocNoEmptyReturnFixer, PhpdocNoPackageFixer, PhpdocOrderFixer, PhpdocScalarFixer, PhpdocToCommentFixer, PhpdocTypesFixer.
      */
     public function getPriority(): int
     {
@@ -146,7 +146,7 @@ final class PhpdocSeparationFixer extends AbstractFixer implements ConfigurableF
 
     protected function createConfigurationDefinition(): FixerConfigurationResolverInterface
     {
-        $allowTagToBelongToOnlyOneGroup = static function ($groups) {
+        $allowTagToBelongToOnlyOneGroup = static function (array $groups): bool {
             $tags = [];
             foreach ($groups as $groupIndex => $group) {
                 foreach ($group as $member) {
@@ -221,7 +221,7 @@ final class PhpdocSeparationFixer extends AbstractFixer implements ConfigurableF
 
             if (true === $shouldBeTogether) {
                 $this->ensureAreTogether($doc, $annotation, $next);
-            } elseif (false === $shouldBeTogether || !$this->configuration['skip_unlisted_annotations']) {
+            } elseif (false === $shouldBeTogether || false === $this->configuration['skip_unlisted_annotations']) {
                 $this->ensureAreSeparate($doc, $annotation, $next);
             }
         }
@@ -295,7 +295,7 @@ final class PhpdocSeparationFixer extends AbstractFixer implements ConfigurableF
 
     private function tagName(Annotation $annotation): ?string
     {
-        Preg::match('/@([a-zA-Z0-9_\\\\-]+(?=\s|$|\())/', $annotation->getContent(), $matches);
+        Preg::match('/@([a-zA-Z0-9_\\\-]+(?=\s|$|\())/', $annotation->getContent(), $matches);
 
         return $matches[1] ?? null;
     }

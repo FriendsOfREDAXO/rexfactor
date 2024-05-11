@@ -72,7 +72,7 @@ final class HeredocIndentationFixer extends AbstractFixer implements Configurabl
     /**
      * {@inheritdoc}
      *
-     * Must run after BracesFixer, StatementIndentationFixer.
+     * Must run after BracesFixer, MultilineStringToHeredocFixer, StatementIndentationFixer.
      */
     public function getPriority(): int
     {
@@ -127,7 +127,9 @@ final class HeredocIndentationFixer extends AbstractFixer implements Configurabl
             return;
         }
 
-        for ($index = $end - 1, $last = true; $index > $start; --$index, $last = false) {
+        $index = $end - 1;
+
+        for ($last = true; $index > $start; --$index, $last = false) {
             if (!$tokens[$index]->isGivenKind([T_ENCAPSED_AND_WHITESPACE, T_WHITESPACE])) {
                 continue;
             }
@@ -138,7 +140,7 @@ final class HeredocIndentationFixer extends AbstractFixer implements Configurabl
                 $content = Preg::replace('/(?<=\v)(?!'.$currentIndent.')\h+/', '', $content);
             }
 
-            $regexEnd = $last && !$currentIndent ? '(?!\v|$)' : '(?!\v)';
+            $regexEnd = $last && '' === $currentIndent ? '(?!\v|$)' : '(?!\v)';
             $content = Preg::replace('/(?<=\v)'.$currentIndent.$regexEnd.'/', $indent, $content);
 
             $tokens[$index] = new Token([$tokens[$index]->getId(), $content]);
@@ -154,9 +156,9 @@ final class HeredocIndentationFixer extends AbstractFixer implements Configurabl
 
         $content = $tokens[$index]->getContent();
 
-        if (!\in_array($content[0], ["\r", "\n"], true) && (!$currentIndent || str_starts_with($content, $currentIndent))) {
+        if (!\in_array($content[0], ["\r", "\n"], true) && ('' === $currentIndent || str_starts_with($content, $currentIndent))) {
             $content = $indent.substr($content, $currentIndentLength);
-        } elseif ($currentIndent) {
+        } elseif ('' !== $currentIndent) {
             $content = Preg::replace('/^(?!'.$currentIndent.')\h+/', '', $content);
         }
 

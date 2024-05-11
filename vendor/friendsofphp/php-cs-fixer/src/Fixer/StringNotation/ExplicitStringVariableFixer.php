@@ -52,11 +52,12 @@ final class ExplicitStringVariableFixer extends AbstractFixer
     /**
      * {@inheritdoc}
      *
+     * Must run before NoUselessConcatOperatorFixer.
      * Must run after BacktickToShellExecFixer.
      */
     public function getPriority(): int
     {
-        return 0;
+        return 6;
     }
 
     public function isCandidate(Tokens $tokens): bool
@@ -123,7 +124,7 @@ final class ExplicitStringVariableFixer extends AbstractFixer
 
             foreach ($variableTokens as $distinctVariableSet) {
                 if (1 === \count($distinctVariableSet['tokens'])) {
-                    $singleVariableIndex = key($distinctVariableSet['tokens']);
+                    $singleVariableIndex = array_key_first($distinctVariableSet['tokens']);
                     $singleVariableToken = current($distinctVariableSet['tokens']);
                     $tokens->overrideRange($singleVariableIndex, $singleVariableIndex, [
                         new Token([T_CURLY_OPEN, '{']),

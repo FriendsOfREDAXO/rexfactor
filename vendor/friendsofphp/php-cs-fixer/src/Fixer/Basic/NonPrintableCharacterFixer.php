@@ -34,12 +34,12 @@ use PhpCsFixer\Tokenizer\Tokens;
 final class NonPrintableCharacterFixer extends AbstractFixer implements ConfigurableFixerInterface
 {
     /**
-     * @var array<string, string[]>
+     * @var array<string, array{string, string}>
      */
     private array $symbolsReplace;
 
     /**
-     * @var int[]
+     * @var list<int>
      */
     private static array $tokens = [
         T_STRING_VARNAME,
@@ -116,7 +116,7 @@ final class NonPrintableCharacterFixer extends AbstractFixer implements Configur
             $content = $token->getContent();
 
             if (
-                $this->configuration['use_escape_sequences_in_strings']
+                true === $this->configuration['use_escape_sequences_in_strings']
                 && $token->isGivenKind([T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE])
             ) {
                 if (!Preg::match('/'.implode('|', array_keys($escapeSequences)).'/', $content)) {
@@ -144,7 +144,7 @@ final class NonPrintableCharacterFixer extends AbstractFixer implements Configur
                 }
 
                 if ($stringTypeChanged) {
-                    $content = Preg::replace('/(\\\\{1,2})/', '\\\\\\\\', $content);
+                    $content = Preg::replace('/(\\\{1,2})/', '\\\\\\\\', $content);
                     $content = str_replace('$', '\$', $content);
                 }
 
