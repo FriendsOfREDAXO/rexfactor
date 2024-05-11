@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202403\Symfony\Component\Yaml;
+namespace RectorPrefix202405\Symfony\Component\Yaml;
 
-use RectorPrefix202403\Symfony\Component\Yaml\Exception\ParseException;
-use RectorPrefix202403\Symfony\Component\Yaml\Tag\TaggedValue;
+use RectorPrefix202405\Symfony\Component\Yaml\Exception\ParseException;
+use RectorPrefix202405\Symfony\Component\Yaml\Tag\TaggedValue;
 /**
  * Parser parses YAML strings to convert them to PHP arrays.
  *
@@ -567,11 +567,11 @@ class Parser
                 break;
             }
             if ($this->isCurrentLineBlank()) {
-                $data[] = \substr($this->currentLine, $newIndent);
+                $data[] = \substr($this->currentLine, $newIndent ?? 0);
                 continue;
             }
             if ($indent >= $newIndent) {
-                $data[] = \substr($this->currentLine, $newIndent);
+                $data[] = \substr($this->currentLine, $newIndent ?? 0);
             } elseif ($this->isCurrentLineComment()) {
                 $data[] = $this->currentLine;
             } elseif (0 == $indent) {

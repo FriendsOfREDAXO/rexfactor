@@ -128,6 +128,9 @@ final class ClassRenamer
      */
     private function refactorName(FullyQualified $fullyQualified, array $oldToNewClasses) : ?FullyQualified
     {
+        if ($fullyQualified->getAttribute(AttributeKey::IS_FUNCCALL_NAME) === \true) {
+            return null;
+        }
         $stringName = $fullyQualified->toString();
         $newName = $oldToNewClasses[$stringName] ?? null;
         if ($newName === null) {

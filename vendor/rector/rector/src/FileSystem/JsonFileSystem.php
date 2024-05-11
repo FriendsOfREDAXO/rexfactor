@@ -3,8 +3,8 @@
 declare (strict_types=1);
 namespace Rector\FileSystem;
 
-use RectorPrefix202403\Nette\Utils\FileSystem;
-use RectorPrefix202403\Nette\Utils\Json;
+use RectorPrefix202405\Nette\Utils\FileSystem;
+use RectorPrefix202405\Nette\Utils\Json;
 final class JsonFileSystem
 {
     /**
@@ -13,14 +13,14 @@ final class JsonFileSystem
     public static function readFilePath(string $filePath) : array
     {
         $fileContents = FileSystem::read($filePath);
-        return Json::decode($fileContents, Json::FORCE_ARRAY);
+        return Json::decode($fileContents, \true);
     }
     /**
      * @param array<string, mixed> $data
      */
     public static function writeFile(string $filePath, array $data) : void
     {
-        $json = Json::encode($data, Json::PRETTY);
+        $json = Json::encode($data, \true);
         FileSystem::write($filePath, $json, null);
     }
 }

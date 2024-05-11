@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Application;
 
-use RectorPrefix202403\Nette\Utils\Strings;
+use RectorPrefix202405\Nette\Utils\Strings;
 use PHPStan\AnalysedCodeException;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ChangesReporting\ValueObjectFactory\ErrorFactory;
@@ -11,7 +11,6 @@ use Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\FileSystem\FilePathHelper;
 use Rector\NodeTypeResolver\NodeScopeAndMetadataDecorator;
-use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\PhpParser\NodeTraverser\RectorNodeTraverser;
 use Rector\PhpParser\Parser\RectorParser;
 use Rector\PhpParser\Printer\FormatPerservingPrinter;
@@ -22,7 +21,7 @@ use Rector\ValueObject\Configuration;
 use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\FileProcessResult;
 use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202403\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
 final class FileProcessor
 {
@@ -163,7 +162,7 @@ final class FileProcessor
          * On printing, the space may be wiped, these below check compare with original file content used to verify
          * that no change actually needed
          */
-        if (!$file->getFileDiff() instanceof FileDiff && \current($file->getNewStmts()) instanceof FileWithoutNamespace) {
+        if (!$file->getFileDiff() instanceof FileDiff) {
             /**
              * Handle new line or space before <?php or InlineHTML node wiped on print format preserving
              * On very first content level

@@ -56,6 +56,22 @@ final class MappingClass
     /**
      * @var string
      */
+    public const INDEX = 'Doctrine\\ORM\\Mapping\\Index';
+    /**
+     * @var string
+     */
+    public const INVERSE_JOIN_COLUMN = 'Doctrine\\ORM\\Mapping\\InverseJoinColumn';
+    /**
+     * @var string
+     */
+    public const JOIN_TABLE = 'Doctrine\\ORM\\Mapping\\JoinTable';
+    /**
+     * @var string
+     */
+    public const MANY_TO_MANY = 'Doctrine\\ORM\\Mapping\\ManyToMany';
+    /**
+     * @var string
+     */
     public const MANY_TO_ONE = 'Doctrine\\ORM\\Mapping\\ManyToOne';
     /**
      * @var string

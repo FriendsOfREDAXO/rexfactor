@@ -8,16 +8,16 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202403\Symfony\Contracts\Service\Attribute;
+namespace RectorPrefix202405\Symfony\Contracts\Service\Attribute;
 
-use RectorPrefix202403\Symfony\Contracts\Service\ServiceSubscriberInterface;
-use RectorPrefix202403\Symfony\Contracts\Service\ServiceSubscriberTrait;
+use RectorPrefix202405\Symfony\Contracts\Service\ServiceMethodsSubscriberTrait;
+use RectorPrefix202405\Symfony\Contracts\Service\ServiceSubscriberInterface;
 /**
  * For use as the return value for {@see ServiceSubscriberInterface}.
  *
  * @example new SubscribedService('http_client', HttpClientInterface::class, false, new Target('githubApi'))
  *
- * Use with {@see ServiceSubscriberTrait} to mark a method's return type
+ * Use with {@see ServiceMethodsSubscriberTrait} to mark a method's return type
  * as a subscribed service.
  *
  * @author Kevin Bond <kevinbond@gmail.com>

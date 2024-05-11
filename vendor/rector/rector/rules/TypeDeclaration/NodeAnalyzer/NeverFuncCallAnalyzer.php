@@ -26,19 +26,22 @@ final class NeverFuncCallAnalyzer
      */
     public function hasNeverFuncCall($functionLike) : bool
     {
-        $hasNeverType = \false;
         foreach ((array) $functionLike->stmts as $stmt) {
-            if ($stmt instanceof Expression) {
-                $stmt = $stmt->expr;
-            }
-            if ($stmt instanceof Stmt) {
-                continue;
-            }
-            $stmtType = $this->nodeTypeResolver->getNativeType($stmt);
-            if ($stmtType instanceof NeverType) {
-                $hasNeverType = \true;
+            if ($this->isWithNeverTypeExpr($stmt)) {
+                return \true;
             }
         }
-        return $hasNeverType;
+        return \false;
+    }
+    public function isWithNeverTypeExpr(Stmt $stmt) : bool
+    {
+        if ($stmt instanceof Expression) {
+            $stmt = $stmt->expr;
+        }
+        if ($stmt instanceof Stmt) {
+            return \false;
+        }
+        $stmtType = $this->nodeTypeResolver->getNativeType($stmt);
+        return $stmtType instanceof NeverType;
     }
 }

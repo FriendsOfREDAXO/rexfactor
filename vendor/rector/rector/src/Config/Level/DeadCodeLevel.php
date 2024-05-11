@@ -28,6 +28,7 @@ use Rector\DeadCode\Rector\For_\RemoveDeadIfForeachForRector;
 use Rector\DeadCode\Rector\For_\RemoveDeadLoopRector;
 use Rector\DeadCode\Rector\Foreach_\RemoveUnusedForeachKeyRector;
 use Rector\DeadCode\Rector\FunctionLike\RemoveDeadReturnRector;
+use Rector\DeadCode\Rector\If_\ReduceAlwaysFalseIfOrRector;
 use Rector\DeadCode\Rector\If_\RemoveAlwaysTrueIfConditionRector;
 use Rector\DeadCode\Rector\If_\RemoveDeadInstanceOfRector;
 use Rector\DeadCode\Rector\If_\RemoveTypedPropertyDeadInstanceOfRector;
@@ -37,6 +38,7 @@ use Rector\DeadCode\Rector\If_\UnwrapFutureCompatibleIfPhpVersionRector;
 use Rector\DeadCode\Rector\Node\RemoveNonExistingVarAnnotationRector;
 use Rector\DeadCode\Rector\Plus\RemoveDeadZeroAndOneOperationRector;
 use Rector\DeadCode\Rector\Property\RemoveUnusedPrivatePropertyRector;
+use Rector\DeadCode\Rector\Property\RemoveUselessReadOnlyTagRector;
 use Rector\DeadCode\Rector\Property\RemoveUselessVarTagRector;
 use Rector\DeadCode\Rector\PropertyProperty\RemoveNullPropertyInitializationRector;
 use Rector\DeadCode\Rector\Return_\RemoveDeadConditionAboveReturnRector;
@@ -85,10 +87,12 @@ final class DeadCodeLevel
         // docblock
         RemoveUselessParamTagRector::class,
         RemoveUselessReturnTagRector::class,
+        RemoveUselessReadOnlyTagRector::class,
         RemoveNonExistingVarAnnotationRector::class,
         RemoveUselessVarTagRector::class,
         RemovePhpVersionIdCheckRector::class,
         RemoveAlwaysTrueIfConditionRector::class,
+        ReduceAlwaysFalseIfOrRector::class,
         RemoveUnusedPrivateClassConstantRector::class,
         RemoveUnusedPrivatePropertyRector::class,
         RemoveDuplicatedCaseInSwitchRector::class,

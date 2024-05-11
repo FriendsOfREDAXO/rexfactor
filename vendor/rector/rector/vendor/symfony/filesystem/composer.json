@@ -18,11 +18,12 @@
     "require": {
         "php": ">=8.1",
         "symfony\/polyfill-ctype": "~1.8",
-        "symfony\/polyfill-mbstring": "~1.8"
+        "symfony\/polyfill-mbstring": "~1.8",
+        "symfony\/process": "^5.4|^6.4"
     },
     "autoload": {
         "psr-4": {
-            "RectorPrefix202403\\Symfony\\Component\\Filesystem\\": ""
+            "RectorPrefix202405\\Symfony\\Component\\Filesystem\\": ""
         },
         "exclude-from-classmap": [
             "\/Tests\/"

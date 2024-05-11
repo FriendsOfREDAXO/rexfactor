@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202403\Illuminate\Contracts\Hashing;
+namespace RectorPrefix202405\Illuminate\Contracts\Hashing;
 
 interface Hasher
 {

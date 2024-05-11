@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202403;
+namespace RectorPrefix202405;
 
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
@@ -81,8 +81,8 @@ return static function (RectorConfig $rectorConfig) : void {
         new AddParamTypeDeclaration('Symfony\\Component\\EventDispatcher\\EventDispatcher', 'dispatch', 0, new ObjectWithoutClassType()),
         new AddParamTypeDeclaration('Symfony\\Contracts\\Translation\\TranslatorInterface', 'setLocale', 0, new StringType()),
         new AddParamTypeDeclaration('Symfony\\Contracts\\Translation\\TranslatorInterface', 'trans', 0, new StringType()),
-        new AddParamTypeDeclaration('Symfony\\Contracts\\Translation\\TranslatorInterface', 'trans', 2, new StringType()),
-        new AddParamTypeDeclaration('Symfony\\Contracts\\Translation\\TranslatorInterface', 'trans', 3, new StringType()),
+        new AddParamTypeDeclaration('Symfony\\Contracts\\Translation\\TranslatorInterface', 'trans', 2, \PHPStan\Type\TypeCombinator::addNull(new StringType())),
+        new AddParamTypeDeclaration('Symfony\\Contracts\\Translation\\TranslatorInterface', 'trans', 3, \PHPStan\Type\TypeCombinator::addNull(new StringType())),
         new AddParamTypeDeclaration('Symfony\\Component\\Form\\AbstractExtension', 'getType', 0, new StringType()),
         new AddParamTypeDeclaration('Symfony\\Component\\Form\\AbstractExtension', 'hasType', 0, new StringType()),
         new AddParamTypeDeclaration('Symfony\\Component\\Form\\AbstractExtension', 'getTypeExtensions', 0, new StringType()),

@@ -523,6 +523,11 @@ final class PhpVersionFeature
      */
     public const SENSITIVE_PARAMETER_ATTRIBUTE = \Rector\ValueObject\PhpVersion::PHP_82;
     /**
+     * @see https://wiki.php.net/rfc/deprecate_dollar_brace_string_interpolation
+     * @var int
+     */
+    public const DEPRECATE_VARIABLE_IN_STRING_INTERPOLATION = \Rector\ValueObject\PhpVersion::PHP_82;
+    /**
      * @see https://wiki.php.net/rfc/marking_overriden_methods
      * @var int
      */
@@ -532,6 +537,11 @@ final class PhpVersionFeature
      * @var int
      */
     public const TYPED_CLASS_CONSTANTS = \Rector\ValueObject\PhpVersion::PHP_83;
+    /**
+     * @see https://wiki.php.net/rfc/deprecate-implicitly-nullable-types
+     * @var int
+     */
+    public const DEPRECATE_IMPLICIT_NULLABLE_PARAM_TYPE = \Rector\ValueObject\PhpVersion::PHP_84;
     /**
      * @see https://www.php.net/manual/en/migration83.deprecated.php#migration83.deprecated.ldap
      * @var int

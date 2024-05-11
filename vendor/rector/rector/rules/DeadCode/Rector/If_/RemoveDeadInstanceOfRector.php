@@ -6,6 +6,7 @@ namespace Rector\DeadCode\Rector\If_;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
 use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\Instanceof_;
@@ -16,9 +17,11 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeTraverser;
+use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\MixedType;
 use Rector\NodeManipulator\IfManipulator;
 use Rector\Rector\AbstractRector;
+use Rector\Reflection\ReflectionResolver;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -31,9 +34,15 @@ final class RemoveDeadInstanceOfRector extends AbstractRector
      * @var \Rector\NodeManipulator\IfManipulator
      */
     private $ifManipulator;
-    public function __construct(IfManipulator $ifManipulator)
+    /**
+     * @readonly
+     * @var \Rector\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    public function __construct(IfManipulator $ifManipulator, ReflectionResolver $reflectionResolver)
     {
         $this->ifManipulator = $ifManipulator;
+        $this->reflectionResolver = $reflectionResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -64,7 +73,7 @@ CODE_SAMPLE
     }
     /**
      * @param If_ $node
-     * @return Stmt[]|null|int
+     * @return Stmt[]|null|int|If_
      */
     public function refactor(Node $node)
     {
@@ -73,6 +82,9 @@ CODE_SAMPLE
         }
         if ($node->cond instanceof BooleanNot && $node->cond->expr instanceof Instanceof_) {
             return $this->refactorStmtAndInstanceof($node, $node->cond->expr);
+        }
+        if ($node->cond instanceof BooleanAnd) {
+            return $this->refactorIfWithBooleanAnd($node);
         }
         if ($node->cond instanceof Instanceof_) {
             return $this->refactorStmtAndInstanceof($node, $node->cond);
@@ -84,17 +96,7 @@ CODE_SAMPLE
      */
     private function refactorStmtAndInstanceof(If_ $if, Instanceof_ $instanceof)
     {
-        if (!$instanceof->class instanceof Name) {
-            return null;
-        }
-        // handle in another rule
-        if ($this->isPropertyFetch($instanceof->expr) || $instanceof->expr instanceof CallLike) {
-            return null;
-        }
-        $classType = $this->nodeTypeResolver->getType($instanceof->class);
-        $exprType = $this->nodeTypeResolver->getType($instanceof->expr);
-        $isSameStaticTypeOrSubtype = $classType->equals($exprType) || $classType->isSuperTypeOf($exprType)->yes();
-        if (!$isSameStaticTypeOrSubtype) {
+        if ($this->isInstanceofTheSameType($instanceof) !== \true) {
             return null;
         }
         if ($this->shouldSkipFromNotTypedParam($instanceof)) {
@@ -124,5 +126,41 @@ CODE_SAMPLE
             return \true;
         }
         return $expr instanceof StaticPropertyFetch;
+    }
+    private function isInstanceofTheSameType(Instanceof_ $instanceof) : ?bool
+    {
+        if (!$instanceof->class instanceof Name) {
+            return null;
+        }
+        // handled in another rule
+        if ($this->isPropertyFetch($instanceof->expr) || $instanceof->expr instanceof CallLike) {
+            return null;
+        }
+        $classReflection = $this->reflectionResolver->resolveClassReflection($instanceof);
+        if ($classReflection instanceof ClassReflection && $classReflection->isTrait()) {
+            return null;
+        }
+        $classType = $this->nodeTypeResolver->getType($instanceof->class);
+        $exprType = $this->nodeTypeResolver->getNativeType($instanceof->expr);
+        if ($classType->equals($exprType)) {
+            return \true;
+        }
+        return $classType->isSuperTypeOf($exprType)->yes();
+    }
+    private function refactorIfWithBooleanAnd(If_ $if) : ?\PhpParser\Node\Stmt\If_
+    {
+        if (!$if->cond instanceof BooleanAnd) {
+            return null;
+        }
+        $booleanAnd = $if->cond;
+        if (!$booleanAnd->left instanceof Instanceof_) {
+            return null;
+        }
+        $instanceof = $booleanAnd->left;
+        if ($this->isInstanceofTheSameType($instanceof) !== \true) {
+            return null;
+        }
+        $if->cond = $booleanAnd->right;
+        return $if;
     }
 }

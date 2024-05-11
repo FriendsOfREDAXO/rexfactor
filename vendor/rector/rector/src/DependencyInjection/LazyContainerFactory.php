@@ -3,9 +3,9 @@
 declare (strict_types=1);
 namespace Rector\DependencyInjection;
 
-use RectorPrefix202403\Doctrine\Inflector\Inflector;
-use RectorPrefix202403\Doctrine\Inflector\Rules\English\InflectorFactory;
-use RectorPrefix202403\Illuminate\Container\Container;
+use RectorPrefix202405\Doctrine\Inflector\Inflector;
+use RectorPrefix202405\Doctrine\Inflector\Rules\English\InflectorFactory;
+use RectorPrefix202405\Illuminate\Container\Container;
 use PhpParser\Lexer;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPStan\Analyser\ScopeFactory;
@@ -181,10 +181,10 @@ use Rector\StaticTypeMapper\PhpParser\UnionTypeNodeMapper;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\Utils\Command\MissingInSetCommand;
 use Rector\Utils\Command\OutsideAnySetCommand;
-use RectorPrefix202403\Symfony\Component\Console\Application;
-use RectorPrefix202403\Symfony\Component\Console\Command\Command;
-use RectorPrefix202403\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202403\Webmozart\Assert\Assert;
+use RectorPrefix202405\Symfony\Component\Console\Application;
+use RectorPrefix202405\Symfony\Component\Console\Command\Command;
+use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202405\Webmozart\Assert\Assert;
 final class LazyContainerFactory
 {
     /**
@@ -234,7 +234,7 @@ final class LazyContainerFactory
     /**
      * @var array<class-string<PhpParserNodeMapperInterface>>
      */
-    private const PHP_PARSER_NODE_MAPPER_CLASSES = [ExprNodeMapper::class, FullyQualifiedNodeMapper::class, IdentifierNodeMapper::class, IntersectionTypeNodeMapper::class, NameNodeMapper::class, NullableTypeNodeMapper::class, StringNodeMapper::class, UnionTypeNodeMapper::class];
+    private const PHP_PARSER_NODE_MAPPER_CLASSES = [FullyQualifiedNodeMapper::class, IdentifierNodeMapper::class, IntersectionTypeNodeMapper::class, NameNodeMapper::class, NullableTypeNodeMapper::class, StringNodeMapper::class, UnionTypeNodeMapper::class, ExprNodeMapper::class];
     /**
      * @var array<class-string<SkipVoterInterface>>
      */
@@ -289,6 +289,9 @@ final class LazyContainerFactory
             $phpStanServicesFactory = $container->make(PHPStanServicesFactory::class);
             return $phpStanServicesFactory->createDynamicSourceLocatorProvider();
         });
+        $rectorConfig->afterResolving(DynamicSourceLocatorProvider::class, static function (DynamicSourceLocatorProvider $dynamicSourceLocatorProvider, Container $container) : void {
+            $dynamicSourceLocatorProvider->autowire($container->make(ReflectionProvider::class));
+        });
         // resetables
         $rectorConfig->tag(DynamicSourceLocatorProvider::class, ResetableInterface::class);
         $rectorConfig->tag(RenamedClassesDataCollector::class, ResetableInterface::class);
@@ -300,9 +303,20 @@ final class LazyContainerFactory
         });
         // tagged services
         $rectorConfig->when(BetterPhpDocParser::class)->needs('$phpDocNodeDecorators')->giveTagged(PhpDocNodeDecoratorInterface::class);
+        $rectorConfig->afterResolving(ArrayTypeMapper::class, static function (ArrayTypeMapper $arrayTypeMapper, Container $container) : void {
+            $arrayTypeMapper->autowire($container->make(PHPStanStaticTypeMapper::class));
+        });
         $rectorConfig->afterResolving(ConditionalTypeForParameterMapper::class, static function (ConditionalTypeForParameterMapper $conditionalTypeForParameterMapper, Container $container) : void {
             $phpStanStaticTypeMapper = $container->make(PHPStanStaticTypeMapper::class);
             $conditionalTypeForParameterMapper->autowire($phpStanStaticTypeMapper);
+        });
+        $rectorConfig->afterResolving(ConditionalTypeMapper::class, static function (ConditionalTypeMapper $conditionalTypeMapper, Container $container) : void {
+            $phpStanStaticTypeMapper = $container->make(PHPStanStaticTypeMapper::class);
+            $conditionalTypeMapper->autowire($phpStanStaticTypeMapper);
+        });
+        $rectorConfig->afterResolving(\Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper::class, static function (\Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper $unionTypeMapper, Container $container) : void {
+            $phpStanStaticTypeMapper = $container->make(PHPStanStaticTypeMapper::class);
+            $unionTypeMapper->autowire($phpStanStaticTypeMapper);
         });
         $rectorConfig->when(PHPStanStaticTypeMapper::class)->needs('$typeMappers')->giveTagged(TypeMapperInterface::class);
         $rectorConfig->when(PhpDocTypeMapper::class)->needs('$phpDocTypeMappers')->giveTagged(PhpDocTypeMapperInterface::class);
@@ -348,15 +362,8 @@ final class LazyContainerFactory
         $rectorConfig->afterResolving(NameScopeFactory::class, static function (NameScopeFactory $nameScopeFactory, Container $container) : void {
             $nameScopeFactory->autowire($container->make(PhpDocInfoFactory::class), $container->make(StaticTypeMapper::class));
         });
-        $rectorConfig->afterResolving(ArrayTypeMapper::class, static function (ArrayTypeMapper $arrayTypeMapper, Container $container) : void {
-            $arrayTypeMapper->autowire($container->make(PHPStanStaticTypeMapper::class));
-        });
         $rectorConfig->afterResolving(PlainValueParser::class, static function (PlainValueParser $plainValueParser, Container $container) : void {
             $plainValueParser->autowire($container->make(StaticDoctrineAnnotationParser::class), $container->make(ArrayParser::class));
-        });
-        $rectorConfig->afterResolving(\Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper::class, static function (\Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper $unionTypeMapper, Container $container) : void {
-            $phpStanStaticTypeMapper = $container->make(PHPStanStaticTypeMapper::class);
-            $unionTypeMapper->autowire($phpStanStaticTypeMapper);
         });
         $rectorConfig->afterResolving(CurlyListNodeAnnotationToAttributeMapper::class, static function (CurlyListNodeAnnotationToAttributeMapper $curlyListNodeAnnotationToAttributeMapper, Container $container) : void {
             $annotationToAttributeMapper = $container->make(AnnotationToAttributeMapper::class);

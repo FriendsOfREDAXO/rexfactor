@@ -15,7 +15,10 @@ use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\FunctionReflection;
 use PHPStan\Reflection\Native\NativeFunctionReflection;
+use PHPStan\Reflection\Native\NativeParameterWithPhpDocsReflection;
+use PHPStan\Reflection\ParametersAcceptor;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NullType;
@@ -113,9 +116,14 @@ CODE_SAMPLE
         }
         $classReflection = $scope->getClassReflection();
         $isTrait = $classReflection instanceof ClassReflection && $classReflection->isTrait();
+        $functionReflection = $this->reflectionResolver->resolveFunctionLikeReflectionFromCall($node);
+        if (!$functionReflection instanceof FunctionReflection) {
+            return null;
+        }
+        $parametersAcceptor = ParametersAcceptorSelectorVariantsWrapper::select($functionReflection, $node, $scope);
         $isChanged = \false;
         foreach ($positions as $position) {
-            $result = $this->processNullToStrictStringOnNodePosition($node, $args, $position, $isTrait, $scope);
+            $result = $this->processNullToStrictStringOnNodePosition($node, $args, $position, $isTrait, $scope, $parametersAcceptor);
             if ($result instanceof Node) {
                 $node = $result;
                 $isChanged = \true;
@@ -154,7 +162,7 @@ CODE_SAMPLE
      * @param Arg[] $args
      * @param int|string $position
      */
-    private function processNullToStrictStringOnNodePosition(FuncCall $funcCall, array $args, $position, bool $isTrait, Scope $scope) : ?FuncCall
+    private function processNullToStrictStringOnNodePosition(FuncCall $funcCall, array $args, $position, bool $isTrait, Scope $scope, ParametersAcceptor $parametersAcceptor) : ?FuncCall
     {
         if (!isset($args[$position])) {
             return null;
@@ -179,11 +187,18 @@ CODE_SAMPLE
         if ($argValue instanceof Encapsed) {
             return null;
         }
-        if ($this->isAnErrorTypeFromParentScope($argValue, $scope)) {
+        if ($this->isAnErrorType($argValue, $nativeType, $scope)) {
             return null;
         }
         if ($this->shouldSkipTrait($argValue, $type, $isTrait)) {
             return null;
+        }
+        $parameter = $parametersAcceptor->getParameters()[$position] ?? null;
+        if ($parameter instanceof NativeParameterWithPhpDocsReflection && $parameter->getType() instanceof UnionType) {
+            $parameterType = $parameter->getType();
+            if (!$this->isValidUnionType($parameterType)) {
+                return null;
+            }
         }
         $args[$position]->value = new CastString_($argValue);
         $funcCall->args = $args;
@@ -225,8 +240,11 @@ CODE_SAMPLE
         }
         return \true;
     }
-    private function isAnErrorTypeFromParentScope(Expr $expr, Scope $scope) : bool
+    private function isAnErrorType(Expr $expr, Type $type, Scope $scope) : bool
     {
+        if ($type instanceof ErrorType) {
+            return \true;
+        }
         $parentScope = $scope->getParentScope();
         if ($parentScope instanceof Scope) {
             return $parentScope->getType($expr) instanceof ErrorType;

@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202403\Symfony\Component\Console\Helper;
+namespace RectorPrefix202405\Symfony\Component\Console\Helper;
 
-use RectorPrefix202403\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202403\Symfony\Component\Console\Exception\RuntimeException;
-use RectorPrefix202403\Symfony\Component\Console\Formatter\OutputFormatter;
-use RectorPrefix202403\Symfony\Component\Console\Formatter\WrappableOutputFormatterInterface;
-use RectorPrefix202403\Symfony\Component\Console\Output\ConsoleSectionOutput;
-use RectorPrefix202403\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202405\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202405\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202405\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202405\Symfony\Component\Console\Formatter\WrappableOutputFormatterInterface;
+use RectorPrefix202405\Symfony\Component\Console\Output\ConsoleSectionOutput;
+use RectorPrefix202405\Symfony\Component\Console\Output\OutputInterface;
 /**
  * Provides helpers to display a table.
  *
@@ -366,7 +366,7 @@ class Table
                     foreach ($parts as $idx => $part) {
                         if ($headers && !$containsColspan) {
                             if (0 === $idx) {
-                                $rows[] = [\sprintf('<comment>%s</>: %s', \str_pad($headers[$i] ?? '', $maxHeaderLength, ' ', \STR_PAD_LEFT), $part)];
+                                $rows[] = [\sprintf('<comment>%s%s</>: %s', \str_repeat(' ', $maxHeaderLength - Helper::width(Helper::removeDecoration($formatter, $headers[$i] ?? ''))), $headers[$i] ?? '', $part)];
                             } else {
                                 $rows[] = [\sprintf('%s  %s', \str_pad('', $maxHeaderLength, ' ', \STR_PAD_LEFT), $part)];
                             }

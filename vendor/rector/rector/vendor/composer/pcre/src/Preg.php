@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
-namespace RectorPrefix202403\Composer\Pcre;
+namespace RectorPrefix202405\Composer\Pcre;
 
 class Preg
 {
@@ -132,7 +132,7 @@ class Preg
      *
      * @param-out int<0, max> $count
      */
-    public static function replace($pattern, $replacement, $subject, int $limit = -1, int &$count = null) : string
+    public static function replace($pattern, $replacement, $subject, int $limit = -1, ?int &$count = null) : string
     {
         if (!\is_scalar($subject)) {
             if (\is_array($subject)) {
@@ -155,7 +155,7 @@ class Preg
      *
      * @param-out int<0, max> $count
      */
-    public static function replaceCallback($pattern, callable $replacement, $subject, int $limit = -1, int &$count = null, int $flags = 0) : string
+    public static function replaceCallback($pattern, callable $replacement, $subject, int $limit = -1, ?int &$count = null, int $flags = 0) : string
     {
         if (!\is_scalar($subject)) {
             if (\is_array($subject)) {
@@ -194,7 +194,7 @@ class Preg
      *
      * @param-out int<0, max> $count
      */
-    public static function replaceCallbackArray(array $pattern, $subject, int $limit = -1, int &$count = null, int $flags = 0) : string
+    public static function replaceCallbackArray(array $pattern, $subject, int $limit = -1, ?int &$count = null, int $flags = 0) : string
     {
         if (!\is_scalar($subject)) {
             if (\is_array($subject)) {
