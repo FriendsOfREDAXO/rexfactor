@@ -51,7 +51,7 @@ final class ChildDoctrineRepositoryClassTypeRector extends AbstractRector
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Add return type to classes that extend Doctrine\\ORM\\EntityRepository', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Add return type to classes that extend Doctrine\\ORM\\EntityRepository based on return Doctrine method names', [new CodeSample(<<<'CODE_SAMPLE'
 use Doctrine\ORM\EntityRepository;
 
 /**
@@ -109,7 +109,9 @@ CODE_SAMPLE
             if ($this->shouldSkipClassMethod($classMethod)) {
                 continue;
             }
-            if ($this->containsMethodCallNamed($classMethod, 'findOneBy')) {
+            if ($this->containsMethodCallNamed($classMethod, 'getOneOrNullResult')) {
+                $classMethod->returnType = $this->createNullableType($entityClassName);
+            } elseif ($this->containsMethodCallNamed($classMethod, 'findOneBy')) {
                 $classMethod->returnType = $this->createNullableType($entityClassName);
             }
             if ($this->containsMethodCallNamed($classMethod, 'findBy')) {
@@ -153,6 +155,10 @@ CODE_SAMPLE
         }
         $entityGenericType = $genericTypeNode->genericTypes[0];
         if (!$entityGenericType instanceof IdentifierTypeNode) {
+            return null;
+        }
+        // skip if value is used in generics
+        if (\in_array($entityGenericType->name, $classPhpDocInfo->getTemplateNames(), \true)) {
             return null;
         }
         return $entityGenericType->name;

@@ -7,6 +7,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Scalar\MagicConst\Class_;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
@@ -61,7 +62,7 @@ final class ArrayCallableMethodMatcher
      * @see https://github.com/rectorphp/rector-src/pull/909
      * @return null|\Rector\NodeCollector\ValueObject\ArrayCallableDynamicMethod|\Rector\NodeCollector\ValueObject\ArrayCallable
      */
-    public function match(Array_ $array, Scope $scope)
+    public function match(Array_ $array, Scope $scope, ?string $classMethodName = null)
     {
         if (\count($array->items) !== 2) {
             return null;
@@ -73,7 +74,7 @@ final class ArrayCallableMethodMatcher
         $items = $array->items;
         // $this, self, static, FQN
         $firstItemValue = $items[0]->value;
-        $callerType = $this->resolveCallerType($firstItemValue, $scope);
+        $callerType = $this->resolveCallerType($firstItemValue, $scope, $classMethodName);
         if (!$callerType instanceof TypeWithClassName) {
             return null;
         }
@@ -135,21 +136,22 @@ final class ArrayCallableMethodMatcher
         return \in_array($fromFuncCallName, $functionNames, \true);
     }
     /**
+     * @param \PhpParser\Node\Expr\ClassConstFetch|\PhpParser\Node\Scalar\MagicConst\Class_ $classContext
      * @return \PHPStan\Type\MixedType|\PHPStan\Type\ObjectType
      */
-    private function resolveClassConstFetchType(ClassConstFetch $classConstFetch, Scope $scope)
+    private function resolveClassContextType($classContext, Scope $scope, ?string $classMethodName)
     {
-        $classConstantReference = $this->valueResolver->getValue($classConstFetch);
-        if ($classConstantReference === ObjectReference::STATIC) {
-            $classReflection = $this->reflectionResolver->resolveClassReflection($classConstFetch);
+        $classConstantReference = $this->valueResolver->getValue($classContext);
+        // non-class value
+        if (!\is_string($classConstantReference)) {
+            return new MixedType();
+        }
+        if ($this->isRequiredClassReflectionResolution($classConstantReference)) {
+            $classReflection = $this->reflectionResolver->resolveClassReflection($classContext);
             if (!$classReflection instanceof ClassReflection || !$classReflection->isClass()) {
                 return new MixedType();
             }
             $classConstantReference = $classReflection->getName();
-        }
-        // non-class value
-        if (!\is_string($classConstantReference)) {
-            return new MixedType();
         }
         if (!$this->reflectionProvider->hasClass($classConstantReference)) {
             return new MixedType();
@@ -157,6 +159,9 @@ final class ArrayCallableMethodMatcher
         $classReflection = $this->reflectionProvider->getClass($classConstantReference);
         $hasConstruct = $classReflection->hasMethod(MethodName::CONSTRUCT);
         if (!$hasConstruct) {
+            return new ObjectType($classConstantReference, null, $classReflection);
+        }
+        if (\is_string($classMethodName) && $classReflection->hasNativeMethod($classMethodName)) {
             return new ObjectType($classConstantReference, null, $classReflection);
         }
         $extendedMethodReflection = $classReflection->getMethod(MethodName::CONSTRUCT, $scope);
@@ -168,11 +173,11 @@ final class ArrayCallableMethodMatcher
         }
         return new ObjectType($classConstantReference, null, $classReflection);
     }
-    private function resolveCallerType(Expr $expr, Scope $scope) : Type
+    private function resolveCallerType(Expr $expr, Scope $scope, ?string $classMethodName) : Type
     {
-        if ($expr instanceof ClassConstFetch) {
-            // static ::class reference?
-            $callerType = $this->resolveClassConstFetchType($expr, $scope);
+        if ($expr instanceof ClassConstFetch || $expr instanceof Class_) {
+            // class context means self|static ::class or __CLASS__
+            $callerType = $this->resolveClassContextType($expr, $scope, $classMethodName);
         } else {
             $callerType = $this->nodeTypeResolver->getType($expr);
         }
@@ -180,5 +185,12 @@ final class ArrayCallableMethodMatcher
             return $callerType->getStaticObjectType();
         }
         return $callerType;
+    }
+    private function isRequiredClassReflectionResolution(string $classConstantReference) : bool
+    {
+        if ($classConstantReference === ObjectReference::STATIC) {
+            return \true;
+        }
+        return $classConstantReference === '__CLASS__';
     }
 }

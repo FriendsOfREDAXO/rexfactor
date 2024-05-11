@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202403\Symfony\Component\Console\Input;
+namespace RectorPrefix202405\Symfony\Component\Console\Input;
 
-use RectorPrefix202403\Symfony\Component\Console\Command\Command;
-use RectorPrefix202403\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202403\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202403\Symfony\Component\Console\Completion\Suggestion;
-use RectorPrefix202403\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202403\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202405\Symfony\Component\Console\Command\Command;
+use RectorPrefix202405\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202405\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202405\Symfony\Component\Console\Completion\Suggestion;
+use RectorPrefix202405\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202405\Symfony\Component\Console\Exception\LogicException;
 /**
  * Represents a command line option.
  *
@@ -48,7 +48,7 @@ class InputOption
      */
     private $name;
     /**
-     * @var string|mixed[]|null
+     * @var mixed[]|string|null
      */
     private $shortcut;
     /**
@@ -56,7 +56,7 @@ class InputOption
      */
     private $mode;
     /**
-     * @var string|int|bool|mixed[]|null|float
+     * @var mixed[]|bool|float|int|string|null
      */
     private $default;
     /**
@@ -195,7 +195,7 @@ class InputOption
     }
     /**
      * Returns the default value.
-     * @return string|bool|int|float|mixed[]|null
+     * @return mixed[]|bool|float|int|string|null
      */
     public function getDefault()
     {

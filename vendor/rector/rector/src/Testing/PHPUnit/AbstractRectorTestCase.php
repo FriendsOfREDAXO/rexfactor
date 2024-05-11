@@ -3,10 +3,10 @@
 declare (strict_types=1);
 namespace Rector\Testing\PHPUnit;
 
-use RectorPrefix202403\Illuminate\Container\RewindableGenerator;
+use RectorPrefix202405\Illuminate\Container\RewindableGenerator;
 use Iterator;
-use RectorPrefix202403\Nette\Utils\FileSystem;
-use RectorPrefix202403\Nette\Utils\Strings;
+use RectorPrefix202405\Nette\Utils\FileSystem;
+use RectorPrefix202405\Nette\Utils\Strings;
 use PHPUnit\Framework\ExpectationFailedException;
 use Rector\Application\ApplicationFileProcessor;
 use Rector\Autoloading\AdditionalAutoloader;
@@ -60,6 +60,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
         SimpleParameterProvider::setParameter(Option::INDENT_CHAR, ' ');
         SimpleParameterProvider::setParameter(Option::INDENT_SIZE, 4);
         SimpleParameterProvider::setParameter(Option::POLYFILL_PACKAGES, []);
+        SimpleParameterProvider::setParameter(Option::NEW_LINE_ON_FLUENT_CALL, \false);
     }
     protected function setUp() : void
     {

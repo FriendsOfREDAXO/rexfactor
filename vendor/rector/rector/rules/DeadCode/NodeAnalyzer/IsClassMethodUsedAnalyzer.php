@@ -9,6 +9,7 @@ use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
@@ -88,11 +89,15 @@ final class IsClassMethodUsedAnalyzer
         if ($this->isClassMethodCalledInLocalMethodCall($class, $classMethodName)) {
             return \true;
         }
-        // 2. direct static calls
+        // 2. direct null-safe calls
+        if ($this->isClassMethodCalledInLocalNullsafeMethodCall($class, $classMethodName)) {
+            return \true;
+        }
+        // 3. direct static calls
         if ($this->isClassMethodUsedInLocalStaticCall($class, $classMethodName)) {
             return \true;
         }
-        // 3. magic array calls!
+        // 4. magic array calls!
         if ($this->isClassMethodCalledInLocalArrayCall($class, $classMethod, $scope)) {
             return \true;
         }
@@ -111,6 +116,13 @@ final class IsClassMethodUsedAnalyzer
         $className = (string) $this->nodeNameResolver->getName($class);
         /** @var MethodCall[] $methodCalls */
         $methodCalls = $this->betterNodeFinder->findInstanceOf($class, MethodCall::class);
+        return $this->callCollectionAnalyzer->isExists($methodCalls, $classMethodName, $className);
+    }
+    private function isClassMethodCalledInLocalNullsafeMethodCall(Class_ $class, string $classMethodName) : bool
+    {
+        $className = (string) $this->nodeNameResolver->getName($class);
+        /** @var Node\Expr\NullsafeMethodCall[] $methodCalls */
+        $methodCalls = $this->betterNodeFinder->findInstanceOf($class, NullsafeMethodCall::class);
         return $this->callCollectionAnalyzer->isExists($methodCalls, $classMethodName, $className);
     }
     private function isInArrayMap(Class_ $class, Array_ $array) : bool
@@ -134,11 +146,12 @@ final class IsClassMethodUsedAnalyzer
     {
         /** @var Array_[] $arrays */
         $arrays = $this->betterNodeFinder->findInstanceOf($class, Array_::class);
+        $classMethodName = $this->nodeNameResolver->getName($classMethod);
         foreach ($arrays as $array) {
             if ($this->isInArrayMap($class, $array)) {
                 return \true;
             }
-            $arrayCallable = $this->arrayCallableMethodMatcher->match($array, $scope);
+            $arrayCallable = $this->arrayCallableMethodMatcher->match($array, $scope, $classMethodName);
             if ($arrayCallable instanceof ArrayCallableDynamicMethod) {
                 return \true;
             }

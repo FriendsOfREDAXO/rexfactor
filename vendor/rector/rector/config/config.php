@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202403;
+namespace RectorPrefix202405;
 
-use RectorPrefix202403\OndraM\CiDetector\CiDetector;
+use RectorPrefix202405\OndraM\CiDetector\CiDetector;
 use Rector\Bootstrap\ExtensionConfigResolver;
 use Rector\Caching\ValueObject\Storage\MemoryCacheStorage;
 use Rector\Config\RectorConfig;
@@ -31,4 +31,6 @@ return static function (RectorConfig $rectorConfig) : void {
     foreach ($extensionConfigResolver->provide() as $extensionConfigFile) {
         $rectorConfig->import($extensionConfigFile);
     }
+    // use original php-parser printer to avoid BC break on fluent call
+    $rectorConfig->newLineOnFluentCall(\false);
 };

@@ -22,8 +22,8 @@ use Rector\Symfony\Set\JMSSetList;
 use Rector\Symfony\Set\SensiolabsSetList;
 use Rector\Symfony\Set\SymfonySetList;
 use Rector\ValueObject\PhpVersion;
-use RectorPrefix202403\Symfony\Component\Finder\Finder;
-use RectorPrefix202403\Webmozart\Assert\Assert;
+use RectorPrefix202405\Symfony\Component\Finder\Finder;
+use RectorPrefix202405\Webmozart\Assert\Assert;
 /**
  * @api
  */
@@ -140,13 +140,17 @@ final class RectorConfigBuilder
     /**
      * To make sure type declarations set and level are not duplicated,
      * as both contain same rules
-     * @var bool
+     * @var bool|null
      */
-    private $isTypeCoverageLevelUsed = \false;
+    private $isTypeCoverageLevelUsed;
     /**
-     * @var bool
+     * @var bool|null
      */
-    private $isDeadCodeLevelUsed = \false;
+    private $isDeadCodeLevelUsed;
+    /**
+     * @var bool|null
+     */
+    private $isFluentNewLine;
     /**
      * @var RegisteredService[]
      */
@@ -154,13 +158,15 @@ final class RectorConfigBuilder
     public function __invoke(RectorConfig $rectorConfig) : void
     {
         $uniqueSets = \array_unique($this->sets);
-        if (\in_array(SetList::TYPE_DECLARATION, $uniqueSets, \true) && $this->isTypeCoverageLevelUsed) {
+        if (\in_array(SetList::TYPE_DECLARATION, $uniqueSets, \true) && $this->isTypeCoverageLevelUsed === \true) {
             throw new InvalidConfigurationException(\sprintf('Your config already enables type declarations set.%sRemove "->withTypeCoverageLevel()" as it only duplicates it, or remove type declaration set.', \PHP_EOL));
         }
-        if (\in_array(SetList::DEAD_CODE, $uniqueSets, \true) && $this->isDeadCodeLevelUsed) {
+        if (\in_array(SetList::DEAD_CODE, $uniqueSets, \true) && $this->isDeadCodeLevelUsed === \true) {
             throw new InvalidConfigurationException(\sprintf('Your config already enables dead code set.%sRemove "->withDeadCodeLevel()" as it only duplicates it, or remove dead code set.', \PHP_EOL));
         }
-        $rectorConfig->sets($uniqueSets);
+        if ($uniqueSets !== []) {
+            $rectorConfig->sets($uniqueSets);
+        }
         if ($this->paths !== []) {
             $rectorConfig->paths($this->paths);
         }
@@ -174,8 +180,12 @@ final class RectorConfigBuilder
                 $rectorConfig->tag($registerService->getClassName(), $registerService->getTag());
             }
         }
-        $rectorConfig->skip($this->skip);
-        $rectorConfig->rules($this->rules);
+        if ($this->skip !== []) {
+            $rectorConfig->skip($this->skip);
+        }
+        if ($this->rules !== []) {
+            $rectorConfig->rules($this->rules);
+        }
         foreach ($this->rulesWithConfigurations as $rectorClass => $configurations) {
             foreach ($configurations as $configuration) {
                 $rectorConfig->ruleWithConfiguration($rectorClass, $configuration);
@@ -233,6 +243,9 @@ final class RectorConfigBuilder
         }
         if ($this->symfonyContainerPhpFile !== null) {
             $rectorConfig->symfonyContainerPhp($this->symfonyContainerPhpFile);
+        }
+        if ($this->isFluentNewLine !== null) {
+            $rectorConfig->newLineOnFluentCall($this->isFluentNewLine);
         }
     }
     /**
@@ -313,7 +326,7 @@ final class RectorConfigBuilder
      * What PHP sets should be applied? By default the same version
      * as composer.json has is used
      */
-    public function withPhpSets(bool $php83 = \false, bool $php82 = \false, bool $php81 = \false, bool $php80 = \false, bool $php74 = \false, bool $php73 = \false, bool $php72 = \false, bool $php71 = \false, bool $php70 = \false, bool $php56 = \false, bool $php55 = \false, bool $php54 = \false, bool $php53 = \false) : self
+    public function withPhpSets(bool $php83 = \false, bool $php82 = \false, bool $php81 = \false, bool $php80 = \false, bool $php74 = \false, bool $php73 = \false, bool $php72 = \false, bool $php71 = \false, bool $php70 = \false, bool $php56 = \false, bool $php55 = \false, bool $php54 = \false, bool $php53 = \false, bool $php84 = \false) : self
     {
         $pickedArguments = \array_filter(\func_get_args());
         if (\count($pickedArguments) > 1) {
@@ -357,6 +370,8 @@ final class RectorConfigBuilder
             $this->sets[] = LevelSetList::UP_TO_PHP_82;
         } elseif ($php83) {
             $this->sets[] = LevelSetList::UP_TO_PHP_83;
+        } elseif ($php84) {
+            $this->sets[] = LevelSetList::UP_TO_PHP_84;
         }
         return $this;
     }
@@ -531,6 +546,11 @@ final class RectorConfigBuilder
         $this->isTypeCoverageLevelUsed = \true;
         $levelRules = LevelRulesResolver::resolve($level, TypeDeclarationLevel::RULES, 'RectorConfig::withTypeCoverageLevel()');
         $this->rules = \array_merge($this->rules, $levelRules);
+        return $this;
+    }
+    public function withFluentCallNewLine(bool $isFluentNewLine = \true) : self
+    {
+        $this->isFluentNewLine = $isFluentNewLine;
         return $this;
     }
     public function registerService(string $className, ?string $alias = null, ?string $tag = null) : self

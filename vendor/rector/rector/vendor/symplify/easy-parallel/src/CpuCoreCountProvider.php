@@ -1,10 +1,10 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202403\Symplify\EasyParallel;
+namespace RectorPrefix202405\Symplify\EasyParallel;
 
-use RectorPrefix202403\Fidry\CpuCoreCounter\CpuCoreCounter;
-use RectorPrefix202403\Fidry\CpuCoreCounter\NumberOfCpuCoreNotFound;
+use RectorPrefix202405\Fidry\CpuCoreCounter\CpuCoreCounter;
+use RectorPrefix202405\Fidry\CpuCoreCounter\NumberOfCpuCoreNotFound;
 /**
  * @api
  */

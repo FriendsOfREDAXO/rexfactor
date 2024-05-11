@@ -3,8 +3,8 @@
 declare (strict_types=1);
 namespace Rector\Php;
 
-use RectorPrefix202403\Nette\Utils\FileSystem;
-use RectorPrefix202403\Nette\Utils\Json;
+use RectorPrefix202405\Nette\Utils\FileSystem;
+use RectorPrefix202405\Nette\Utils\Json;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\ValueObject\PolyfillPackage;
@@ -33,7 +33,7 @@ final class PolyfillPackagesProvider
             return $this->cachedPolyfillPackages;
         }
         $composerContents = FileSystem::read($projectComposerJson);
-        $composerJson = Json::decode($composerContents, Json::FORCE_ARRAY);
+        $composerJson = Json::decode($composerContents, \true);
         $this->cachedPolyfillPackages = $this->filterPolyfillPackages($composerJson['require'] ?? []);
         return $this->cachedPolyfillPackages;
     }

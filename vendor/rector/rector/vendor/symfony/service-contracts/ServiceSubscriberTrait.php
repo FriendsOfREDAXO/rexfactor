@@ -8,21 +8,27 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202403\Symfony\Contracts\Service;
+namespace RectorPrefix202405\Symfony\Contracts\Service;
 
-use RectorPrefix202403\Psr\Container\ContainerInterface;
-use RectorPrefix202403\Symfony\Contracts\Service\Attribute\Required;
-use RectorPrefix202403\Symfony\Contracts\Service\Attribute\SubscribedService;
+use RectorPrefix202405\Psr\Container\ContainerInterface;
+use RectorPrefix202405\Symfony\Contracts\Service\Attribute\Required;
+use RectorPrefix202405\Symfony\Contracts\Service\Attribute\SubscribedService;
+trigger_deprecation('symfony/contracts', 'v3.5', '"%s" is deprecated, use "ServiceMethodsSubscriberTrait" instead.', ServiceSubscriberTrait::class);
 /**
- * Implementation of ServiceSubscriberInterface that determines subscribed services from
- * method return types. Service ids are available as "ClassName::methodName".
+ * Implementation of ServiceSubscriberInterface that determines subscribed services
+ * from methods that have the #[SubscribedService] attribute.
+ *
+ * Service ids are available as "ClassName::methodName" so that the implementation
+ * of subscriber methods can be just `return $this->container->get(__METHOD__);`.
+ *
+ * @property ContainerInterface $container
  *
  * @author Kevin Bond <kevinbond@gmail.com>
+ *
+ * @deprecated since symfony/contracts v3.5, use ServiceMethodsSubscriberTrait instead
  */
 trait ServiceSubscriberTrait
 {
-    /** @var ContainerInterface */
-    protected $container;
     public static function getSubscribedServices() : array
     {
         $services = \method_exists(\get_parent_class(self::class) ?: '', __FUNCTION__) ? parent::getSubscribedServices() : [];

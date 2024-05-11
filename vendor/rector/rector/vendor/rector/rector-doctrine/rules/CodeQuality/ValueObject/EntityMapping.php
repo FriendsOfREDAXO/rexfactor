@@ -7,7 +7,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Property;
 use Rector\Exception\ShouldNotHappenException;
-use RectorPrefix202403\Webmozart\Assert\Assert;
+use RectorPrefix202405\Webmozart\Assert\Assert;
 final class EntityMapping
 {
     /**
@@ -49,6 +49,15 @@ final class EntityMapping
     {
         $propertyName = $this->getPropertyName($property);
         return $this->entityMapping['embedded'][$propertyName] ?? null;
+    }
+    /**
+     * @return array<string, mixed>|null
+     * @param \PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $property
+     */
+    public function matchManyToManyPropertyMapping($property) : ?array
+    {
+        $propertyName = $this->getPropertyName($property);
+        return $this->entityMapping['manyToMany'][$propertyName] ?? null;
     }
     /**
      * @return array<string, mixed>|null
