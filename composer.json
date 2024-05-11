@@ -2,7 +2,7 @@
     "require": {
         "php": ">=7.4",
         "rector/rector": "1.0.5",
-        "friendsofphp/php-cs-fixer": "3.38.2",
+        "friendsofphp/php-cs-fixer": "3.56.1",
         "redaxo/php-cs-fixer-config": "^1.0"
     },
     "config": {
