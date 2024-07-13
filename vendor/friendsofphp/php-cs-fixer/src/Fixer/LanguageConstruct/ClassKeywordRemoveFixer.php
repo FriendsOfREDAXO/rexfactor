@@ -32,7 +32,7 @@ use PhpCsFixer\Tokenizer\TokensAnalyzer;
 final class ClassKeywordRemoveFixer extends AbstractFixer implements DeprecatedFixerInterface
 {
     /**
-     * @var string[]
+     * @var array<array-key, string>
      */
     private array $imports = [];
 
@@ -188,7 +188,7 @@ $className = Baz::class;
                 $classStringArray = explode('\\', $classString);
                 $namespaceToTest = $classStringArray[0];
 
-                if (0 === strcmp($namespaceToTest, substr($import, -\strlen($namespaceToTest)))) {
+                if (0 === ($namespaceToTest <=> substr($import, -\strlen($namespaceToTest)))) {
                     $classImport = $import;
 
                     break;

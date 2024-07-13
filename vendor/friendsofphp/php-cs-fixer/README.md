@@ -4,8 +4,7 @@
     </a>
 </p>
 
-PHP Coding Standards Fixer
-==========================
+# PHP Coding Standards Fixer
 
 The PHP Coding Standards Fixer (PHP CS Fixer) tool fixes your code to follow standards;
 whether you want to follow PHP coding standards as defined in the PSR-1, PSR-2, etc.,
@@ -22,9 +21,10 @@ projects. This tool does not only detect them, but also fixes them for you.
 ## Supported PHP Versions
 
 * PHP 7.4
-* PHP 8.0 (except PHP 8.0.0 due to [bug in PHP tokenizer](https://bugs.php.net/bug.php?id=80462))
+* PHP 8.0
 * PHP 8.1
 * PHP 8.2
+* PHP 8.3
 
 > **Note**
 > Each new PHP version requires a huge effort to support the new syntax.
@@ -48,6 +48,7 @@ composer require --working-dir=tools/php-cs-fixer friendsofphp/php-cs-fixer
 ```
 
 Or using the main `composer.json`:
+
 ```console
 composer require --dev friendsofphp/php-cs-fixer
 ```
@@ -55,10 +56,24 @@ composer require --dev friendsofphp/php-cs-fixer
 For more details and other installation methods, see
 [installation instructions](./doc/installation.rst).
 
+### Run with Docker
+
+You can use pre-built Docker images to run ``php-cs-fixer``.
+
+```console
+docker run -v $(pwd):/code ghcr.io/php-cs-fixer/php-cs-fixer:${FIXER_VERSION:-3-php8.3} fix src
+```
+
+`$FIXER_VERSION` used in example above is an identifier of a release you want to use, which is based on Fixer and PHP versions combined. There are different tags for each Fixer's SemVer level and PHP version with syntax `<php-cs-fixer-version>-php<php-version>`. For example:
+
+* `3.47.0-php7.4`
+* `3.47-php8.0`
+* `3-php8.3`
+
 ### Usage
 
 Assuming you installed PHP CS Fixer as instructed above, you can run the
-following command to fix the files PHP files in the `src` directory:
+following command to fix the PHP files in the `src` directory:
 
 ```console
 tools/php-cs-fixer/vendor/bin/php-cs-fixer fix src
@@ -82,11 +97,11 @@ Dedicated plugins exist for:
 
 ## Community
 
-The PHP CS Fixer is maintained on GitHub at https://github.com/PHP-CS-Fixer/PHP-CS-Fixer.
+The PHP CS Fixer is maintained on GitHub at <https://github.com/PHP-CS-Fixer/PHP-CS-Fixer>.
 Bug reports and ideas about new features are welcome there.
 
-You can reach us at https://gitter.im/PHP-CS-Fixer/Lobby about the project,
-configuration, possible improvements, ideas and questions, please visit us!
+You can reach us in the [GitHub Discussions](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/discussions/) regarding the
+project, configuration, possible improvements, ideas and questions. Please visit us there!
 
 ## Contribute
 

@@ -61,7 +61,7 @@ final class GroupImportFixer extends AbstractFixer
     /**
      * Gets namespace use analyzers with same namespaces.
      *
-     * @return NamespaceUseAnalysis[]
+     * @return list<NamespaceUseAnalysis>
      */
     private function getSameNamespaces(Tokens $tokens): array
     {
@@ -89,16 +89,16 @@ final class GroupImportFixer extends AbstractFixer
             $namespaceA = $this->getNamespaceNameWithSlash($a);
             $namespaceB = $this->getNamespaceNameWithSlash($b);
 
-            $namespaceDifference = \strlen($namespaceA) - \strlen($namespaceB);
+            $namespaceDifference = \strlen($namespaceA) <=> \strlen($namespaceB);
 
-            return 0 !== $namespaceDifference ? $namespaceDifference : strcmp($a->getFullName(), $b->getFullName());
+            return 0 !== $namespaceDifference ? $namespaceDifference : $a->getFullName() <=> $b->getFullName();
         });
 
         return $sameNamespaceAnalysis;
     }
 
     /**
-     * @param NamespaceUseAnalysis[] $statements
+     * @param list<NamespaceUseAnalysis> $statements
      */
     private function removeSingleUseStatements(array $statements, Tokens $tokens): void
     {
@@ -129,7 +129,7 @@ final class GroupImportFixer extends AbstractFixer
     }
 
     /**
-     * @param NamespaceUseAnalysis[] $statements
+     * @param list<NamespaceUseAnalysis> $statements
      */
     private function addGroupUseStatements(array $statements, Tokens $tokens): void
     {
@@ -143,7 +143,7 @@ final class GroupImportFixer extends AbstractFixer
                     $tokens,
                     $insertIndex,
                     $useDeclaration,
-                    $this->getNamespaceNameWithSlash($currentUseDeclaration)
+                    rtrim($this->getNamespaceNameWithSlash($currentUseDeclaration), '\\')
                 );
             } else {
                 $newTokens = [
@@ -225,7 +225,7 @@ final class GroupImportFixer extends AbstractFixer
             $newTokens[] = new Token([T_WHITESPACE, ' ']);
         }
 
-        $namespaceParts = array_filter(explode('\\', $currentNamespace));
+        $namespaceParts = explode('\\', $currentNamespace);
 
         foreach ($namespaceParts as $part) {
             $newTokens[] = new Token([T_STRING, $part]);

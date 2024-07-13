@@ -57,15 +57,14 @@ final class TypeAnalysis implements StartEndTokenAwareAnalysis
 
     private int $endIndex;
 
-    private bool $nullable;
+    private bool $nullable = false;
 
     /**
      * @param ($startIndex is null ? null : int) $endIndex
      */
-    public function __construct(string $name, int $startIndex = null, int $endIndex = null)
+    public function __construct(string $name, ?int $startIndex = null, ?int $endIndex = null)
     {
         $this->name = $name;
-        $this->nullable = false;
 
         if (str_starts_with($name, '?')) {
             $this->name = substr($name, 1);

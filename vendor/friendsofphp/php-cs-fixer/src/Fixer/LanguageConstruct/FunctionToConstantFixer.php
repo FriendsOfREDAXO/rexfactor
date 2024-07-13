@@ -31,12 +31,12 @@ use PhpCsFixer\Tokenizer\Tokens;
 final class FunctionToConstantFixer extends AbstractFixer implements ConfigurableFixerInterface
 {
     /**
-     * @var array<string, Token[]>
+     * @var array<string, list<Token>>
      */
     private static $availableFunctions;
 
     /**
-     * @var array<string, Token[]>
+     * @var array<string, list<Token>>
      */
     private array $functionsFixMap;
 
@@ -49,7 +49,11 @@ final class FunctionToConstantFixer extends AbstractFixer implements Configurabl
                     new Token([T_DOUBLE_COLON, '::']),
                     new Token([CT::T_CLASS_CONSTANT, 'class']),
                 ],
-                'get_class' => [new Token([T_CLASS_C, '__CLASS__'])],
+                'get_class' => [
+                    new Token([T_STRING, 'self']),
+                    new Token([T_DOUBLE_COLON, '::']),
+                    new Token([CT::T_CLASS_CONSTANT, 'class']),
+                ],
                 'get_class_this' => [
                     new Token([T_STATIC, 'static']),
                     new Token([T_DOUBLE_COLON, '::']),
@@ -155,7 +159,7 @@ final class FunctionToConstantFixer extends AbstractFixer implements Configurabl
     }
 
     /**
-     * @param Token[] $replacements
+     * @param list<Token> $replacements
      */
     private function fixFunctionCallToConstant(Tokens $tokens, int $index, int $braceOpenIndex, int $braceCloseIndex, array $replacements): void
     {
@@ -167,7 +171,10 @@ final class FunctionToConstantFixer extends AbstractFixer implements Configurabl
             $tokens->clearTokenAndMergeSurroundingWhitespace($i);
         }
 
-        if ($replacements[0]->isGivenKind([T_CLASS_C, T_STATIC])) {
+        if (
+            $replacements[0]->isGivenKind([T_CLASS_C, T_STATIC])
+            || ($replacements[0]->isGivenKind(T_STRING) && 'self' === $replacements[0]->getContent())
+        ) {
             $prevIndex = $tokens->getPrevMeaningfulToken($index);
             $prevToken = $tokens[$prevIndex];
             if ($prevToken->isGivenKind(T_NS_SEPARATOR)) {
@@ -179,6 +186,9 @@ final class FunctionToConstantFixer extends AbstractFixer implements Configurabl
         $tokens->insertAt($index, $replacements);
     }
 
+    /**
+     * @return ?array{int, int, list<Token>}
+     */
     private function getReplaceCandidate(
         Tokens $tokens,
         FunctionsAnalyzer $functionAnalyzer,
@@ -216,6 +226,9 @@ final class FunctionToConstantFixer extends AbstractFixer implements Configurabl
         return $this->getReplacementTokenClones($lowerContent, $braceOpenIndex, $braceCloseIndex);
     }
 
+    /**
+     * @return ?array{int, int, list<Token>}
+     */
     private function fixGetClassCall(
         Tokens $tokens,
         FunctionsAnalyzer $functionAnalyzer,
@@ -267,12 +280,15 @@ final class FunctionToConstantFixer extends AbstractFixer implements Configurabl
         return null;
     }
 
+    /**
+     * @return array{int, int, list<Token>}
+     */
     private function getReplacementTokenClones(string $lowerContent, int $braceOpenIndex, int $braceCloseIndex): array
     {
-        $clones = [];
-        foreach ($this->functionsFixMap[$lowerContent] as $token) {
-            $clones[] = clone $token;
-        }
+        $clones = array_map(
+            static fn (Token $token): Token => clone $token,
+            $this->functionsFixMap[$lowerContent],
+        );
 
         return [
             $braceOpenIndex,

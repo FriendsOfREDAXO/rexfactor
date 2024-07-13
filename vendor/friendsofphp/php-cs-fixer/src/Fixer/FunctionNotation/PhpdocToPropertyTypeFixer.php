@@ -16,13 +16,17 @@ namespace PhpCsFixer\Fixer\FunctionNotation;
 
 use PhpCsFixer\AbstractPhpdocToTypeDeclarationFixer;
 use PhpCsFixer\DocBlock\Annotation;
+use PhpCsFixer\Fixer\ExperimentalFixerInterface;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\FixerDefinition\FixerDefinitionInterface;
 use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 
-final class PhpdocToPropertyTypeFixer extends AbstractPhpdocToTypeDeclarationFixer
+/**
+ * @phpstan-import-type _CommonTypeInfo from AbstractPhpdocToTypeDeclarationFixer
+ */
+final class PhpdocToPropertyTypeFixer extends AbstractPhpdocToTypeDeclarationFixer implements ExperimentalFixerInterface
 {
     private const TYPE_CHECK_TEMPLATE = '<?php class A { private %s $b; }';
 
@@ -37,7 +41,7 @@ final class PhpdocToPropertyTypeFixer extends AbstractPhpdocToTypeDeclarationFix
     public function getDefinition(): FixerDefinitionInterface
     {
         return new FixerDefinition(
-            'EXPERIMENTAL: Takes `@var` annotation of non-mixed types and adjusts accordingly the property signature. Requires PHP >= 7.4.',
+            'Takes `@var` annotation of non-mixed types and adjusts accordingly the property signature. Requires PHP >= 7.4.',
             [
                 new CodeSample(
                     '<?php
@@ -60,9 +64,20 @@ class Foo {
 ',
                     ['scalar_types' => false]
                 ),
+                new CodeSample(
+                    '<?php
+class Foo {
+    /** @var int|string */
+    private $foo;
+    /** @var \Traversable */
+    private $bar;
+}
+',
+                    ['union_types' => false]
+                ),
             ],
             null,
-            'This rule is EXPERIMENTAL and [1] is not covered with backward compatibility promise. [2] `@var` annotation is mandatory for the fixer to make changes, signatures of properties without it (no docblock) will not be fixed. [3] Manual actions might be required for newly typed properties that are read before initialization.'
+            'The `@var` annotation is mandatory for the fixer to make changes, signatures of properties without it (no docblock) will not be fixed. Manual actions might be required for newly typed properties that are read before initialization.'
         );
     }
 
@@ -142,7 +157,8 @@ class Foo {
                 continue;
             }
 
-            [$propertyType, $isNullable] = $typeInfo;
+            $propertyType = $typeInfo['commonType'];
+            $isNullable = $typeInfo['isNullable'];
 
             if (\in_array($propertyType, ['callable', 'never', 'void'], true)) {
                 continue;
@@ -198,7 +214,9 @@ class Foo {
 
     /**
      * @param array<string, int> $propertyIndices
-     * @param Annotation[]       $annotations
+     * @param list<Annotation>   $annotations
+     *
+     * @return ?_CommonTypeInfo
      */
     private function resolveApplicableType(array $propertyIndices, array $annotations): ?array
     {
@@ -212,7 +230,7 @@ class Foo {
                     continue;
                 }
 
-                $propertyName = key($propertyIndices);
+                $propertyName = array_key_first($propertyIndices);
             }
 
             if (!isset($propertyIndices[$propertyName])) {
@@ -237,7 +255,7 @@ class Foo {
             }
 
             if (null !== $unionTypes) {
-                $typeInfo = [$unionTypes, false];
+                $typeInfo = ['commonType' => $unionTypes, 'isNullable' => false];
             }
 
             if (\array_key_exists($propertyName, $propertyTypes) && $typeInfo !== $propertyTypes[$propertyName]) {
