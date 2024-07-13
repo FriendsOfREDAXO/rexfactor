@@ -99,7 +99,7 @@ if ($total['changed_files'] > 0) {
     $diffout = '<div style="margin-top: 10px"></div>';
     $diffout .= '<div style="background: unset; color: unset;">'.$diff.'</div>';
 } else {
-    $content .= '<h2>Code is shiny. Nothing todo for this migration - move along.</h2>';
+    $content .= '<h2>✌️ Code is shiny. Nothing todo for this migration - move along.</h2>';
 
     $content .= '<a class="btn btn-info" href="'. $backUrl .'">back</a>';
 }
