@@ -1,10 +1,10 @@
 <?php
 
-namespace RectorPrefix202405\React\Socket;
+namespace RectorPrefix202410\React\Socket;
 
-use RectorPrefix202405\Evenement\EventEmitter;
-use RectorPrefix202405\React\EventLoop\Loop;
-use RectorPrefix202405\React\EventLoop\LoopInterface;
+use RectorPrefix202410\Evenement\EventEmitter;
+use RectorPrefix202410\React\EventLoop\Loop;
+use RectorPrefix202410\React\EventLoop\LoopInterface;
 use InvalidArgumentException;
 use RuntimeException;
 /**
@@ -126,8 +126,12 @@ final class TcpServer extends EventEmitter implements ServerInterface
      * @throws InvalidArgumentException if the listening address is invalid
      * @throws RuntimeException if listening on this address fails (already in use etc.)
      */
-    public function __construct($uri, LoopInterface $loop = null, array $context = array())
+    public function __construct($uri, $loop = null, array $context = array())
     {
+        if ($loop !== null && !$loop instanceof LoopInterface) {
+            // manual type check to support legacy PHP < 7.1
+            throw new \InvalidArgumentException('Argument #2 ($loop) expected null|React\\EventLoop\\LoopInterface');
+        }
         $this->loop = $loop ?: Loop::get();
         // a single port has been given => assume localhost
         if ((string) (int) $uri === (string) $uri) {

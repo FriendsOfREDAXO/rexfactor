@@ -12,10 +12,12 @@ use Rector\DeadCode\Rector\BooleanAnd\RemoveAndTrueRector;
 use Rector\DeadCode\Rector\Cast\RecastingRemovalRector;
 use Rector\DeadCode\Rector\ClassConst\RemoveUnusedPrivateClassConstantRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveEmptyClassMethodRector;
+use Rector\DeadCode\Rector\ClassMethod\RemoveNullTagValueNodeRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedConstructorParamRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodParameterRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector;
+use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPublicMethodParameterRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnExprInConstructRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
@@ -90,6 +92,8 @@ final class DeadCodeLevel
         RemoveUselessReadOnlyTagRector::class,
         RemoveNonExistingVarAnnotationRector::class,
         RemoveUselessVarTagRector::class,
+        // prioritize safe belt on RemoveUseless*TagRector that registered previously first
+        RemoveNullTagValueNodeRector::class,
         RemovePhpVersionIdCheckRector::class,
         RemoveAlwaysTrueIfConditionRector::class,
         ReduceAlwaysFalseIfOrRector::class,
@@ -107,6 +111,7 @@ final class DeadCodeLevel
         // removing methods could be risky if there is some magic loading them
         RemoveUnusedPromotedPropertyRector::class,
         RemoveUnusedPrivateMethodParameterRector::class,
+        RemoveUnusedPublicMethodParameterRector::class,
         RemoveUnusedPrivateMethodRector::class,
         RemoveUnreachableStatementRector::class,
         RemoveUnusedVariableAssignRector::class,

@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202405\Symfony\Component\Filesystem;
+namespace RectorPrefix202410\Symfony\Component\Filesystem;
 
-use RectorPrefix202405\Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use RectorPrefix202405\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
-use RectorPrefix202405\Symfony\Component\Filesystem\Exception\IOException;
+use RectorPrefix202410\Symfony\Component\Filesystem\Exception\FileNotFoundException;
+use RectorPrefix202410\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
+use RectorPrefix202410\Symfony\Component\Filesystem\Exception\IOException;
 /**
  * Provides basic utility to manipulate the file system.
  *
@@ -157,7 +157,7 @@ class Filesystem
                 }
             } elseif (\is_dir($file)) {
                 if (!$isRecursive) {
-                    $tmpName = \dirname(\realpath($file)) . '/.' . \strrev(\strtr(\base64_encode(\random_bytes(2)), '/=', '-_'));
+                    $tmpName = \dirname(\realpath($file)) . '/.!' . \strrev(\strtr(\base64_encode(\random_bytes(2)), '/=', '-!'));
                     if (\file_exists($tmpName)) {
                         try {
                             self::doRemove([$tmpName], \true);
@@ -211,6 +211,9 @@ class Filesystem
     /**
      * Change the owner of an array of files or directories.
      *
+     * This method always throws on Windows, as the underlying PHP function is not supported.
+     * @see https://www.php.net/chown
+     *
      * @param string|int $user      A user name or number
      * @param bool       $recursive Whether change the owner recursively or not
      *
@@ -238,6 +241,9 @@ class Filesystem
     }
     /**
      * Change the group of an array of files or directories.
+     *
+     * This method always throws on Windows, as the underlying PHP function is not supported.
+     * @see https://www.php.net/chgrp
      *
      * @param string|int $group     A group name or number
      * @param bool       $recursive Whether change the group recursively or not
@@ -594,10 +600,13 @@ class Filesystem
             if (\false === self::box('file_put_contents', $tmpFile, $content)) {
                 throw new IOException(\sprintf('Failed to write file "%s": ', $filename) . self::$lastError, 0, null, $filename);
             }
-            self::box('chmod', $tmpFile, @\fileperms($filename) ?: 0666 & ~\umask());
+            self::box('chmod', $tmpFile, self::box('fileperms', $filename) ?: 0666 & ~\umask());
             $this->rename($tmpFile, $filename, \true);
         } finally {
             if (\file_exists($tmpFile)) {
+                if ('\\' === \DIRECTORY_SEPARATOR && !\is_writable($tmpFile)) {
+                    self::box('chmod', $tmpFile, self::box('fileperms', $tmpFile) | 0200);
+                }
                 self::box('unlink', $tmpFile);
             }
         }

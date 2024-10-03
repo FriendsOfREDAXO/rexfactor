@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202405;
+namespace RectorPrefix202410;
 
 use Rector\Config\RectorConfig;
 use Rector\Php80\Rector\Class_\AnnotationToAttributeRector;
@@ -13,11 +13,21 @@ use Rector\Renaming\ValueObject\MethodCallRename;
 use Rector\Renaming\ValueObject\RenameClassAndConstFetch;
 use Rector\Symfony\Symfony62\Rector\Class_\MessageHandlerInterfaceToAttributeRector;
 use Rector\Symfony\Symfony62\Rector\Class_\MessageSubscriberInterfaceToAttributeRector;
+use Rector\Symfony\Symfony62\Rector\Class_\SecurityAttributeToIsGrantedAttributeRector;
 use Rector\Symfony\Symfony62\Rector\ClassMethod\ClassMethod\ArgumentValueResolverToValueResolverRector;
 use Rector\Symfony\Symfony62\Rector\ClassMethod\ParamConverterAttributeToMapEntityAttributeRector;
 use Rector\Symfony\Symfony62\Rector\MethodCall\SimplifyFormRenderingRector;
 return static function (RectorConfig $rectorConfig) : void {
-    $rectorConfig->rule(SimplifyFormRenderingRector::class);
+    $rectorConfig->rules([
+        SimplifyFormRenderingRector::class,
+        SecurityAttributeToIsGrantedAttributeRector::class,
+        ParamConverterAttributeToMapEntityAttributeRector::class,
+        // @see https://github.com/symfony/symfony/pull/47068, #[AsMessageHandler] attribute
+        MessageHandlerInterfaceToAttributeRector::class,
+        MessageSubscriberInterfaceToAttributeRector::class,
+        // @see https://github.com/symfony/symfony/pull/47363
+        ArgumentValueResolverToValueResolverRector::class,
+    ]);
     // change to attribute before rename
     // https://symfony.com/blog/new-in-symfony-6-2-built-in-cache-security-template-and-doctrine-attributes
     // @see https://github.com/rectorphp/rector-symfony/issues/535#issuecomment-1783983383
@@ -62,10 +72,4 @@ return static function (RectorConfig $rectorConfig) : void {
     // @see https://github.com/symfony/symfony/pull/46094
     // @see https://github.com/symfony/symfony/pull/48554
     $rectorConfig->ruleWithConfiguration(RenameClassConstFetchRector::class, [new RenameClassAndConstFetch('Symfony\\Component\\Security\\Core\\Security', 'ACCESS_DENIED_ERROR', 'Symfony\\Component\\Security\\Http\\SecurityRequestAttributes', 'ACCESS_DENIED_ERROR'), new RenameClassAndConstFetch('Symfony\\Component\\Security\\Core\\Security', 'AUTHENTICATION_ERROR', 'Symfony\\Component\\Security\\Http\\SecurityRequestAttributes', 'AUTHENTICATION_ERROR'), new RenameClassAndConstFetch('Symfony\\Component\\Security\\Core\\Security', 'LAST_USERNAME', 'Symfony\\Component\\Security\\Http\\SecurityRequestAttributes', 'LAST_USERNAME'), new RenameClassAndConstFetch('Symfony\\Component\\Security\\Core\\Security', 'MAX_USERNAME_LENGTH', 'Symfony\\Component\\Security\\Http\\Authenticator\\Passport\\Badge\\UserBadge', 'MAX_USERNAME_LENGTH')]);
-    $rectorConfig->rule(ParamConverterAttributeToMapEntityAttributeRector::class);
-    // @see https://github.com/symfony/symfony/pull/47068
-    $rectorConfig->rule(MessageHandlerInterfaceToAttributeRector::class);
-    $rectorConfig->rule(MessageSubscriberInterfaceToAttributeRector::class);
-    // @see https://github.com/symfony/symfony/pull/47363
-    $rectorConfig->rule(ArgumentValueResolverToValueResolverRector::class);
 };

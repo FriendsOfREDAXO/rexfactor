@@ -27,7 +27,6 @@ use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @changelog https://wiki.php.net/rfc/lsp_errors
  * @see \Rector\Tests\Php80\Rector\ClassMethod\AddParamBasedOnParentClassMethodRector\AddParamBasedOnParentClassMethodRectorTest
  */
 final class AddParamBasedOnParentClassMethodRector extends AbstractRector implements MinPhpVersionInterface
@@ -200,7 +199,7 @@ CODE_SAMPLE
             }
             $paramDefault = $parentClassMethodParam->default;
             if ($paramDefault instanceof Expr) {
-                $paramDefault = $this->nodeFactory->createReprintedExpr($paramDefault);
+                $paramDefault = $this->nodeFactory->createReprintedNode($paramDefault);
             }
             $paramName = $this->nodeNameResolver->getName($parentClassMethodParam);
             $paramType = $this->resolveParamType($parentClassMethodParam);
@@ -220,9 +219,7 @@ CODE_SAMPLE
         if ($param->type === null) {
             return null;
         }
-        $paramType = $param->type;
-        $paramType->setAttribute(AttributeKey::ORIGINAL_NODE, null);
-        return $paramType;
+        return $this->nodeFactory->createReprintedNode($param->type);
     }
     /**
      * @return string[]

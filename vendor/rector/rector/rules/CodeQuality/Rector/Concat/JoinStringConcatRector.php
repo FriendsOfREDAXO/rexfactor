@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\Concat;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Scalar\String_;
@@ -72,7 +72,7 @@ CODE_SAMPLE
     {
         $leftValue = $leftString->value;
         $rightValue = $rightString->value;
-        if ($leftValue === "\n" || $rightValue === "\n") {
+        if (\strpos($leftValue, "\n") !== \false || \strpos($rightValue, "\n") !== \false) {
             return null;
         }
         $joinedStringValue = $leftValue . $rightValue;

@@ -20,14 +20,13 @@ use PHPStan\Reflection\ReflectionProvider;
 use Rector\NodeCollector\NodeAnalyzer\ArrayCallableMethodMatcher;
 use Rector\NodeCollector\ValueObject\ArrayCallable;
 use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 use Rector\ValueObject\PhpVersion;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @changelog https://php.watch/versions/8.1/first-class-callable-syntax
- *
  * @see \Rector\Tests\Php81\Rector\Array_\FirstClassCallableRector\FirstClassCallableRectorTest
  */
 final class FirstClassCallableRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
@@ -42,13 +41,20 @@ final class FirstClassCallableRector extends AbstractScopeAwareRector implements
      * @var \PHPStan\Reflection\ReflectionProvider
      */
     private $reflectionProvider;
-    public function __construct(ArrayCallableMethodMatcher $arrayCallableMethodMatcher, ReflectionProvider $reflectionProvider)
+    /**
+     * @readonly
+     * @var \Rector\Reflection\ReflectionResolver
+     */
+    private $reflectionResolver;
+    public function __construct(ArrayCallableMethodMatcher $arrayCallableMethodMatcher, ReflectionProvider $reflectionProvider, ReflectionResolver $reflectionResolver)
     {
         $this->arrayCallableMethodMatcher = $arrayCallableMethodMatcher;
         $this->reflectionProvider = $reflectionProvider;
+        $this->reflectionResolver = $reflectionResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
+        // see RFC https://wiki.php.net/rfc/first_class_callable_syntax
         return new RuleDefinition('Upgrade array callable to first class callable', [new CodeSample(<<<'CODE_SAMPLE'
 final class SomeClass
 {
@@ -109,7 +115,16 @@ CODE_SAMPLE
             }
             return new StaticCall($callerExpr->class, $arrayCallable->getMethod(), $args);
         }
-        return new MethodCall($callerExpr, $arrayCallable->getMethod(), $args);
+        $methodName = $arrayCallable->getMethod();
+        $methodCall = new MethodCall($callerExpr, $methodName, $args);
+        $classReflection = $this->reflectionResolver->resolveClassReflectionSourceObject($methodCall);
+        if ($classReflection instanceof ClassReflection && $classReflection->hasNativeMethod($methodName)) {
+            $method = $classReflection->getNativeMethod($methodName);
+            if (!$method->isPublic()) {
+                return null;
+            }
+        }
+        return $methodCall;
     }
     public function provideMinPhpVersion() : int
     {

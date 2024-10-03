@@ -3,19 +3,17 @@
 declare (strict_types=1);
 namespace Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
 
-use PhpParser\Node;
 use PhpParser\Node\Expr;
-use PhpParser\Node\FunctionLike;
+use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Return_;
-use PhpParser\NodeTraverser;
+use PhpParser\Node\Stmt\Function_;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
 use PHPStan\Type\VoidType;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
-use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
+use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\Reflection\ReflectionResolver;
 use Rector\TypeDeclaration\TypeInferer\SilentVoidResolver;
 use Rector\TypeDeclaration\TypeInferer\SplArrayFixedTypeNarrower;
@@ -31,14 +29,14 @@ final class ReturnedNodesReturnTypeInfererTypeInferer
     private $silentVoidResolver;
     /**
      * @readonly
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    /**
+     * @readonly
      * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
     private $nodeTypeResolver;
-    /**
-     * @readonly
-     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
-     */
-    private $simpleCallableNodeTraverser;
     /**
      * @readonly
      * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
@@ -54,76 +52,48 @@ final class ReturnedNodesReturnTypeInfererTypeInferer
      * @var \Rector\Reflection\ReflectionResolver
      */
     private $reflectionResolver;
-    public function __construct(SilentVoidResolver $silentVoidResolver, NodeTypeResolver $nodeTypeResolver, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, TypeFactory $typeFactory, SplArrayFixedTypeNarrower $splArrayFixedTypeNarrower, ReflectionResolver $reflectionResolver)
+    public function __construct(SilentVoidResolver $silentVoidResolver, BetterNodeFinder $betterNodeFinder, NodeTypeResolver $nodeTypeResolver, TypeFactory $typeFactory, SplArrayFixedTypeNarrower $splArrayFixedTypeNarrower, ReflectionResolver $reflectionResolver)
     {
         $this->silentVoidResolver = $silentVoidResolver;
+        $this->betterNodeFinder = $betterNodeFinder;
         $this->nodeTypeResolver = $nodeTypeResolver;
-        $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
         $this->typeFactory = $typeFactory;
         $this->splArrayFixedTypeNarrower = $splArrayFixedTypeNarrower;
         $this->reflectionResolver = $reflectionResolver;
     }
-    public function inferFunctionLike(FunctionLike $functionLike) : Type
+    /**
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $functionLike
+     */
+    public function inferFunctionLike($functionLike) : Type
     {
         $classReflection = $this->reflectionResolver->resolveClassReflection($functionLike);
-        if (!$classReflection instanceof ClassReflection) {
-            return new MixedType();
-        }
-        if ($functionLike instanceof ClassMethod && $classReflection->isInterface()) {
+        if ($functionLike instanceof ClassMethod && (!$classReflection instanceof ClassReflection || $classReflection->isInterface())) {
             return new MixedType();
         }
         $types = [];
-        $localReturnNodes = $this->collectReturns($functionLike);
+        // empty returns can have yield, use MixedType() instead
+        $localReturnNodes = $this->betterNodeFinder->findReturnsScoped($functionLike);
         if ($localReturnNodes === []) {
-            return $this->resolveNoLocalReturnNodes($classReflection, $functionLike);
+            return new MixedType();
         }
+        $hasVoid = \false;
         foreach ($localReturnNodes as $localReturnNode) {
-            $returnedExprType = $localReturnNode->expr instanceof Expr ? $this->nodeTypeResolver->getNativeType($localReturnNode->expr) : new VoidType();
+            if (!$localReturnNode->expr instanceof Expr) {
+                $hasVoid = \true;
+                $types[] = new VoidType();
+                continue;
+            }
+            $returnedExprType = $this->nodeTypeResolver->getNativeType($localReturnNode->expr);
             $types[] = $this->splArrayFixedTypeNarrower->narrow($returnedExprType);
         }
-        if ($this->silentVoidResolver->hasSilentVoid($functionLike)) {
+        if (!$hasVoid && $this->silentVoidResolver->hasSilentVoid($functionLike)) {
             $types[] = new VoidType();
         }
-        return $this->typeFactory->createMixedPassedOrUnionTypeAndKeepConstant($types);
-    }
-    /**
-     * @return Return_[]
-     */
-    private function collectReturns(FunctionLike $functionLike) : array
-    {
-        $returns = [];
-        $this->simpleCallableNodeTraverser->traverseNodesWithCallable((array) $functionLike->getStmts(), static function (Node $node) use(&$returns) : ?int {
-            // skip Return_ nodes in nested functions or switch statements
-            if ($node instanceof FunctionLike) {
-                return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
-            }
-            if (!$node instanceof Return_) {
-                return null;
-            }
-            $returns[] = $node;
-            return null;
-        });
-        return $returns;
-    }
-    /**
-     * @return \PHPStan\Type\VoidType|\PHPStan\Type\MixedType
-     */
-    private function resolveNoLocalReturnNodes(ClassReflection $classReflection, FunctionLike $functionLike)
-    {
-        // void type
-        if (!$this->isAbstractMethod($classReflection, $functionLike)) {
-            return new VoidType();
+        $returnType = $this->typeFactory->createMixedPassedOrUnionTypeAndKeepConstant($types);
+        // only void?
+        if ($returnType->isVoid()->yes()) {
+            return new MixedType();
         }
-        return new MixedType();
-    }
-    private function isAbstractMethod(ClassReflection $classReflection, FunctionLike $functionLike) : bool
-    {
-        if ($functionLike instanceof ClassMethod && $functionLike->isAbstract()) {
-            return \true;
-        }
-        if (!$classReflection->isClass()) {
-            return \false;
-        }
-        return $classReflection->isAbstract();
+        return $returnType;
     }
 }

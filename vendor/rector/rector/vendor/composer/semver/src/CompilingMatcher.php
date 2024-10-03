@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
-namespace RectorPrefix202405\Composer\Semver;
+namespace RectorPrefix202410\Composer\Semver;
 
-use RectorPrefix202405\Composer\Semver\Constraint\Constraint;
-use RectorPrefix202405\Composer\Semver\Constraint\ConstraintInterface;
+use RectorPrefix202410\Composer\Semver\Constraint\Constraint;
+use RectorPrefix202410\Composer\Semver\Constraint\ConstraintInterface;
 /**
  * Helper class to evaluate constraint by compiling and reusing the code to evaluate
  */
@@ -51,7 +51,7 @@ class CompilingMatcher
      * @phpstan-param Constraint::OP_*  $operator
      * @param string              $version
      *
-     * @return mixed
+     * @return bool
      */
     public static function match(ConstraintInterface $constraint, $operator, $version)
     {

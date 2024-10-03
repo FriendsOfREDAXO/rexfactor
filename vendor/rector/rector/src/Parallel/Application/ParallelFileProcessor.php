@@ -3,30 +3,29 @@
 declare (strict_types=1);
 namespace Rector\Parallel\Application;
 
-use RectorPrefix202405\Clue\React\NDJson\Decoder;
-use RectorPrefix202405\Clue\React\NDJson\Encoder;
-use RectorPrefix202405\Nette\Utils\Random;
-use RectorPrefix202405\React\EventLoop\StreamSelectLoop;
-use RectorPrefix202405\React\Socket\ConnectionInterface;
-use RectorPrefix202405\React\Socket\TcpServer;
+use RectorPrefix202410\Clue\React\NDJson\Decoder;
+use RectorPrefix202410\Clue\React\NDJson\Encoder;
+use RectorPrefix202410\Nette\Utils\Random;
+use RectorPrefix202410\React\EventLoop\StreamSelectLoop;
+use RectorPrefix202410\React\Socket\ConnectionInterface;
+use RectorPrefix202410\React\Socket\TcpServer;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Console\Command\ProcessCommand;
 use Rector\Parallel\Command\WorkerCommandLineFactory;
 use Rector\Parallel\ValueObject\Bridge;
-use Rector\ValueObject\Configuration;
 use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\ProcessResult;
 use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202405\Symfony\Component\Console\Command\Command;
-use RectorPrefix202405\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202405\Symplify\EasyParallel\Enum\Action;
-use RectorPrefix202405\Symplify\EasyParallel\Enum\Content;
-use RectorPrefix202405\Symplify\EasyParallel\Enum\ReactCommand;
-use RectorPrefix202405\Symplify\EasyParallel\Enum\ReactEvent;
-use RectorPrefix202405\Symplify\EasyParallel\ValueObject\ParallelProcess;
-use RectorPrefix202405\Symplify\EasyParallel\ValueObject\ProcessPool;
-use RectorPrefix202405\Symplify\EasyParallel\ValueObject\Schedule;
+use RectorPrefix202410\Symfony\Component\Console\Command\Command;
+use RectorPrefix202410\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202410\Symplify\EasyParallel\Enum\Action;
+use RectorPrefix202410\Symplify\EasyParallel\Enum\Content;
+use RectorPrefix202410\Symplify\EasyParallel\Enum\ReactCommand;
+use RectorPrefix202410\Symplify\EasyParallel\Enum\ReactEvent;
+use RectorPrefix202410\Symplify\EasyParallel\ValueObject\ParallelProcess;
+use RectorPrefix202410\Symplify\EasyParallel\ValueObject\ProcessPool;
+use RectorPrefix202410\Symplify\EasyParallel\ValueObject\Schedule;
 use Throwable;
 /**
  * Inspired from @see
@@ -63,7 +62,7 @@ final class ParallelFileProcessor
     /**
      * @param callable(int $stepCount): void $postFileCallback Used for progress bar jump
      */
-    public function process(Schedule $schedule, string $mainScript, callable $postFileCallback, InputInterface $input, Configuration $configuration) : ProcessResult
+    public function process(Schedule $schedule, string $mainScript, callable $postFileCallback, InputInterface $input) : ProcessResult
     {
         $jobs = \array_reverse($schedule->getJobs());
         $streamSelectLoop = new StreamSelectLoop();

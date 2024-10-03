@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202405;
+namespace RectorPrefix202410;
 
-use RectorPrefix202405\OndraM\CiDetector\CiDetector;
+use RectorPrefix202410\OndraM\CiDetector\CiDetector;
 use Rector\Bootstrap\ExtensionConfigResolver;
 use Rector\Caching\ValueObject\Storage\MemoryCacheStorage;
 use Rector\Config\RectorConfig;
@@ -33,4 +33,6 @@ return static function (RectorConfig $rectorConfig) : void {
     }
     // use original php-parser printer to avoid BC break on fluent call
     $rectorConfig->newLineOnFluentCall(\false);
+    // allow real paths in output formatters
+    $rectorConfig->reportingRealPath(\false);
 };

@@ -25,7 +25,7 @@ use Rector\Symfony\Utils\StringUtils;
 use Rector\Symfony\ValueObject\ExtensionKeyAndConfiguration;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
  * @changelog https://symfony.com/blog/new-in-symfony-5-3-config-builder-classes
  *
@@ -71,7 +71,7 @@ final class StringExtensionToConfigBuilderRector extends AbstractRector
     /**
      * @var array<string, string>
      */
-    private const EXTENSION_KEY_TO_CLASS_MAP = ['security' => 'Symfony\\Config\\SecurityConfig', 'framework' => 'Symfony\\Config\\FrameworkConfig', 'monolog' => 'Symfony\\Config\\MonologConfig', 'twig' => 'Symfony\\Config\\TwigConfig', 'doctrine' => 'Symfony\\Config\\DoctrineConfig', 'doctrine_migrations' => 'Symfony\\Config\\DoctrineMigrationsConfig', 'sentry' => 'Symfony\\Config\\SentryConfig'];
+    private const EXTENSION_KEY_TO_CLASS_MAP = ['security' => 'Symfony\\Config\\SecurityConfig', 'framework' => 'Symfony\\Config\\FrameworkConfig', 'monolog' => 'Symfony\\Config\\MonologConfig', 'twig' => 'Symfony\\Config\\TwigConfig', 'doctrine' => 'Symfony\\Config\\DoctrineConfig', 'doctrine_migrations' => 'Symfony\\Config\\DoctrineMigrationsConfig', 'sentry' => 'Symfony\\Config\\SentryConfig', 'web_profiler' => 'Symfony\\Config\\WebProfilerConfig', 'debug' => 'Symfony\\Config\\DebugConfig', 'maker' => 'Symfony\\Config\\MakerConfig', 'nelmio_cors' => 'Symfony\\Config\\NelmioCorsConfig', 'api_platform' => 'Symfony\\Config\\ApiPlatformConfig'];
     public function __construct(SymfonyPhpClosureDetector $symfonyPhpClosureDetector, SymfonyClosureExtensionMatcher $symfonyClosureExtensionMatcher, PropertyNaming $propertyNaming, ValueResolver $valueResolver, NestedConfigCallsFactory $nestedConfigCallsFactory, SecurityAccessDecisionManagerConfigArrayHandler $securityAccessDecisionManagerConfigArrayHandler, SymfonyClosureFactory $symfonyClosureFactory)
     {
         $this->symfonyPhpClosureDetector = $symfonyPhpClosureDetector;
@@ -178,11 +178,7 @@ CODE_SAMPLE
                 }
             }
             if ($splitMany) {
-                if ($nested) {
-                    $currentConfigCaller = new MethodCall($configVariable, $methodCallName);
-                } else {
-                    $currentConfigCaller = $configVariable;
-                }
+                $currentConfigCaller = $nested ? new MethodCall($configVariable, $methodCallName) : $configVariable;
                 if (!\is_array($value)) {
                     return null;
                 }

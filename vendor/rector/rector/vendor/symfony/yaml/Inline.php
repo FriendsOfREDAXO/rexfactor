@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202405\Symfony\Component\Yaml;
+namespace RectorPrefix202410\Symfony\Component\Yaml;
 
-use RectorPrefix202405\Symfony\Component\Yaml\Exception\DumpException;
-use RectorPrefix202405\Symfony\Component\Yaml\Exception\ParseException;
-use RectorPrefix202405\Symfony\Component\Yaml\Tag\TaggedValue;
+use RectorPrefix202410\Symfony\Component\Yaml\Exception\DumpException;
+use RectorPrefix202410\Symfony\Component\Yaml\Exception\ParseException;
+use RectorPrefix202410\Symfony\Component\Yaml\Tag\TaggedValue;
 /**
  * Inline implements a YAML parser/dumper for the YAML inline syntax.
  *
@@ -125,7 +125,7 @@ class Inline
                     }
                 })());
             case $value instanceof \UnitEnum:
-                return \sprintf('!php/const %s::%s', \get_class($value), $value->name);
+                return \sprintf('!php/enum %s::%s', \get_class($value), $value->name);
             case \is_object($value):
                 if ($value instanceof TaggedValue) {
                     return '!' . $value->getTag() . ' ' . self::dump($value->getValue(), $flags);
@@ -332,11 +332,17 @@ class Inline
         $len = \strlen($sequence);
         ++$i;
         // [foo, bar, ...]
+        $lastToken = null;
         while ($i < $len) {
             if (']' === $sequence[$i]) {
                 return $output;
             }
             if (',' === $sequence[$i] || ' ' === $sequence[$i]) {
+                if (',' === $sequence[$i] && (null === $lastToken || 'separator' === $lastToken)) {
+                    $output[] = null;
+                } elseif (',' === $sequence[$i]) {
+                    $lastToken = 'separator';
+                }
                 ++$i;
                 continue;
             }
@@ -372,6 +378,7 @@ class Inline
                 $value = new TaggedValue($tag, $value);
             }
             $output[] = $value;
+            $lastToken = 'value';
             ++$i;
         }
         throw new ParseException(\sprintf('Malformed inline YAML string: "%s".', $sequence), self::$parsedLineNumber + 1, null, self::$parsedFilename);
@@ -582,22 +589,27 @@ class Inline
                                 throw new ParseException('Missing value for tag "!php/enum".', self::$parsedLineNumber + 1, $scalar, self::$parsedFilename);
                             }
                             $i = 0;
-                            $enum = self::parseScalar(\substr($scalar, 10), 0, null, $i, \false);
-                            if ($useValue = \substr_compare($enum, '->value', -\strlen('->value')) === 0) {
-                                $enum = \substr($enum, 0, -7);
-                            }
-                            if (!\defined($enum)) {
+                            $enumName = self::parseScalar(\substr($scalar, 10), 0, null, $i, \false);
+                            $useName = \strpos($enumName, '::') !== \false;
+                            $enum = $useName ? \strstr($enumName, '::', \true) : $enumName;
+                            if (!\class_exists($enum)) {
                                 throw new ParseException(\sprintf('The enum "%s" is not defined.', $enum), self::$parsedLineNumber + 1, $scalar, self::$parsedFilename);
                             }
-                            $value = \constant($enum);
-                            if (!$value instanceof \UnitEnum) {
-                                throw new ParseException(\sprintf('The string "%s" is not the name of a valid enum.', $enum), self::$parsedLineNumber + 1, $scalar, self::$parsedFilename);
+                            if (!$useName) {
+                                return $enum::cases();
                             }
+                            if ($useValue = \substr_compare($enumName, '->value', -\strlen('->value')) === 0) {
+                                $enumName = \substr($enumName, 0, -7);
+                            }
+                            if (!\defined($enumName)) {
+                                throw new ParseException(\sprintf('The string "%s" is not the name of a valid enum.', $enumName), self::$parsedLineNumber + 1, $scalar, self::$parsedFilename);
+                            }
+                            $value = \constant($enumName);
                             if (!$useValue) {
                                 return $value;
                             }
                             if (!$value instanceof \BackedEnum) {
-                                throw new ParseException(\sprintf('The enum "%s" defines no value next to its name.', $enum), self::$parsedLineNumber + 1, $scalar, self::$parsedFilename);
+                                throw new ParseException(\sprintf('The enum "%s" defines no value next to its name.', $enumName), self::$parsedLineNumber + 1, $scalar, self::$parsedFilename);
                             }
                             return $value->value;
                         }
@@ -638,8 +650,13 @@ class Inline
                     case Parser::preg_match('/^(-|\\+)?[0-9][0-9_]*(\\.[0-9_]+)?$/', $scalar):
                         return (float) \str_replace('_', '', $scalar);
                     case Parser::preg_match(self::getTimestampRegex(), $scalar):
-                        // When no timezone is provided in the parsed date, YAML spec says we must assume UTC.
-                        $time = new \DateTimeImmutable($scalar, new \DateTimeZone('UTC'));
+                        try {
+                            // When no timezone is provided in the parsed date, YAML spec says we must assume UTC.
+                            $time = new \DateTimeImmutable($scalar, new \DateTimeZone('UTC'));
+                        } catch (\Exception $e) {
+                            // Some dates accepted by the regex are not valid dates.
+                            throw new ParseException(\sprintf('The date "%s" could not be parsed as it is an invalid date.', $scalar), self::$parsedLineNumber + 1, $scalar, self::$parsedFilename, $e);
+                        }
                         if (Yaml::PARSE_DATETIME & $flags) {
                             return $time;
                         }

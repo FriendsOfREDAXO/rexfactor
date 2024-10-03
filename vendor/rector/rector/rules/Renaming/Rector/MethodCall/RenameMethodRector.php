@@ -25,7 +25,7 @@ use Rector\Renaming\ValueObject\MethodCallRename;
 use Rector\Renaming\ValueObject\MethodCallRenameWithArrayKey;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\MethodCall\RenameMethodRector\RenameMethodRectorTest
  */
@@ -132,7 +132,7 @@ CODE_SAMPLE
         if (!$classReflection->isInterface()) {
             return \false;
         }
-        return $this->classManipulator->hasParentMethodOrInterface($methodCallRename->getObjectType(), $methodCallRename->getOldMethod(), $methodCallRename->getNewMethod());
+        return $this->classManipulator->hasParentMethodOrInterface($methodCallRename->getObjectType(), $methodCallRename->getOldMethod());
     }
     /**
      * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Interface_ $classOrInterface
@@ -151,11 +151,12 @@ CODE_SAMPLE
                 continue;
             }
             foreach ($this->methodCallRenames as $methodCallRename) {
-                if ($this->shouldSkipRename($methodName, $classMethod, $methodCallRename, $classReflection, $classOrInterface)) {
+                if ($this->shouldSkipRename($methodName, $classMethod, $methodCallRename, $classOrInterface, $classReflection)) {
                     continue;
                 }
                 $classMethod->name = new Identifier($methodCallRename->getNewMethod());
                 $hasChanged = \true;
+                continue 2;
             }
         }
         if ($hasChanged) {
@@ -166,7 +167,7 @@ CODE_SAMPLE
     /**
      * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Interface_ $classOrInterface
      */
-    private function shouldSkipRename(string $methodName, ClassMethod $classMethod, MethodCallRenameInterface $methodCallRename, ClassReflection $classReflection, $classOrInterface) : bool
+    private function shouldSkipRename(string $methodName, ClassMethod $classMethod, MethodCallRenameInterface $methodCallRename, $classOrInterface, ?ClassReflection $classReflection) : bool
     {
         if (!$this->nodeNameResolver->isStringName($methodName, $methodCallRename->getOldMethod())) {
             return \true;

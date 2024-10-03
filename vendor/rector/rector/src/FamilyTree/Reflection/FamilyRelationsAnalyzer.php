@@ -9,7 +9,6 @@ use PhpParser\Node\Stmt\Interface_;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use Rector\NodeNameResolver\NodeNameResolver;
-use Rector\Util\Reflection\PrivatesAccessor;
 final class FamilyRelationsAnalyzer
 {
     /**
@@ -22,35 +21,10 @@ final class FamilyRelationsAnalyzer
      * @var \Rector\NodeNameResolver\NodeNameResolver
      */
     private $nodeNameResolver;
-    /**
-     * @readonly
-     * @var \Rector\Util\Reflection\PrivatesAccessor
-     */
-    private $privatesAccessor;
-    public function __construct(ReflectionProvider $reflectionProvider, NodeNameResolver $nodeNameResolver, PrivatesAccessor $privatesAccessor)
+    public function __construct(ReflectionProvider $reflectionProvider, NodeNameResolver $nodeNameResolver)
     {
         $this->reflectionProvider = $reflectionProvider;
         $this->nodeNameResolver = $nodeNameResolver;
-        $this->privatesAccessor = $privatesAccessor;
-    }
-    /**
-     * @return ClassReflection[]
-     */
-    public function getChildrenOfClassReflection(ClassReflection $desiredClassReflection) : array
-    {
-        if ($desiredClassReflection->isFinalByKeyword()) {
-            return [];
-        }
-        /** @var ClassReflection[] $classReflections */
-        $classReflections = $this->privatesAccessor->getPrivateProperty($this->reflectionProvider, 'classes');
-        $childrenClassReflections = [];
-        foreach ($classReflections as $classReflection) {
-            if (!$classReflection->isSubclassOf($desiredClassReflection->getName())) {
-                continue;
-            }
-            $childrenClassReflections[] = $classReflection;
-        }
-        return $childrenClassReflections;
     }
     /**
      * @api

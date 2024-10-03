@@ -18,7 +18,7 @@ use PhpParser\Node\Stmt\Function_;
 use PHPStan\Analyser\Scope;
 use Rector\DeadCode\SideEffect\SideEffectNodeDetector;
 use Rector\NodeAnalyzer\VariableAnalyzer;
-use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\NodeManipulator\StmtsManipulator;
 use Rector\Php\ReservedKeywordAnalyzer;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\Rector\AbstractScopeAwareRector;
@@ -49,12 +49,18 @@ final class RemoveUnusedVariableAssignRector extends AbstractScopeAwareRector
      * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
-    public function __construct(ReservedKeywordAnalyzer $reservedKeywordAnalyzer, SideEffectNodeDetector $sideEffectNodeDetector, VariableAnalyzer $variableAnalyzer, BetterNodeFinder $betterNodeFinder)
+    /**
+     * @readonly
+     * @var \Rector\NodeManipulator\StmtsManipulator
+     */
+    private $stmtsManipulator;
+    public function __construct(ReservedKeywordAnalyzer $reservedKeywordAnalyzer, SideEffectNodeDetector $sideEffectNodeDetector, VariableAnalyzer $variableAnalyzer, BetterNodeFinder $betterNodeFinder, StmtsManipulator $stmtsManipulator)
     {
         $this->reservedKeywordAnalyzer = $reservedKeywordAnalyzer;
         $this->sideEffectNodeDetector = $sideEffectNodeDetector;
         $this->variableAnalyzer = $variableAnalyzer;
         $this->betterNodeFinder = $betterNodeFinder;
+        $this->stmtsManipulator = $stmtsManipulator;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -101,7 +107,7 @@ CODE_SAMPLE
         $assignedVariableNamesByStmtPosition = $this->resolvedAssignedVariablesByStmtPosition($stmts);
         $hasChanged = \false;
         foreach ($assignedVariableNamesByStmtPosition as $stmtPosition => $variableName) {
-            if ($this->isVariableUsedInFollowingStmts($node, $stmtPosition, $variableName)) {
+            if ($this->stmtsManipulator->isVariableUsedInNextStmt($stmts, $stmtPosition + 1, $variableName)) {
                 continue;
             }
             /** @var Expression<Assign> $currentStmt */
@@ -136,30 +142,6 @@ CODE_SAMPLE
         return (bool) $this->betterNodeFinder->findFirst($expr, function (Node $subNode) use($scope) : bool {
             return $this->sideEffectNodeDetector->detectCallExpr($subNode, $scope);
         });
-    }
-    /**
-     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $functionLike
-     */
-    private function isVariableUsedInFollowingStmts($functionLike, int $assignStmtPosition, string $variableName) : bool
-    {
-        if ($functionLike->stmts === null) {
-            return \false;
-        }
-        foreach ($functionLike->stmts as $key => $stmt) {
-            // do not look yet
-            if ($key <= $assignStmtPosition) {
-                continue;
-            }
-            $stmtScope = $stmt->getAttribute(AttributeKey::SCOPE);
-            if (!$stmtScope instanceof Scope) {
-                continue;
-            }
-            $foundVariable = $this->betterNodeFinder->findVariableOfName($stmt, $variableName);
-            if ($foundVariable instanceof Variable) {
-                return \true;
-            }
-        }
-        return \false;
     }
     /**
      * @param Stmt[] $stmts

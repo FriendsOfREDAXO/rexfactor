@@ -3,11 +3,12 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Rector\Catch_;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Catch_;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -17,9 +18,7 @@ use PhpParser\Node\Stmt\TryCatch;
 use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\ObjectType;
-use Rector\Naming\Naming\AliasNameResolver;
 use Rector\Naming\Naming\PropertyNaming;
-use Rector\Naming\Naming\UseImportsResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\Rector\AbstractRector;
@@ -36,52 +35,28 @@ final class CatchExceptionNameMatchingTypeRector extends AbstractRector
      */
     private $propertyNaming;
     /**
-     * @readonly
-     * @var \Rector\Naming\Naming\AliasNameResolver
-     */
-    private $aliasNameResolver;
-    /**
-     * @readonly
-     * @var \Rector\Naming\Naming\UseImportsResolver
-     */
-    private $useImportsResolver;
-    /**
      * @var string
      * @see https://regex101.com/r/xmfMAX/1
      */
     private const STARTS_WITH_ABBREVIATION_REGEX = '#^([A-Za-z]+?)([A-Z]{1}[a-z]{1})([A-Za-z]*)#';
-    public function __construct(PropertyNaming $propertyNaming, AliasNameResolver $aliasNameResolver, UseImportsResolver $useImportsResolver)
+    public function __construct(PropertyNaming $propertyNaming)
     {
         $this->propertyNaming = $propertyNaming;
-        $this->aliasNameResolver = $aliasNameResolver;
-        $this->useImportsResolver = $useImportsResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Type and name of catch exception should match', [new CodeSample(<<<'CODE_SAMPLE'
-class SomeClass
-{
-    public function run()
-    {
-        try {
-            // ...
-        } catch (SomeException $typoException) {
-            $typoException->getMessage();
-        }
-    }
+try {
+    // ...
+} catch (SomeException $typoException) {
+    $typoException->getMessage();
 }
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
-class SomeClass
-{
-    public function run()
-    {
-        try {
-            // ...
-        } catch (SomeException $someException) {
-            $someException->getMessage();
-        }
-    }
+try {
+    // ...
+} catch (SomeException $someException) {
+    $someException->getMessage();
 }
 CODE_SAMPLE
 )]);
@@ -102,7 +77,6 @@ CODE_SAMPLE
             return null;
         }
         $hasChanged = \false;
-        $uses = null;
         foreach ($node->stmts as $key => $stmt) {
             if ($this->shouldSkip($stmt)) {
                 continue;
@@ -118,15 +92,7 @@ CODE_SAMPLE
             $catchVar = $catch->var;
             /** @var string $oldVariableName */
             $oldVariableName = (string) $this->getName($catchVar);
-            if ($uses === null) {
-                $uses = $this->useImportsResolver->resolve();
-            }
-            $type = $catch->types[0];
-            $typeShortName = $this->nodeNameResolver->getShortName($type);
-            $aliasName = $this->aliasNameResolver->resolveByName($type, $uses);
-            if (\is_string($aliasName)) {
-                $typeShortName = $aliasName;
-            }
+            $typeShortName = $this->resolveVariableName($catch->types[0]);
             $newVariableName = $this->resolveNewVariableName($typeShortName);
             $objectType = new ObjectType($newVariableName);
             $newVariableName = $this->propertyNaming->fqnToVariableName($objectType);
@@ -219,5 +185,14 @@ CODE_SAMPLE
         $nextNode = $stmts[$key + 2];
         $key += 2;
         $this->replaceNextUsageVariable($oldVariableName, $newVariableName, $key, $stmts, $nextNode);
+    }
+    private function resolveVariableName(Name $name) : string
+    {
+        $originalName = $name->getAttribute(AttributeKey::ORIGINAL_NAME);
+        // this allows to respect the name alias, if used
+        if ($originalName instanceof Name) {
+            return $originalName->toString();
+        }
+        return $name->toString();
     }
 }

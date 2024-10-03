@@ -4,10 +4,12 @@ declare (strict_types=1);
 namespace Rector\NodeManipulator;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
+use Rector\DeadCode\NodeAnalyzer\ExprUsedInNodeAnalyzer;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\PhpParser\Comparing\NodeComparator;
 use Rector\PhpParser\Node\BetterNodeFinder;
@@ -28,11 +30,17 @@ final class StmtsManipulator
      * @var \Rector\PhpParser\Comparing\NodeComparator
      */
     private $nodeComparator;
-    public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser, BetterNodeFinder $betterNodeFinder, NodeComparator $nodeComparator)
+    /**
+     * @readonly
+     * @var \Rector\DeadCode\NodeAnalyzer\ExprUsedInNodeAnalyzer
+     */
+    private $exprUsedInNodeAnalyzer;
+    public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser, BetterNodeFinder $betterNodeFinder, NodeComparator $nodeComparator, ExprUsedInNodeAnalyzer $exprUsedInNodeAnalyzer)
     {
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->nodeComparator = $nodeComparator;
+        $this->exprUsedInNodeAnalyzer = $exprUsedInNodeAnalyzer;
     }
     /**
      * @param Stmt[] $stmts
@@ -65,12 +73,18 @@ final class StmtsManipulator
         });
         return $stmts;
     }
-    public function isVariableUsedInNextStmt(StmtsAwareInterface $stmtsAware, int $jumpToKey, string $variableName) : bool
+    /**
+     * @param StmtsAwareInterface|Stmt[] $stmtsAware
+     */
+    public function isVariableUsedInNextStmt($stmtsAware, int $jumpToKey, string $variableName) : bool
     {
-        if ($stmtsAware->stmts === null) {
+        if ($stmtsAware instanceof StmtsAwareInterface && $stmtsAware->stmts === null) {
             return \false;
         }
-        $stmts = \array_slice($stmtsAware->stmts, $jumpToKey, null, \true);
-        return (bool) $this->betterNodeFinder->findVariableOfName($stmts, $variableName);
+        $stmts = \array_slice($stmtsAware instanceof StmtsAwareInterface ? $stmtsAware->stmts : $stmtsAware, $jumpToKey, null, \true);
+        $variable = new Variable($variableName);
+        return (bool) $this->betterNodeFinder->findFirst($stmts, function (Node $subNode) use($variable) : bool {
+            return $this->exprUsedInNodeAnalyzer->isUsed($subNode, $variable);
+        });
     }
 }

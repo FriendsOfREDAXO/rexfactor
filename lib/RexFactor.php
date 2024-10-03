@@ -45,14 +45,10 @@ final class RexFactor
             'PHPUNIT_70' => 'PHPUnit 7',
             'PHPUNIT_80' => 'PHPUnit 8',
             'PHPUNIT_90' => 'PHPUnit 9',
-            'PHPUNIT_91' => 'PHPUnit 9.1',
             'PHPUNIT_100' => 'PHPUnit 10',
         ],
         self::TESTS_QUALITY => [
             'PHPUNIT_CODE_QUALITY' => 'Unify test-code quality',
-            'PHPUNIT_EXCEPTION' => 'Refactor exception expectations',
-            'REMOVE_MOCKS' => 'Reduce mock usage',
-            'PHPUNIT_SPECIFIC_METHOD' => 'Use specific assert*() methods',
             'ANNOTATIONS_TO_ATTRIBUTES' => 'Annotations to Attributes',
         ],
         self::MISC_MIGRATIONS => [

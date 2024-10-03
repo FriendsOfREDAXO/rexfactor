@@ -15,11 +15,11 @@ use PHPStan\Reflection\ReflectionProvider;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider;
-use RectorPrefix202405\Symfony\Component\Console\Input\ArrayInput;
-use RectorPrefix202405\Symfony\Component\Console\Output\ConsoleOutput;
-use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202410\Symfony\Component\Console\Input\ArrayInput;
+use RectorPrefix202410\Symfony\Component\Console\Output\ConsoleOutput;
+use RectorPrefix202410\Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
  * Factory so Symfony app can use services from PHPStan container
  *
@@ -141,6 +141,6 @@ MESSAGE_ERROR;
         $additionalConfigFiles[] = __DIR__ . '/../../../config/phpstan/static-reflection.neon';
         $additionalConfigFiles[] = __DIR__ . '/../../../config/phpstan/better-infer.neon';
         $additionalConfigFiles[] = __DIR__ . '/../../../config/phpstan/parser.neon';
-        return \array_filter($additionalConfigFiles, 'file_exists');
+        return \array_filter($additionalConfigFiles, \Closure::fromCallable('file_exists'));
     }
 }

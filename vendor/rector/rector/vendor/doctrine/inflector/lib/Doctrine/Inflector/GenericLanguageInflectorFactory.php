@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202405\Doctrine\Inflector;
+namespace RectorPrefix202410\Doctrine\Inflector;
 
-use RectorPrefix202405\Doctrine\Inflector\Rules\Ruleset;
+use RectorPrefix202410\Doctrine\Inflector\Rules\Ruleset;
 use function array_unshift;
 abstract class GenericLanguageInflectorFactory implements LanguageInflectorFactory
 {

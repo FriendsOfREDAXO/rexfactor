@@ -3,8 +3,7 @@
 declare (strict_types=1);
 namespace Rector\ChangesReporting\Output;
 
-use RectorPrefix202405\Nette\Utils\Json;
-use Rector\ChangesReporting\Annotation\RectorsChangelogResolver;
+use RectorPrefix202410\Nette\Utils\Json;
 use Rector\ChangesReporting\Contract\Output\OutputFormatterInterface;
 use Rector\Parallel\ValueObject\Bridge;
 use Rector\ValueObject\Configuration;
@@ -13,18 +12,9 @@ use Rector\ValueObject\ProcessResult;
 final class JsonOutputFormatter implements OutputFormatterInterface
 {
     /**
-     * @readonly
-     * @var \Rector\ChangesReporting\Annotation\RectorsChangelogResolver
-     */
-    private $rectorsChangelogResolver;
-    /**
      * @var string
      */
     public const NAME = 'json';
-    public function __construct(RectorsChangelogResolver $rectorsChangelogResolver)
-    {
-        $this->rectorsChangelogResolver = $rectorsChangelogResolver;
-    }
     public function getName() : string
     {
         return self::NAME;
@@ -35,15 +25,14 @@ final class JsonOutputFormatter implements OutputFormatterInterface
         $fileDiffs = $processResult->getFileDiffs();
         \ksort($fileDiffs);
         foreach ($fileDiffs as $fileDiff) {
-            $relativeFilePath = $fileDiff->getRelativeFilePath();
-            $appliedRectorsWithChangelog = $this->rectorsChangelogResolver->resolve($fileDiff->getRectorClasses());
-            $errorsJson[Bridge::FILE_DIFFS][] = ['file' => $relativeFilePath, 'diff' => $fileDiff->getDiff(), 'applied_rectors' => $fileDiff->getRectorClasses(), 'applied_rectors_with_changelog' => $appliedRectorsWithChangelog];
+            $filePath = $configuration->isReportingWithRealPath() ? $fileDiff->getAbsoluteFilePath() ?? '' : $fileDiff->getRelativeFilePath();
+            $errorsJson[Bridge::FILE_DIFFS][] = ['file' => $filePath, 'diff' => $fileDiff->getDiff(), 'applied_rectors' => $fileDiff->getRectorClasses()];
             // for Rector CI
-            $errorsJson['changed_files'][] = $relativeFilePath;
+            $errorsJson['changed_files'][] = $filePath;
         }
         $systemErrors = $processResult->getSystemErrors();
         $errorsJson['totals']['errors'] = \count($systemErrors);
-        $errorsData = $this->createErrorsData($systemErrors);
+        $errorsData = $this->createErrorsData($systemErrors, $configuration->isReportingWithRealPath());
         if ($errorsData !== []) {
             $errorsJson['errors'] = $errorsData;
         }
@@ -54,11 +43,11 @@ final class JsonOutputFormatter implements OutputFormatterInterface
      * @param SystemError[] $errors
      * @return mixed[]
      */
-    private function createErrorsData(array $errors) : array
+    private function createErrorsData(array $errors, bool $absoluteFilePath) : array
     {
         $errorsData = [];
         foreach ($errors as $error) {
-            $errorDataJson = ['message' => $error->getMessage(), 'file' => $error->getRelativeFilePath()];
+            $errorDataJson = ['message' => $error->getMessage(), 'file' => $absoluteFilePath ? $error->getAbsoluteFilePath() : $error->getRelativeFilePath()];
             if ($error->getRectorClass() !== null) {
                 $errorDataJson['caused_by'] = $error->getRectorClass();
             }

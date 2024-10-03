@@ -16,7 +16,7 @@ use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\TypeDeclaration\ValueObject\AddPropertyTypeDeclaration;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\Property\AddPropertyTypeDeclarationRector\AddPropertyTypeDeclarationRectorTest
  */
@@ -37,7 +37,6 @@ final class AddPropertyTypeDeclarationRector extends AbstractScopeAwareRector im
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        $configuration = [new AddPropertyTypeDeclaration('ParentClass', 'name', new StringType())];
         return new RuleDefinition('Add type to property by added rules, mostly public/property by parent type', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 class SomeClass extends ParentClass
 {
@@ -50,7 +49,7 @@ class SomeClass extends ParentClass
     public string $name;
 }
 CODE_SAMPLE
-, $configuration)]);
+, [new AddPropertyTypeDeclaration('ParentClass', 'name', new StringType())])]);
     }
     /**
      * @return array<class-string<Node>>

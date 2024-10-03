@@ -26,6 +26,7 @@ use Rector\Exception\ShouldNotHappenException;
 use Rector\NodeAnalyzer\CallAnalyzer;
 use Rector\NodeNameResolver\Contract\NodeNameResolverInterface;
 use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\ValueObject\MethodName;
 final class NodeNameResolver
 {
     /**
@@ -78,6 +79,7 @@ final class NodeNameResolver
     }
     /**
      * @param Node|Node[] $node
+     * @param MethodName::*|string $name
      */
     public function isName($node, string $name) : bool
     {
@@ -88,24 +90,6 @@ final class NodeNameResolver
             }
         }
         return \false;
-    }
-    /**
-     * @api
-     * @deprecated This method is unused and will be removed, go for isName() instead
-     */
-    public function isCaseSensitiveName(Node $node, string $name) : bool
-    {
-        if ($name === '') {
-            return \false;
-        }
-        if ($node instanceof CallLike && !$node instanceof FuncCall) {
-            return \false;
-        }
-        $resolvedName = $this->getName($node);
-        if ($resolvedName === null) {
-            return \false;
-        }
-        return $name === $resolvedName;
     }
     /**
      * Some nodes have always-known string name. This makes PHPStan smarter.

@@ -3,9 +3,14 @@
 declare (strict_types=1);
 namespace Rector\FileSystem;
 
+use RectorPrefix202410\Nette\Utils\FileSystem;
+use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\Caching\UnchangedFilesFilter;
+use Rector\Configuration\Option;
+use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Skipper\Skipper\PathSkipper;
-use RectorPrefix202405\Symfony\Component\Finder\Finder;
+use Rector\ValueObject\Configuration;
+use RectorPrefix202410\Symfony\Component\Finder\Finder;
 /**
  * @see \Rector\Tests\FileSystem\FilesFinder\FilesFinderTest
  */
@@ -31,12 +36,24 @@ final class FilesFinder
      * @var \Rector\Skipper\Skipper\PathSkipper
      */
     private $pathSkipper;
-    public function __construct(\Rector\FileSystem\FilesystemTweaker $filesystemTweaker, UnchangedFilesFilter $unchangedFilesFilter, \Rector\FileSystem\FileAndDirectoryFilter $fileAndDirectoryFilter, PathSkipper $pathSkipper)
+    /**
+     * @readonly
+     * @var \Rector\FileSystem\FilePathHelper
+     */
+    private $filePathHelper;
+    /**
+     * @readonly
+     * @var \Rector\Caching\Detector\ChangedFilesDetector
+     */
+    private $changedFilesDetector;
+    public function __construct(\Rector\FileSystem\FilesystemTweaker $filesystemTweaker, UnchangedFilesFilter $unchangedFilesFilter, \Rector\FileSystem\FileAndDirectoryFilter $fileAndDirectoryFilter, PathSkipper $pathSkipper, \Rector\FileSystem\FilePathHelper $filePathHelper, ChangedFilesDetector $changedFilesDetector)
     {
         $this->filesystemTweaker = $filesystemTweaker;
         $this->unchangedFilesFilter = $unchangedFilesFilter;
         $this->fileAndDirectoryFilter = $fileAndDirectoryFilter;
         $this->pathSkipper = $pathSkipper;
+        $this->filePathHelper = $filePathHelper;
+        $this->changedFilesDetector = $changedFilesDetector;
     }
     /**
      * @param string[] $source
@@ -46,8 +63,12 @@ final class FilesFinder
     public function findInDirectoriesAndFiles(array $source, array $suffixes = [], bool $sortByName = \true) : array
     {
         $filesAndDirectories = $this->filesystemTweaker->resolveWithFnmatch($source);
-        $files = $this->fileAndDirectoryFilter->filterFiles($filesAndDirectories);
-        $filteredFilePaths = \array_filter($files, function (string $filePath) : bool {
+        // filtering files in files collection
+        $filteredFilePaths = $this->fileAndDirectoryFilter->filterFiles($filesAndDirectories);
+        $filteredFilePaths = \array_map(function (string $filePath) : string {
+            return \realpath($filePath);
+        }, $filteredFilePaths);
+        $filteredFilePaths = \array_filter($filteredFilePaths, function (string $filePath) : bool {
             return !$this->pathSkipper->shouldSkip($filePath);
         });
         if ($suffixes !== []) {
@@ -57,10 +78,37 @@ final class FilesFinder
             };
             $filteredFilePaths = \array_filter($filteredFilePaths, $fileWithExtensionsFilter);
         }
+        $filteredFilePaths = \array_filter($filteredFilePaths, function (string $file) : bool {
+            if ($this->isStartWithShortPHPTag(FileSystem::read($file))) {
+                SimpleParameterProvider::addParameter(Option::SKIPPED_START_WITH_SHORT_OPEN_TAG_FILES, $this->filePathHelper->relativePath($file));
+                return \false;
+            }
+            return \true;
+        });
+        // filtering files in directories collection
         $directories = $this->fileAndDirectoryFilter->filterDirectories($filesAndDirectories);
         $filteredFilePathsInDirectories = $this->findInDirectories($directories, $suffixes, $sortByName);
         $filePaths = \array_merge($filteredFilePaths, $filteredFilePathsInDirectories);
-        return $this->unchangedFilesFilter->filterFileInfos($filePaths);
+        return $this->unchangedFilesFilter->filterFilePaths($filePaths);
+    }
+    /**
+     * @param string[] $paths
+     * @return string[]
+     */
+    public function findFilesInPaths(array $paths, Configuration $configuration) : array
+    {
+        if ($configuration->shouldClearCache()) {
+            $this->changedFilesDetector->clear();
+        }
+        $supportedFileExtensions = $configuration->getFileExtensions();
+        return $this->findInDirectoriesAndFiles($paths, $supportedFileExtensions);
+    }
+    /**
+     * Exclude short "<?=" tags as lead to invalid changes
+     */
+    private function isStartWithShortPHPTag(string $fileContent) : bool
+    {
+        return \strncmp(\ltrim($fileContent), '<?=', \strlen('<?=')) === 0;
     }
     /**
      * @param string[] $directories
@@ -90,6 +138,10 @@ final class FilesFinder
                 continue;
             }
             if ($this->pathSkipper->shouldSkip($path)) {
+                continue;
+            }
+            if ($this->isStartWithShortPHPTag($fileInfo->getContents())) {
+                SimpleParameterProvider::addParameter(Option::SKIPPED_START_WITH_SHORT_OPEN_TAG_FILES, $this->filePathHelper->relativePath($path));
                 continue;
             }
             $filePaths[] = $path;

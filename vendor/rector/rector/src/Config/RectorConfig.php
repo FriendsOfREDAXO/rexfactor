@@ -3,12 +3,13 @@
 declare (strict_types=1);
 namespace Rector\Config;
 
-use RectorPrefix202405\Illuminate\Container\Container;
+use RectorPrefix202410\Illuminate\Container\Container;
 use Rector\Caching\Contract\ValueObject\Storage\CacheStorageInterface;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Configuration\RectorConfigBuilder;
 use Rector\Contract\DependencyInjection\RelatedConfigInterface;
+use Rector\Contract\DependencyInjection\ResetableInterface;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Contract\Rector\RectorInterface;
 use Rector\DependencyInjection\Laravel\ContainerMemento;
@@ -17,24 +18,24 @@ use Rector\Skipper\SkipCriteriaResolver\SkippedClassResolver;
 use Rector\Validation\RectorConfigValidator;
 use Rector\ValueObject\PhpVersion;
 use Rector\ValueObject\PolyfillPackage;
-use RectorPrefix202405\Symfony\Component\Console\Command\Command;
-use RectorPrefix202405\Symfony\Component\Console\Input\ArrayInput;
-use RectorPrefix202405\Symfony\Component\Console\Output\ConsoleOutput;
-use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Symfony\Component\Console\Command\Command;
+use RectorPrefix202410\Symfony\Component\Console\Input\ArrayInput;
+use RectorPrefix202410\Symfony\Component\Console\Output\ConsoleOutput;
+use RectorPrefix202410\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
  * @api
  */
 final class RectorConfig extends Container
 {
     /**
-     * @var array<class-string<RectorInterface>, mixed[]>>
+     * @var array<class-string<ConfigurableRectorInterface>, mixed[]>>
      */
     private $ruleConfigurations = [];
     /**
      * @var string[]
      */
-    private $autotagInterfaces = [Command::class];
+    private $autotagInterfaces = [Command::class, ResetableInterface::class];
     public static function configure() : RectorConfigBuilder
     {
         return new RectorConfigBuilder();
@@ -330,5 +331,25 @@ final class RectorConfig extends Container
             }
             $this->tag($abstract, $autotagInterface);
         }
+    }
+    public function reportingRealPath(bool $absolute = \true) : void
+    {
+        SimpleParameterProvider::setParameter(Option::ABSOLUTE_FILE_PATH, $absolute);
+    }
+    /**
+     * @internal Used only for bridge
+     * @return array<class-string<ConfigurableRectorInterface>, mixed>
+     */
+    public function getRuleConfigurations() : array
+    {
+        return $this->ruleConfigurations;
+    }
+    /**
+     * @internal Used only for bridge
+     * @return array<class-string<RectorInterface>>
+     */
+    public function getRectorClasses() : array
+    {
+        return $this->tags[RectorInterface::class] ?? [];
     }
 }

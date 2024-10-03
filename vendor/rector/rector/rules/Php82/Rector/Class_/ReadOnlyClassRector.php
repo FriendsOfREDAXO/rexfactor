@@ -26,8 +26,6 @@ use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @changelog https://wiki.php.net/rfc/readonly_classes
- *
  * @see \Rector\Tests\Php82\Rector\Class_\ReadOnlyClassRector\ReadOnlyClassRectorTest
  */
 final class ReadOnlyClassRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
@@ -263,8 +261,8 @@ CODE_SAMPLE
     private function shouldSkipParams(array $params) : bool
     {
         foreach ($params as $param) {
-            // has non-property promotion, skip
-            if (!$this->visibilityManipulator->hasVisibility($param, Visibility::READONLY)) {
+            // has non-readonly property promotion
+            if (!$this->visibilityManipulator->hasVisibility($param, Visibility::READONLY) && $param->flags !== 0) {
                 return \true;
             }
             // type is missing, invalid syntax

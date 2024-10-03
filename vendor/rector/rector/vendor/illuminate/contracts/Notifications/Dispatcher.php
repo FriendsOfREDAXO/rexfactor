@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202405\Illuminate\Contracts\Notifications;
+namespace RectorPrefix202410\Illuminate\Contracts\Notifications;
 
 interface Dispatcher
 {
@@ -17,7 +17,8 @@ interface Dispatcher
      *
      * @param  \Illuminate\Support\Collection|array|mixed  $notifiables
      * @param  mixed  $notification
+     * @param  array|null  $channels
      * @return void
      */
-    public function sendNow($notifiables, $notification);
+    public function sendNow($notifiables, $notification, ?array $channels = null);
 }

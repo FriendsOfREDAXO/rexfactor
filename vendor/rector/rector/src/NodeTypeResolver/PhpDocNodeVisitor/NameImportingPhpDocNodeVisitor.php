@@ -3,13 +3,14 @@
 declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PhpDocNodeVisitor;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PhpParser\Node as PhpParserNode;
 use PHPStan\PhpDocParser\Ast\Node;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
+use Rector\Application\Provider\CurrentFileProvider;
 use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
 use Rector\BetterPhpDocParser\PhpDoc\SpacelessPhpDocTagNode;
 use Rector\BetterPhpDocParser\ValueObject\PhpDocAttributeKey;
@@ -19,9 +20,9 @@ use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\PhpDocParser\PhpDocParser\PhpDocNodeVisitor\AbstractPhpDocNodeVisitor;
 use Rector\PostRector\Collector\UseNodesToAddCollector;
-use Rector\Provider\CurrentFileProvider;
-use Rector\StaticTypeMapper\PhpDocParser\IdentifierTypeMapper;
+use Rector\StaticTypeMapper\PhpDocParser\IdentifierPhpDocTypeMapper;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
+use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Rector\ValueObject\Application\File;
 final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
 {
@@ -37,7 +38,7 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
     private $useNodesToAddCollector;
     /**
      * @readonly
-     * @var \Rector\Provider\CurrentFileProvider
+     * @var \Rector\Application\Provider\CurrentFileProvider
      */
     private $currentFileProvider;
     /**
@@ -47,9 +48,9 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
     private $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\PhpDocParser\IdentifierTypeMapper
+     * @var \Rector\StaticTypeMapper\PhpDocParser\IdentifierPhpDocTypeMapper
      */
-    private $identifierTypeMapper;
+    private $identifierPhpDocTypeMapper;
     /**
      * @var PhpParserNode|null
      */
@@ -58,15 +59,15 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
      * @var bool
      */
     private $hasChanged = \false;
-    public function __construct(ClassNameImportSkipper $classNameImportSkipper, UseNodesToAddCollector $useNodesToAddCollector, CurrentFileProvider $currentFileProvider, ReflectionProvider $reflectionProvider, IdentifierTypeMapper $identifierTypeMapper)
+    public function __construct(ClassNameImportSkipper $classNameImportSkipper, UseNodesToAddCollector $useNodesToAddCollector, CurrentFileProvider $currentFileProvider, ReflectionProvider $reflectionProvider, IdentifierPhpDocTypeMapper $identifierPhpDocTypeMapper)
     {
         $this->classNameImportSkipper = $classNameImportSkipper;
         $this->useNodesToAddCollector = $useNodesToAddCollector;
         $this->currentFileProvider = $currentFileProvider;
         $this->reflectionProvider = $reflectionProvider;
-        $this->identifierTypeMapper = $identifierTypeMapper;
+        $this->identifierPhpDocTypeMapper = $identifierPhpDocTypeMapper;
     }
-    public function beforeTraverse(Node $node) : void
+    public function beforeTraverse(\PHPStan\PhpDocParser\Ast\Node $node) : void
     {
         if (!$this->currentPhpParserNode instanceof PhpParserNode) {
             throw new ShouldNotHappenException('Set "$currentPhpParserNode" first');
@@ -84,7 +85,17 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
         if (!$node instanceof IdentifierTypeNode) {
             return null;
         }
-        $staticType = $this->identifierTypeMapper->mapIdentifierTypeNode($node, $this->currentPhpParserNode);
+        if (!$this->currentPhpParserNode instanceof PhpParserNode) {
+            throw new ShouldNotHappenException();
+        }
+        // no \, skip early
+        if (\strpos($node->name, '\\') === \false) {
+            return null;
+        }
+        $staticType = $this->identifierPhpDocTypeMapper->mapIdentifierTypeNode($node, $this->currentPhpParserNode);
+        if ($staticType instanceof ShortenedObjectType) {
+            $staticType = new FullyQualifiedObjectType($staticType->getFullyQualifiedName());
+        }
         if (!$staticType instanceof FullyQualifiedObjectType) {
             return null;
         }
@@ -95,9 +106,6 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
         $file = $this->currentFileProvider->getFile();
         if (!$file instanceof File) {
             return null;
-        }
-        if (!$this->currentPhpParserNode instanceof PhpParserNode) {
-            throw new ShouldNotHappenException();
         }
         return $this->processFqnNameImport($this->currentPhpParserNode, $node, $staticType, $file);
     }
@@ -176,7 +184,7 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
             throw new ShouldNotHappenException();
         }
         $identifierTypeNode = $doctrineAnnotationTagValueNode->identifierTypeNode;
-        $staticType = $this->identifierTypeMapper->mapIdentifierTypeNode($identifierTypeNode, $currentPhpParserNode);
+        $staticType = $this->identifierPhpDocTypeMapper->mapIdentifierTypeNode($identifierTypeNode, $currentPhpParserNode);
         if (!$staticType instanceof FullyQualifiedObjectType) {
             if (!$staticType instanceof ObjectType) {
                 return;
@@ -209,7 +217,7 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
         if (!$currentPhpParserNode instanceof PhpParserNode) {
             throw new ShouldNotHappenException();
         }
-        $staticType = $this->identifierTypeMapper->mapIdentifierTypeNode(new IdentifierTypeNode($attributeClass), $currentPhpParserNode);
+        $staticType = $this->identifierPhpDocTypeMapper->mapIdentifierTypeNode(new IdentifierTypeNode($attributeClass), $currentPhpParserNode);
         if (!$staticType instanceof FullyQualifiedObjectType) {
             if (!$staticType instanceof ObjectType) {
                 return null;

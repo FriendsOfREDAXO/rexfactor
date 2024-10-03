@@ -34,17 +34,17 @@
         "php": "^5.3.2 || ^7.0 || ^8.0"
     },
     "require-dev": {
-        "symfony\/phpunit-bridge": "^4.2 || ^5",
-        "phpstan\/phpstan": "^1.4"
+        "symfony\/phpunit-bridge": "^3 || ^7",
+        "phpstan\/phpstan": "^1.11"
     },
     "autoload": {
         "psr-4": {
-            "RectorPrefix202405\\Composer\\Semver\\": "src"
+            "RectorPrefix202410\\Composer\\Semver\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "RectorPrefix202405\\Composer\\Semver\\": "tests"
+            "RectorPrefix202410\\Composer\\Semver\\": "tests"
         }
     },
     "extra": {

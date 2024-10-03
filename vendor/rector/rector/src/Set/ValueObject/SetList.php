@@ -10,6 +10,11 @@ use Rector\Set\Contract\SetListInterface;
 final class SetList implements SetListInterface
 {
     /**
+     * @internal
+     * @var string
+     */
+    public const PHP_POLYFILLS = __DIR__ . '/../../../config/set/php-polyfills.php';
+    /**
      * @var string
      */
     public const CODE_QUALITY = __DIR__ . '/../../../config/set/code-quality.php';
@@ -33,6 +38,12 @@ final class SetList implements SetListInterface
      * @var string
      */
     public const NAMING = __DIR__ . '/../../../config/set/naming.php';
+    /**
+     * Opinionated rules that match rector coding standard
+     *
+     * @var string
+     */
+    public const RECTOR_PRESET = __DIR__ . '/../../../config/set/rector-preset.php';
     /**
      * @var string
      */
@@ -109,4 +120,8 @@ final class SetList implements SetListInterface
      * @var string
      */
     public const INSTANCEOF = __DIR__ . '/../../../config/set/instanceof.php';
+    /**
+     * @var string
+     */
+    public const CARBON = __DIR__ . '/../../../config/set/datetime-to-carbon.php';
 }

@@ -3,8 +3,10 @@
 declare (strict_types=1);
 namespace Rector\Application;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\FileSystem;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PHPStan\AnalysedCodeException;
+use PHPStan\Parser\ParserErrorsException;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ChangesReporting\ValueObjectFactory\ErrorFactory;
 use Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory;
@@ -12,8 +14,9 @@ use Rector\Exception\ShouldNotHappenException;
 use Rector\FileSystem\FilePathHelper;
 use Rector\NodeTypeResolver\NodeScopeAndMetadataDecorator;
 use Rector\PhpParser\NodeTraverser\RectorNodeTraverser;
+use Rector\PhpParser\Parser\ParserErrors;
 use Rector\PhpParser\Parser\RectorParser;
-use Rector\PhpParser\Printer\FormatPerservingPrinter;
+use Rector\PhpParser\Printer\BetterStandardPrinter;
 use Rector\PostRector\Application\PostFileProcessor;
 use Rector\Testing\PHPUnit\StaticPHPUnitEnvironment;
 use Rector\ValueObject\Application\File;
@@ -21,15 +24,15 @@ use Rector\ValueObject\Configuration;
 use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\FileProcessResult;
 use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202410\Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
 final class FileProcessor
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Printer\FormatPerservingPrinter
+     * @var \Rector\PhpParser\Printer\BetterStandardPrinter
      */
-    private $formatPerservingPrinter;
+    private $betterStandardPrinter;
     /**
      * @readonly
      * @var \Rector\PhpParser\NodeTraverser\RectorNodeTraverser
@@ -80,9 +83,9 @@ final class FileProcessor
      * @see https://regex101.com/r/llm7XZ/1
      */
     private const OPEN_TAG_SPACED_REGEX = '#^[ \\t]+<\\?php#m';
-    public function __construct(FormatPerservingPrinter $formatPerservingPrinter, RectorNodeTraverser $rectorNodeTraverser, SymfonyStyle $symfonyStyle, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, ErrorFactory $errorFactory, FilePathHelper $filePathHelper, PostFileProcessor $postFileProcessor, RectorParser $rectorParser, NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator)
+    public function __construct(BetterStandardPrinter $betterStandardPrinter, RectorNodeTraverser $rectorNodeTraverser, SymfonyStyle $symfonyStyle, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, ErrorFactory $errorFactory, FilePathHelper $filePathHelper, PostFileProcessor $postFileProcessor, RectorParser $rectorParser, NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator)
     {
-        $this->formatPerservingPrinter = $formatPerservingPrinter;
+        $this->betterStandardPrinter = $betterStandardPrinter;
         $this->rectorNodeTraverser = $rectorNodeTraverser;
         $this->symfonyStyle = $symfonyStyle;
         $this->fileDiffFactory = $fileDiffFactory;
@@ -109,7 +112,7 @@ final class FileProcessor
             $file->changeHasChanged(\false);
             $newStmts = $this->rectorNodeTraverser->traverse($file->getNewStmts());
             // apply post rectors
-            $postNewStmts = $this->postFileProcessor->traverse($newStmts, $filePath);
+            $postNewStmts = $this->postFileProcessor->traverse($newStmts, $file);
             // this is needed for new tokens added in "afterTraverse()"
             $file->changeNewStmts($postNewStmts);
             // 3. print to file or string
@@ -149,6 +152,9 @@ final class FileProcessor
                 throw $throwable;
             }
             $relativeFilePath = $this->filePathHelper->relativePath($file->getFilePath());
+            if ($throwable instanceof ParserErrorsException) {
+                $throwable = new ParserErrors($throwable);
+            }
             return new SystemError($throwable->getMessage(), $relativeFilePath, $throwable->getLine());
         }
         return null;
@@ -156,7 +162,7 @@ final class FileProcessor
     private function printFile(File $file, Configuration $configuration, string $filePath) : void
     {
         // only save to string first, no need to print to file when not needed
-        $newContent = $this->formatPerservingPrinter->printParsedStmstAndTokensToString($file);
+        $newContent = $this->betterStandardPrinter->printFormatPreserving($file->getNewStmts(), $file->getOldStmts(), $file->getOldTokens());
         /**
          * When no diff applied, the PostRector may still change the content, that's why printing still needed
          * On printing, the space may be wiped, these below check compare with original file content used to verify
@@ -186,7 +192,7 @@ final class FileProcessor
         if (!$file->hasChanged()) {
             return;
         }
-        $this->formatPerservingPrinter->dumpFile($filePath, $newContent);
+        FileSystem::write($filePath, $newContent, null);
     }
     private function parseFileNodes(File $file) : void
     {

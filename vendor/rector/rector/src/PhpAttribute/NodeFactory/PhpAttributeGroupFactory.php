@@ -17,6 +17,7 @@ use Rector\BetterPhpDocParser\PhpDoc\ArrayItemNode;
 use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Php80\ValueObject\AnnotationToAttribute;
+use Rector\Php81\Enum\AttributeName;
 use Rector\PhpAttribute\AnnotationToAttributeMapper;
 use Rector\PhpAttribute\AttributeArrayNameInliner;
 /**
@@ -44,17 +45,26 @@ final class PhpAttributeGroupFactory
      * @var \Rector\PhpAttribute\AttributeArrayNameInliner
      */
     private $attributeArrayNameInliner;
-    public function __construct(AnnotationToAttributeMapper $annotationToAttributeMapper, \Rector\PhpAttribute\NodeFactory\AttributeNameFactory $attributeNameFactory, \Rector\PhpAttribute\NodeFactory\NamedArgsFactory $namedArgsFactory, AttributeArrayNameInliner $attributeArrayNameInliner)
+    /**
+     * @readonly
+     * @var \Rector\PhpAttribute\NodeFactory\AnnotationToAttributeIntegerValueCaster
+     */
+    private $annotationToAttributeIntegerValueCaster;
+    public function __construct(AnnotationToAttributeMapper $annotationToAttributeMapper, \Rector\PhpAttribute\NodeFactory\AttributeNameFactory $attributeNameFactory, \Rector\PhpAttribute\NodeFactory\NamedArgsFactory $namedArgsFactory, AttributeArrayNameInliner $attributeArrayNameInliner, \Rector\PhpAttribute\NodeFactory\AnnotationToAttributeIntegerValueCaster $annotationToAttributeIntegerValueCaster)
     {
         $this->annotationToAttributeMapper = $annotationToAttributeMapper;
         $this->attributeNameFactory = $attributeNameFactory;
         $this->namedArgsFactory = $namedArgsFactory;
         $this->attributeArrayNameInliner = $attributeArrayNameInliner;
+        $this->annotationToAttributeIntegerValueCaster = $annotationToAttributeIntegerValueCaster;
     }
     public function createFromSimpleTag(AnnotationToAttribute $annotationToAttribute) : AttributeGroup
     {
         return $this->createFromClass($annotationToAttribute->getAttributeClass());
     }
+    /**
+     * @param AttributeName::*|string $attributeClass
+     */
     public function createFromClass(string $attributeClass) : AttributeGroup
     {
         $fullyQualified = new FullyQualified($attributeClass);
@@ -68,7 +78,7 @@ final class PhpAttributeGroupFactory
     public function createFromClassWithItems(string $attributeClass, array $items) : AttributeGroup
     {
         $fullyQualified = new FullyQualified($attributeClass);
-        $args = $this->createArgsFromItems($items, $attributeClass);
+        $args = $this->createArgsFromItems($items);
         $attribute = new Attribute($fullyQualified, $args);
         return new AttributeGroup([$attribute]);
     }
@@ -78,7 +88,8 @@ final class PhpAttributeGroupFactory
     public function create(DoctrineAnnotationTagValueNode $doctrineAnnotationTagValueNode, AnnotationToAttribute $annotationToAttribute, array $uses) : AttributeGroup
     {
         $values = $doctrineAnnotationTagValueNode->getValuesWithSilentKey();
-        $args = $this->createArgsFromItems($values, $annotationToAttribute->getAttributeClass(), $annotationToAttribute->getClassReferenceFields());
+        $args = $this->createArgsFromItems($values, '', $annotationToAttribute->getClassReferenceFields());
+        $this->annotationToAttributeIntegerValueCaster->castAttributeTypes($annotationToAttribute, $args);
         $args = $this->attributeArrayNameInliner->inlineArrayToArgs($args);
         $attributeName = $this->attributeNameFactory->create($annotationToAttribute, $doctrineAnnotationTagValueNode, $uses);
         // keep FQN in the attribute, so it can be easily detected later
@@ -96,9 +107,10 @@ final class PhpAttributeGroupFactory
      *
      * @param ArrayItemNode[]|mixed[] $items
      * @param string[] $classReferencedFields
+     *
      * @return Arg[]
      */
-    public function createArgsFromItems(array $items, string $attributeClass, array $classReferencedFields = []) : array
+    public function createArgsFromItems(array $items, string $attributeClass = '', array $classReferencedFields = []) : array
     {
         $mappedItems = $this->annotationToAttributeMapper->map($items);
         $this->mapClassReferences($mappedItems, $classReferencedFields);

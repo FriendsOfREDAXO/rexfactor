@@ -3,13 +3,12 @@
 declare (strict_types=1);
 namespace Rector\DependencyInjection;
 
-use RectorPrefix202405\Doctrine\Inflector\Inflector;
-use RectorPrefix202405\Doctrine\Inflector\Rules\English\InflectorFactory;
-use RectorPrefix202405\Illuminate\Container\Container;
+use RectorPrefix202410\Doctrine\Inflector\Inflector;
+use RectorPrefix202410\Doctrine\Inflector\Rules\English\InflectorFactory;
+use RectorPrefix202410\Illuminate\Container\Container;
 use PhpParser\Lexer;
 use PHPStan\Analyser\NodeScopeResolver;
 use PHPStan\Analyser\ScopeFactory;
-use PHPStan\File\FileHelper;
 use PHPStan\Parser\Parser;
 use PHPStan\PhpDoc\TypeNodeResolver;
 use PHPStan\PhpDocParser\Parser\ConstExprParser;
@@ -18,9 +17,9 @@ use PHPStan\Reflection\BetterReflection\SourceLocator\CachingVisitor;
 use PHPStan\Reflection\ReflectionProvider;
 use Rector\Application\ChangedNodeScopeRefresher;
 use Rector\Application\FileProcessor;
+use Rector\Application\Provider\CurrentFileProvider;
 use Rector\BetterPhpDocParser\Contract\BasePhpDocNodeVisitorInterface;
 use Rector\BetterPhpDocParser\Contract\PhpDocParser\PhpDocNodeDecoratorInterface;
-use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocNodeMapper;
 use Rector\BetterPhpDocParser\PhpDocNodeVisitor\ArrayTypePhpDocNodeVisitor;
 use Rector\BetterPhpDocParser\PhpDocNodeVisitor\CallableTypePhpDocNodeVisitor;
@@ -50,7 +49,6 @@ use Rector\Config\RectorConfig;
 use Rector\Configuration\ConfigInitializer;
 use Rector\Configuration\RenamedClassesDataCollector;
 use Rector\Console\Command\CustomRuleCommand;
-use Rector\Console\Command\DetectNodeCommand;
 use Rector\Console\Command\ListRulesCommand;
 use Rector\Console\Command\ProcessCommand;
 use Rector\Console\Command\SetupCICommand;
@@ -79,7 +77,7 @@ use Rector\NodeTypeResolver\DependencyInjection\PHPStanServicesFactory;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver\CastTypeResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver\ClassAndInterfaceTypeResolver;
-use Rector\NodeTypeResolver\NodeTypeResolver\ClassMethodOrClassConstTypeResolver;
+use Rector\NodeTypeResolver\NodeTypeResolver\ClassConstFetchTypeResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver\IdentifierTypeResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver\NameTypeResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver\NewTypeResolver;
@@ -139,6 +137,7 @@ use Rector\PHPStanStaticTypeMapper\TypeMapper\HasOffsetTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\HasOffsetValueTypeTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\HasPropertyTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\IntegerTypeMapper;
+use Rector\PHPStanStaticTypeMapper\TypeMapper\IntersectionTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\IterableTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\MixedTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\NeverTypeMapper;
@@ -150,26 +149,24 @@ use Rector\PHPStanStaticTypeMapper\TypeMapper\OversizedArrayTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\ParentStaticTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\ResourceTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\SelfObjectTypeMapper;
+use Rector\PHPStanStaticTypeMapper\TypeMapper\StaticTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\StrictMixedTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\StringTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\ThisTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\TypeWithClassNameTypeMapper;
+use Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\VoidTypeMapper;
 use Rector\PostRector\Application\PostFileProcessor;
-use Rector\Provider\CurrentFileProvider;
 use Rector\Rector\AbstractRector;
-use Rector\Skipper\Contract\SkipVoterInterface;
 use Rector\Skipper\Skipper\Skipper;
-use Rector\Skipper\SkipVoter\ClassSkipVoter;
 use Rector\StaticTypeMapper\Contract\PhpDocParser\PhpDocTypeMapperInterface;
 use Rector\StaticTypeMapper\Contract\PhpParser\PhpParserNodeMapperInterface;
 use Rector\StaticTypeMapper\Mapper\PhpParserNodeMapper;
-use Rector\StaticTypeMapper\Naming\NameScopeFactory;
 use Rector\StaticTypeMapper\PhpDoc\PhpDocTypeMapper;
-use Rector\StaticTypeMapper\PhpDocParser\IdentifierTypeMapper;
-use Rector\StaticTypeMapper\PhpDocParser\IntersectionTypeMapper;
-use Rector\StaticTypeMapper\PhpDocParser\NullableTypeMapper;
-use Rector\StaticTypeMapper\PhpDocParser\UnionTypeMapper;
+use Rector\StaticTypeMapper\PhpDocParser\IdentifierPhpDocTypeMapper;
+use Rector\StaticTypeMapper\PhpDocParser\IntersectionPhpDocTypeMapper;
+use Rector\StaticTypeMapper\PhpDocParser\NullablePhpDocTypeMapper;
+use Rector\StaticTypeMapper\PhpDocParser\UnionPhpDocTypeMapper;
 use Rector\StaticTypeMapper\PhpParser\ExprNodeMapper;
 use Rector\StaticTypeMapper\PhpParser\FullyQualifiedNodeMapper;
 use Rector\StaticTypeMapper\PhpParser\IdentifierNodeMapper;
@@ -178,13 +175,10 @@ use Rector\StaticTypeMapper\PhpParser\NameNodeMapper;
 use Rector\StaticTypeMapper\PhpParser\NullableTypeNodeMapper;
 use Rector\StaticTypeMapper\PhpParser\StringNodeMapper;
 use Rector\StaticTypeMapper\PhpParser\UnionTypeNodeMapper;
-use Rector\StaticTypeMapper\StaticTypeMapper;
-use Rector\Utils\Command\MissingInSetCommand;
-use Rector\Utils\Command\OutsideAnySetCommand;
-use RectorPrefix202405\Symfony\Component\Console\Application;
-use RectorPrefix202405\Symfony\Component\Console\Command\Command;
-use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Symfony\Component\Console\Application;
+use RectorPrefix202410\Symfony\Component\Console\Command\Command;
+use RectorPrefix202410\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 final class LazyContainerFactory
 {
     /**
@@ -206,7 +200,7 @@ final class LazyContainerFactory
     /**
      * @var array<class-string<PhpDocTypeMapperInterface>>
      */
-    private const PHPDOC_TYPE_MAPPER_CLASSES = [IdentifierTypeMapper::class, IntersectionTypeMapper::class, NullableTypeMapper::class, UnionTypeMapper::class];
+    private const PHPDOC_TYPE_MAPPER_CLASSES = [IdentifierPhpDocTypeMapper::class, IntersectionPhpDocTypeMapper::class, NullablePhpDocTypeMapper::class, UnionPhpDocTypeMapper::class];
     /**
      * @var array<class-string<ClassNameImportSkipVoterInterface>>
      */
@@ -214,7 +208,7 @@ final class LazyContainerFactory
     /**
      * @var array<class-string<TypeMapperInterface>>
      */
-    private const TYPE_MAPPER_CLASSES = [AccessoryLiteralStringTypeMapper::class, AccessoryNonEmptyStringTypeMapper::class, AccessoryNonFalsyStringTypeMapper::class, AccessoryNumericStringTypeMapper::class, ArrayTypeMapper::class, BooleanTypeMapper::class, CallableTypeMapper::class, ClassStringTypeMapper::class, ClosureTypeMapper::class, ConditionalTypeForParameterMapper::class, ConditionalTypeMapper::class, FloatTypeMapper::class, GenericClassStringTypeMapper::class, HasMethodTypeMapper::class, HasOffsetTypeMapper::class, HasOffsetValueTypeTypeMapper::class, HasPropertyTypeMapper::class, IntegerTypeMapper::class, \Rector\PHPStanStaticTypeMapper\TypeMapper\IntersectionTypeMapper::class, IterableTypeMapper::class, MixedTypeMapper::class, NeverTypeMapper::class, NonEmptyArrayTypeMapper::class, NullTypeMapper::class, ObjectTypeMapper::class, ObjectWithoutClassTypeMapper::class, OversizedArrayTypeMapper::class, ParentStaticTypeMapper::class, ResourceTypeMapper::class, SelfObjectTypeMapper::class, \Rector\PHPStanStaticTypeMapper\TypeMapper\StaticTypeMapper::class, StrictMixedTypeMapper::class, StringTypeMapper::class, ThisTypeMapper::class, TypeWithClassNameTypeMapper::class, \Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper::class, VoidTypeMapper::class];
+    private const TYPE_MAPPER_CLASSES = [AccessoryLiteralStringTypeMapper::class, AccessoryNonEmptyStringTypeMapper::class, AccessoryNonFalsyStringTypeMapper::class, AccessoryNumericStringTypeMapper::class, ArrayTypeMapper::class, BooleanTypeMapper::class, CallableTypeMapper::class, ClassStringTypeMapper::class, ClosureTypeMapper::class, ConditionalTypeForParameterMapper::class, ConditionalTypeMapper::class, FloatTypeMapper::class, GenericClassStringTypeMapper::class, HasMethodTypeMapper::class, HasOffsetTypeMapper::class, HasOffsetValueTypeTypeMapper::class, HasPropertyTypeMapper::class, IntegerTypeMapper::class, IntersectionTypeMapper::class, IterableTypeMapper::class, MixedTypeMapper::class, NeverTypeMapper::class, NonEmptyArrayTypeMapper::class, NullTypeMapper::class, ObjectTypeMapper::class, ObjectWithoutClassTypeMapper::class, OversizedArrayTypeMapper::class, ParentStaticTypeMapper::class, ResourceTypeMapper::class, SelfObjectTypeMapper::class, StaticTypeMapper::class, StrictMixedTypeMapper::class, StringTypeMapper::class, ThisTypeMapper::class, TypeWithClassNameTypeMapper::class, UnionTypeMapper::class, VoidTypeMapper::class];
     /**
      * @var array<class-string<PhpDocNodeDecoratorInterface>>
      */
@@ -222,7 +216,7 @@ final class LazyContainerFactory
     /**
      * @var array<class-string>
      */
-    private const PUBLIC_PHPSTAN_SERVICE_TYPES = [ScopeFactory::class, TypeNodeResolver::class, FileHelper::class, NodeScopeResolver::class, ReflectionProvider::class, CachingVisitor::class];
+    private const PUBLIC_PHPSTAN_SERVICE_TYPES = [ScopeFactory::class, TypeNodeResolver::class, NodeScopeResolver::class, ReflectionProvider::class, CachingVisitor::class];
     /**
      * @var array<class-string<OutputFormatterInterface>>
      */
@@ -230,15 +224,11 @@ final class LazyContainerFactory
     /**
      * @var array<class-string<NodeTypeResolverInterface>>
      */
-    private const NODE_TYPE_RESOLVER_CLASSES = [CastTypeResolver::class, StaticCallMethodCallTypeResolver::class, ClassAndInterfaceTypeResolver::class, ClassMethodOrClassConstTypeResolver::class, IdentifierTypeResolver::class, NameTypeResolver::class, NewTypeResolver::class, ParamTypeResolver::class, PropertyFetchTypeResolver::class, PropertyTypeResolver::class, ScalarTypeResolver::class, TraitTypeResolver::class];
+    private const NODE_TYPE_RESOLVER_CLASSES = [CastTypeResolver::class, StaticCallMethodCallTypeResolver::class, ClassAndInterfaceTypeResolver::class, IdentifierTypeResolver::class, NameTypeResolver::class, NewTypeResolver::class, ParamTypeResolver::class, PropertyFetchTypeResolver::class, ClassConstFetchTypeResolver::class, PropertyTypeResolver::class, ScalarTypeResolver::class, TraitTypeResolver::class];
     /**
      * @var array<class-string<PhpParserNodeMapperInterface>>
      */
     private const PHP_PARSER_NODE_MAPPER_CLASSES = [FullyQualifiedNodeMapper::class, IdentifierNodeMapper::class, IntersectionTypeNodeMapper::class, NameNodeMapper::class, NullableTypeNodeMapper::class, StringNodeMapper::class, UnionTypeNodeMapper::class, ExprNodeMapper::class];
-    /**
-     * @var array<class-string<SkipVoterInterface>>
-     */
-    private const SKIP_VOTER_CLASSES = [ClassSkipVoter::class];
     /**
      * @var array<class-string<ConverterAttributeDecoratorInterface>>
      */
@@ -269,13 +259,7 @@ final class LazyContainerFactory
         $rectorConfig->singleton(SetupCICommand::class);
         $rectorConfig->singleton(ListRulesCommand::class);
         $rectorConfig->singleton(CustomRuleCommand::class);
-        $rectorConfig->singleton(DetectNodeCommand::class);
         $rectorConfig->when(ListRulesCommand::class)->needs('$rectors')->giveTagged(RectorInterface::class);
-        // dev
-        if (\class_exists(MissingInSetCommand::class)) {
-            $rectorConfig->singleton(MissingInSetCommand::class);
-            $rectorConfig->singleton(OutsideAnySetCommand::class);
-        }
         $rectorConfig->singleton(FileProcessor::class);
         $rectorConfig->singleton(PostFileProcessor::class);
         // phpdoc-parser
@@ -288,9 +272,6 @@ final class LazyContainerFactory
         $rectorConfig->singleton(DynamicSourceLocatorProvider::class, static function (Container $container) : DynamicSourceLocatorProvider {
             $phpStanServicesFactory = $container->make(PHPStanServicesFactory::class);
             return $phpStanServicesFactory->createDynamicSourceLocatorProvider();
-        });
-        $rectorConfig->afterResolving(DynamicSourceLocatorProvider::class, static function (DynamicSourceLocatorProvider $dynamicSourceLocatorProvider, Container $container) : void {
-            $dynamicSourceLocatorProvider->autowire($container->make(ReflectionProvider::class));
         });
         // resetables
         $rectorConfig->tag(DynamicSourceLocatorProvider::class, ResetableInterface::class);
@@ -314,7 +295,7 @@ final class LazyContainerFactory
             $phpStanStaticTypeMapper = $container->make(PHPStanStaticTypeMapper::class);
             $conditionalTypeMapper->autowire($phpStanStaticTypeMapper);
         });
-        $rectorConfig->afterResolving(\Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper::class, static function (\Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper $unionTypeMapper, Container $container) : void {
+        $rectorConfig->afterResolving(UnionTypeMapper::class, static function (UnionTypeMapper $unionTypeMapper, Container $container) : void {
             $phpStanStaticTypeMapper = $container->make(PHPStanStaticTypeMapper::class);
             $unionTypeMapper->autowire($phpStanStaticTypeMapper);
         });
@@ -324,8 +305,6 @@ final class LazyContainerFactory
         $rectorConfig->when(NodeTypeResolver::class)->needs('$nodeTypeResolvers')->giveTagged(NodeTypeResolverInterface::class);
         // node name resolvers
         $rectorConfig->when(NodeNameResolver::class)->needs('$nodeNameResolvers')->giveTagged(NodeNameResolverInterface::class);
-        $rectorConfig->when(Skipper::class)->needs('$skipVoters')->giveTagged(SkipVoterInterface::class);
-        $this->registerTagged($rectorConfig, self::SKIP_VOTER_CLASSES, SkipVoterInterface::class);
         $rectorConfig->when(AttributeGroupNamedArgumentManipulator::class)->needs('$converterAttributeDecorators')->giveTagged(ConverterAttributeDecoratorInterface::class);
         $this->registerTagged($rectorConfig, self::CONVERTER_ATTRIBUTE_DECORATOR_CLASSES, ConverterAttributeDecoratorInterface::class);
         $rectorConfig->afterResolving(AbstractRector::class, static function (AbstractRector $rector, Container $container) : void {
@@ -358,9 +337,6 @@ final class LazyContainerFactory
         $rectorConfig->afterResolving(ArrayItemNodeAnnotationToAttributeMapper::class, static function (ArrayItemNodeAnnotationToAttributeMapper $arrayItemNodeAnnotationToAttributeMapper, Container $container) : void {
             $annotationToAttributeMapper = $container->make(AnnotationToAttributeMapper::class);
             $arrayItemNodeAnnotationToAttributeMapper->autowire($annotationToAttributeMapper);
-        });
-        $rectorConfig->afterResolving(NameScopeFactory::class, static function (NameScopeFactory $nameScopeFactory, Container $container) : void {
-            $nameScopeFactory->autowire($container->make(PhpDocInfoFactory::class), $container->make(StaticTypeMapper::class));
         });
         $rectorConfig->afterResolving(PlainValueParser::class, static function (PlainValueParser $plainValueParser, Container $container) : void {
             $plainValueParser->autowire($container->make(StaticDoctrineAnnotationParser::class), $container->make(ArrayParser::class));
