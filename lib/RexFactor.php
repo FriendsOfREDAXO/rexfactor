@@ -45,7 +45,6 @@ final class RexFactor
             'PHPUNIT_70' => 'PHPUnit 7',
             'PHPUNIT_80' => 'PHPUnit 8',
             'PHPUNIT_90' => 'PHPUnit 9',
-            'PHPUNIT_91' => 'PHPUnit 9.1',
             'PHPUNIT_100' => 'PHPUnit 10',
         ],
         self::TESTS_QUALITY => [
