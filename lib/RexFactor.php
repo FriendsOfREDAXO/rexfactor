@@ -49,9 +49,6 @@ final class RexFactor
         ],
         self::TESTS_QUALITY => [
             'PHPUNIT_CODE_QUALITY' => 'Unify test-code quality',
-            'PHPUNIT_EXCEPTION' => 'Refactor exception expectations',
-            'REMOVE_MOCKS' => 'Reduce mock usage',
-            'PHPUNIT_SPECIFIC_METHOD' => 'Use specific assert*() methods',
             'ANNOTATIONS_TO_ATTRIBUTES' => 'Annotations to Attributes',
         ],
         self::MISC_MIGRATIONS => [
