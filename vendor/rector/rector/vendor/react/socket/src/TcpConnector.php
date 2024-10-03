@@ -1,18 +1,26 @@
 <?php
 
-namespace RectorPrefix202405\React\Socket;
+namespace RectorPrefix202410\React\Socket;
 
-use RectorPrefix202405\React\EventLoop\Loop;
-use RectorPrefix202405\React\EventLoop\LoopInterface;
-use RectorPrefix202405\React\Promise;
+use RectorPrefix202410\React\EventLoop\Loop;
+use RectorPrefix202410\React\EventLoop\LoopInterface;
+use RectorPrefix202410\React\Promise;
 use InvalidArgumentException;
 use RuntimeException;
 final class TcpConnector implements ConnectorInterface
 {
     private $loop;
     private $context;
-    public function __construct(LoopInterface $loop = null, array $context = array())
+    /**
+     * @param ?LoopInterface $loop
+     * @param array $context
+     */
+    public function __construct($loop = null, array $context = array())
     {
+        if ($loop !== null && !$loop instanceof LoopInterface) {
+            // manual type check to support legacy PHP < 7.1
+            throw new \InvalidArgumentException('Argument #1 ($loop) expected null|React\\EventLoop\\LoopInterface');
+        }
         $this->loop = $loop ?: Loop::get();
         $this->context = $context;
     }

@@ -3,16 +3,15 @@
 declare (strict_types=1);
 namespace Rector\PostRector\Rector;
 
+use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Namespace_;
+use PhpParser\NodeTraverser;
 use Rector\CodingStyle\Application\UseImportsAdder;
-use Rector\Exception\ShouldNotHappenException;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
 use Rector\PostRector\Collector\UseNodesToAddCollector;
-use Rector\Provider\CurrentFileProvider;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
-use Rector\ValueObject\Application\File;
 final class UseAddingPostRector extends \Rector\PostRector\Rector\AbstractPostRector
 {
     /**
@@ -30,17 +29,11 @@ final class UseAddingPostRector extends \Rector\PostRector\Rector\AbstractPostRe
      * @var \Rector\PostRector\Collector\UseNodesToAddCollector
      */
     private $useNodesToAddCollector;
-    /**
-     * @readonly
-     * @var \Rector\Provider\CurrentFileProvider
-     */
-    private $currentFileProvider;
-    public function __construct(TypeFactory $typeFactory, UseImportsAdder $useImportsAdder, UseNodesToAddCollector $useNodesToAddCollector, CurrentFileProvider $currentFileProvider)
+    public function __construct(TypeFactory $typeFactory, UseImportsAdder $useImportsAdder, UseNodesToAddCollector $useNodesToAddCollector)
     {
         $this->typeFactory = $typeFactory;
         $this->useImportsAdder = $useImportsAdder;
         $this->useNodesToAddCollector = $useNodesToAddCollector;
-        $this->currentFileProvider = $currentFileProvider;
     }
     /**
      * @param Stmt[] $nodes
@@ -52,20 +45,10 @@ final class UseAddingPostRector extends \Rector\PostRector\Rector\AbstractPostRe
         if ($nodes === []) {
             return $nodes;
         }
-        $rootNode = null;
-        foreach ($nodes as $node) {
-            if ($node instanceof FileWithoutNamespace || $node instanceof Namespace_) {
-                $rootNode = $node;
-                break;
-            }
-        }
-        $file = $this->currentFileProvider->getFile();
-        if (!$file instanceof File) {
-            throw new ShouldNotHappenException();
-        }
-        $useImportTypes = $this->useNodesToAddCollector->getObjectImportsByFilePath($file->getFilePath());
-        $constantUseImportTypes = $this->useNodesToAddCollector->getConstantImportsByFilePath($file->getFilePath());
-        $functionUseImportTypes = $this->useNodesToAddCollector->getFunctionImportsByFilePath($file->getFilePath());
+        $rootNode = $this->resolveRootNode($nodes);
+        $useImportTypes = $this->useNodesToAddCollector->getObjectImportsByFilePath($this->getFile()->getFilePath());
+        $constantUseImportTypes = $this->useNodesToAddCollector->getConstantImportsByFilePath($this->getFile()->getFilePath());
+        $functionUseImportTypes = $this->useNodesToAddCollector->getFunctionImportsByFilePath($this->getFile()->getFilePath());
         if ($useImportTypes === [] && $constantUseImportTypes === [] && $functionUseImportTypes === []) {
             return $nodes;
         }
@@ -78,6 +61,18 @@ final class UseAddingPostRector extends \Rector\PostRector\Rector\AbstractPostRe
             return $nodes;
         }
         return $this->resolveNodesWithImportedUses($nodes, $useImportTypes, $constantUseImportTypes, $functionUseImportTypes, $rootNode);
+    }
+    public function enterNode(Node $node) : int
+    {
+        /**
+         * We stop the traversal because all the work has already been done in the beforeTraverse() function
+         *
+         * Using STOP_TRAVERSAL is usually dangerous as it will stop the processing of all your nodes for all visitors
+         * but since the PostFileProcessor is using direct new NodeTraverser() and traverse() for only a single
+         * visitor per execution, using stop traversal here is safe,
+         * ref https://github.com/rectorphp/rector-src/blob/fc1e742fa4d9861ccdc5933f3b53613b8223438d/src/PostRector/Application/PostFileProcessor.php#L59-L61
+         */
+        return NodeTraverser::STOP_TRAVERSAL;
     }
     /**
      * @param Stmt[] $nodes
@@ -115,5 +110,18 @@ final class UseAddingPostRector extends \Rector\PostRector\Rector\AbstractPostRe
             $namespacedUseImportTypes[] = $useImportType;
         }
         return $namespacedUseImportTypes;
+    }
+    /**
+     * @param Stmt[] $nodes
+     * @return \PhpParser\Node\Stmt\Namespace_|\Rector\PhpParser\Node\CustomNode\FileWithoutNamespace|null
+     */
+    private function resolveRootNode(array $nodes)
+    {
+        foreach ($nodes as $node) {
+            if ($node instanceof FileWithoutNamespace || $node instanceof Namespace_) {
+                return $node;
+            }
+        }
+        return null;
     }
 }

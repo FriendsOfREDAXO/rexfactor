@@ -8,14 +8,18 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
+use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Else_;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\NodeTraverser;
+use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantBooleanType;
+use PHPStan\Type\IntersectionType;
 use Rector\DeadCode\NodeAnalyzer\SafeLeftTypeBooleanAndOrAnalyzer;
 use Rector\NodeAnalyzer\ExprAnalyzer;
 use Rector\PhpParser\Node\BetterNodeFinder;
@@ -109,7 +113,7 @@ CODE_SAMPLE
         if ($this->shouldSkipExpr($node->cond)) {
             return null;
         }
-        if ($this->shouldSkipFromParam($node->cond)) {
+        if ($this->shouldSkipFromVariable($node->cond)) {
             return null;
         }
         $hasAssign = (bool) $this->betterNodeFinder->findFirstInstanceOf($node->cond, Assign::class);
@@ -121,7 +125,7 @@ CODE_SAMPLE
         }
         return $node->stmts;
     }
-    private function shouldSkipFromParam(Expr $expr) : bool
+    private function shouldSkipFromVariable(Expr $expr) : bool
     {
         /** @var Variable[] $variables */
         $variables = $this->betterNodeFinder->findInstancesOf($expr, [Variable::class]);
@@ -129,12 +133,20 @@ CODE_SAMPLE
             if ($this->exprAnalyzer->isNonTypedFromParam($variable)) {
                 return \true;
             }
+            $type = $this->getType($variable);
+            if ($type instanceof IntersectionType) {
+                foreach ($type->getTypes() as $subType) {
+                    if ($subType instanceof ArrayType) {
+                        return \true;
+                    }
+                }
+            }
         }
         return \false;
     }
     private function shouldSkipExpr(Expr $expr) : bool
     {
-        return (bool) $this->betterNodeFinder->findInstancesOf($expr, [PropertyFetch::class, StaticPropertyFetch::class, ArrayDimFetch::class]);
+        return (bool) $this->betterNodeFinder->findInstancesOf($expr, [PropertyFetch::class, StaticPropertyFetch::class, ArrayDimFetch::class, MethodCall::class, StaticCall::class]);
     }
     private function refactorIfWithBooleanAnd(If_ $if) : ?If_
     {

@@ -12,10 +12,8 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\StaticCallToNew;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
- * @changelog https://github.com/symfony/symfony/pull/35308
- *
  * @see \Rector\Tests\Transform\Rector\StaticCall\StaticCallToNewRector\StaticCallToNewRectorTest
  */
 final class StaticCallToNewRector extends AbstractRector implements ConfigurableRectorInterface
@@ -54,7 +52,7 @@ CODE_SAMPLE
         return [StaticCall::class];
     }
     /**
-     * @param Node\Expr\StaticCall $node
+     * @param StaticCall $node
      */
     public function refactor(Node $node) : ?Node
     {

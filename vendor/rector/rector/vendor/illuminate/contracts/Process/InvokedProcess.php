@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202405\Illuminate\Contracts\Process;
+namespace RectorPrefix202410\Illuminate\Contracts\Process;
 
 interface InvokedProcess
 {
@@ -51,7 +51,7 @@ interface InvokedProcess
      * Wait for the process to finish.
      *
      * @param  callable|null  $output
-     * @return \Illuminate\Console\Process\ProcessResult
+     * @return \Illuminate\Process\ProcessResult
      */
-    public function wait(callable $output = null);
+    public function wait(?callable $output = null);
 }

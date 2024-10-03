@@ -8,17 +8,16 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\ClassConstFetch;
-use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Ternary;
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Scalar\String_;
-use PhpParser\Node\Stmt\Property;
+use PhpParser\Node\Stmt\ClassConst;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\UnionType as NodeUnionType;
 use PHPStan\Analyser\Scope;
 use PHPStan\Broker\ClassAutoloadingException;
@@ -39,6 +38,7 @@ use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
 use Rector\Configuration\RenamedClassesDataCollector;
+use Rector\Exception\ShouldNotHappenException;
 use Rector\NodeAnalyzer\ClassAnalyzer;
 use Rector\NodeTypeResolver\Contract\NodeTypeResolverAwareInterface;
 use Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface;
@@ -82,6 +82,10 @@ final class NodeTypeResolver
      */
     private $renamedClassesDataCollector;
     /**
+     * @var string
+     */
+    private const ERROR_MESSAGE = '%s itself does not have any type. Check the %s node instead';
+    /**
      * @var array<class-string<Node>, NodeTypeResolverInterface>
      */
     private $nodeTypeResolvers = [];
@@ -123,6 +127,10 @@ final class NodeTypeResolver
         if ($node instanceof ClassConstFetch) {
             return \false;
         }
+        // warn about invalid use of this method
+        if ($node instanceof ClassMethod || $node instanceof ClassConst) {
+            throw new ShouldNotHappenException(\sprintf(self::ERROR_MESSAGE, \get_class($node), ClassLike::class));
+        }
         $resolvedType = $this->getType($node);
         if ($resolvedType instanceof MixedType) {
             return \false;
@@ -145,13 +153,7 @@ final class NodeTypeResolver
     }
     public function getType(Node $node) : Type
     {
-        if ($node instanceof Property && $node->type instanceof Node) {
-            return $this->getType($node->type);
-        }
         if ($node instanceof NullableType) {
-            if ($node->type instanceof Name && $node->type->hasAttribute(AttributeKey::NAMESPACED_NAME)) {
-                $node->type = new FullyQualified($node->type->getAttribute(AttributeKey::NAMESPACED_NAME));
-            }
             $type = $this->getType($node->type);
             if (!$type instanceof MixedType) {
                 return new UnionType([$type, new NullType()]);
@@ -182,12 +184,6 @@ final class NodeTypeResolver
         }
         $scope = $node->getAttribute(AttributeKey::SCOPE);
         if (!$scope instanceof Scope) {
-            if ($node instanceof ConstFetch) {
-                $name = $node->name->toString();
-                if (\strtolower($name) === 'null') {
-                    return new NullType();
-                }
-            }
             return new MixedType();
         }
         if ($node instanceof NodeUnionType) {
@@ -233,7 +229,7 @@ final class NodeTypeResolver
                 return $type;
             }
         }
-        $type = $scope->getNativeType($expr);
+        $type = $this->resolveNativeTypeWithBuiltinMethodCallFallback($expr, $scope);
         if ($expr instanceof ArrayDimFetch) {
             $type = $this->resolveArrayDimFetchType($expr, $scope, $type);
         }
@@ -462,5 +458,19 @@ final class NodeTypeResolver
             }
         }
         return new MixedType();
+    }
+    /**
+     * Method calls on native PHP classes report mixed,
+     * even on strict known type; this fallbacks to getType() that provides correct type
+     */
+    private function resolveNativeTypeWithBuiltinMethodCallFallback(Expr $expr, Scope $scope) : Type
+    {
+        if ($expr instanceof MethodCall) {
+            $callerType = $scope->getType($expr->var);
+            if ($callerType instanceof ObjectType && $callerType->getClassReflection() instanceof ClassReflection && $callerType->getClassReflection()->isBuiltin()) {
+                return $scope->getType($expr);
+            }
+        }
+        return $scope->getNativeType($expr);
     }
 }

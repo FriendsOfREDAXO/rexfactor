@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202405\Illuminate\Contracts\Auth;
+namespace RectorPrefix202410\Illuminate\Contracts\Auth;
 
 interface Guard
 {
@@ -45,7 +45,7 @@ interface Guard
      * Set the current user.
      *
      * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
+     * @return $this
      */
     public function setUser(Authenticatable $user);
 }

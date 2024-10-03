@@ -22,10 +22,8 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\AttributeKeyToClassConstFetch;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
- * @changelog https://github.com/doctrine/dbal/blob/3.1.x/src/Types/Types.php
- *
  * @api used in rector-doctrine
  * @see \Rector\Tests\Transform\Rector\Attribute\AttributeKeyToClassConstFetchRector\AttributeKeyToClassConstFetchRectorTest
  */
@@ -132,11 +130,11 @@ CODE_SAMPLE
         if ($constName === null) {
             return \false;
         }
-        $newValue = $this->nodeFactory->createClassConstFetch($attributeKeyToClassConstFetch->getConstantClass(), $constName);
-        if ($arg->value instanceof ClassConstFetch && $this->getName($arg->value) === $this->getName($newValue)) {
+        $classConstFetch = $this->nodeFactory->createClassConstFetch($attributeKeyToClassConstFetch->getConstantClass(), $constName);
+        if ($arg->value instanceof ClassConstFetch && $this->getName($arg->value) === $this->getName($classConstFetch)) {
             return \false;
         }
-        $arg->value = $newValue;
+        $arg->value = $classConstFetch;
         return \true;
     }
 }

@@ -76,6 +76,7 @@ final class ClassRenamer
     }
     /**
      * @param array<string, string> $oldToNewClasses
+     * @return ($node is FullyQualified ? FullyQualified : Node)
      */
     public function renameNode(Node $node, array $oldToNewClasses, ?Scope $scope) : ?Node
     {
@@ -157,10 +158,6 @@ final class ClassRenamer
         $hasChanged = \false;
         $classLike->implements = \array_unique($classLike->implements);
         foreach ($classLike->implements as $key => $implementName) {
-            $virtualNode = (bool) $implementName->getAttribute(AttributeKey::VIRTUAL_NODE);
-            if (!$virtualNode) {
-                continue;
-            }
             $namespaceName = $scope instanceof Scope ? $scope->getNamespace() : null;
             $fullyQualifiedName = $namespaceName . '\\' . $implementName->toString();
             $newName = $oldToNewClasses[$fullyQualifiedName] ?? null;

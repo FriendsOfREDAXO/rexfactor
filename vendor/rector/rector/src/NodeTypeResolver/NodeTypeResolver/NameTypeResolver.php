@@ -8,7 +8,6 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
-use PHPStan\Type\ArrayType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
@@ -35,13 +34,14 @@ final class NameTypeResolver implements NodeTypeResolverInterface
      */
     public function resolve(Node $node) : Type
     {
+        // not instanceof FullyQualified means it is a Name
+        if (!$node instanceof FullyQualified && $node->hasAttribute(AttributeKey::NAMESPACED_NAME)) {
+            return $this->resolve(new FullyQualified($node->getAttribute(AttributeKey::NAMESPACED_NAME)));
+        }
         if ($node->toString() === ObjectReference::PARENT) {
             return $this->resolveParent($node);
         }
         $fullyQualifiedName = $this->resolveFullyQualifiedName($node);
-        if ($node->toString() === 'array') {
-            return new ArrayType(new MixedType(), new MixedType());
-        }
         return new ObjectType($fullyQualifiedName);
     }
     /**
@@ -82,7 +82,7 @@ final class NameTypeResolver implements NodeTypeResolverInterface
     private function resolveFullyQualifiedName(Name $name) : string
     {
         $nameValue = $name->toString();
-        if (\in_array($nameValue, [ObjectReference::SELF, ObjectReference::STATIC, 'this'], \true)) {
+        if (\in_array($nameValue, [ObjectReference::SELF, ObjectReference::STATIC], \true)) {
             $classReflection = $this->resolveClassReflection($name);
             if (!$classReflection instanceof ClassReflection || $classReflection->isAnonymous()) {
                 return $name->toString();

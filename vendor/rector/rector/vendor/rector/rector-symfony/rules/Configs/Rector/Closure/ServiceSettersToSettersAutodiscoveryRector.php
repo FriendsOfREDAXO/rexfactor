@@ -23,7 +23,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Symfony\MinimalSharedStringSolver;
 use Rector\Symfony\NodeAnalyzer\SymfonyPhpClosureDetector;
 use Rector\Symfony\ValueObject\ClassNameAndFilePath;
-use RectorPrefix202405\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202410\Symfony\Component\Filesystem\Filesystem;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -115,7 +115,7 @@ CODE_SAMPLE
             return null;
         }
         $classNamesAndFilesPaths = $this->createClassNamesAndFilePaths($bareServicesSetMethodCallExpressions);
-        $classNames = \array_map(function (ClassNameAndFilePath $classNameAndFilePath) : string {
+        $classNames = \array_map(static function (ClassNameAndFilePath $classNameAndFilePath) : string {
             return $classNameAndFilePath->getClassName();
         }, $classNamesAndFilesPaths);
         $sharedNamespace = $this->minimalSharedStringSolver->solve(...$classNames);

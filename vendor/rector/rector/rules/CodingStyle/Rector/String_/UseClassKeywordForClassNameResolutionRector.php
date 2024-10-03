@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Rector\String_;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name\FullyQualified;
@@ -76,7 +76,7 @@ CODE_SAMPLE
      */
     private function getParts(String_ $string, array $classNames) : array
     {
-        $quotedClassNames = \array_map('preg_quote', $classNames);
+        $quotedClassNames = \array_map(\Closure::fromCallable('preg_quote'), $classNames);
         // @see https://regex101.com/r/8nGS0F/1
         $parts = Strings::split($string->value, '#(' . \implode('|', $quotedClassNames) . ')#');
         return \array_filter($parts, static function (string $className) : bool {

@@ -48,10 +48,11 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
-        if ($node->returnType !== null) {
+        if ($node->returnType instanceof Node) {
             return null;
         }
         $type = $this->nodeTypeResolver->getNativeType($node->expr);
+        // not valid to add explicit type in PHP
         if ($type->isVoid()->yes()) {
             return null;
         }

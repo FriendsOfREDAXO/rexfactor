@@ -4,11 +4,10 @@ declare (strict_types=1);
 namespace Rector\Console\Style;
 
 use Rector\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202405\Symfony\Component\Console\Application;
-use RectorPrefix202405\Symfony\Component\Console\Input\ArgvInput;
-use RectorPrefix202405\Symfony\Component\Console\Output\ConsoleOutput;
-use RectorPrefix202405\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202410\Symfony\Component\Console\Application;
+use RectorPrefix202410\Symfony\Component\Console\Input\ArgvInput;
+use RectorPrefix202410\Symfony\Component\Console\Output\ConsoleOutput;
+use RectorPrefix202410\Symfony\Component\Console\Output\OutputInterface;
 final class SymfonyStyleFactory
 {
     /**
@@ -23,7 +22,7 @@ final class SymfonyStyleFactory
     /**
      * @api
      */
-    public function create() : SymfonyStyle
+    public function create() : \Rector\Console\Style\RectorStyle
     {
         // to prevent missing argv indexes
         if (!isset($_SERVER['argv'])) {

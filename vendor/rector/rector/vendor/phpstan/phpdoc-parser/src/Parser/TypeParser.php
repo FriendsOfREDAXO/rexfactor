@@ -346,10 +346,12 @@ class TypeParser
     {
         $name = $tokens->currentTokenValue();
         $tokens->consumeTokenType(Lexer::TOKEN_IDENTIFIER);
+        $upperBound = $lowerBound = null;
         if ($tokens->tryConsumeTokenValue('of') || $tokens->tryConsumeTokenValue('as')) {
-            $bound = $this->parse($tokens);
-        } else {
-            $bound = null;
+            $upperBound = $this->parse($tokens);
+        }
+        if ($tokens->tryConsumeTokenValue('super')) {
+            $lowerBound = $this->parse($tokens);
         }
         if ($tokens->tryConsumeTokenValue('=')) {
             $default = $this->parse($tokens);
@@ -361,7 +363,10 @@ class TypeParser
         } else {
             $description = '';
         }
-        return new Ast\PhpDoc\TemplateTagValueNode($name, $bound, $description, $default);
+        if ($name === '') {
+            throw new LogicException('Template tag name cannot be empty.');
+        }
+        return new Ast\PhpDoc\TemplateTagValueNode($name, $upperBound, $description, $default, $lowerBound);
     }
     /** @phpstan-impure */
     private function parseCallable(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens, Ast\Type\IdentifierTypeNode $identifier, bool $hasTemplate) : Ast\Type\TypeNode
@@ -564,6 +569,7 @@ class TypeParser
         $tokens->consumeTokenType(Lexer::TOKEN_OPEN_CURLY_BRACKET);
         $items = [];
         $sealed = \true;
+        $unsealedType = null;
         do {
             $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
             if ($tokens->tryConsumeTokenType(Lexer::TOKEN_CLOSE_CURLY_BRACKET)) {
@@ -571,6 +577,15 @@ class TypeParser
             }
             if ($tokens->tryConsumeTokenType(Lexer::TOKEN_VARIADIC)) {
                 $sealed = \false;
+                $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+                if ($tokens->isCurrentTokenType(Lexer::TOKEN_OPEN_ANGLE_BRACKET)) {
+                    if ($kind === Ast\Type\ArrayShapeNode::KIND_ARRAY) {
+                        $unsealedType = $this->parseArrayShapeUnsealedType($tokens);
+                    } else {
+                        $unsealedType = $this->parseListShapeUnsealedType($tokens);
+                    }
+                    $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+                }
                 $tokens->tryConsumeTokenType(Lexer::TOKEN_COMMA);
                 break;
             }
@@ -579,7 +594,7 @@ class TypeParser
         } while ($tokens->tryConsumeTokenType(Lexer::TOKEN_COMMA));
         $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
         $tokens->consumeTokenType(Lexer::TOKEN_CLOSE_CURLY_BRACKET);
-        return new Ast\Type\ArrayShapeNode($items, $sealed, $kind);
+        return new Ast\Type\ArrayShapeNode($items, $sealed, $kind, $unsealedType);
     }
     /** @phpstan-impure */
     private function parseArrayShapeItem(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens) : Ast\Type\ArrayShapeItemNode
@@ -630,6 +645,41 @@ class TypeParser
             $tokens->consumeTokenType(Lexer::TOKEN_IDENTIFIER);
         }
         return $this->enrichWithAttributes($tokens, $key, $startLine, $startIndex);
+    }
+    /**
+     * @phpstan-impure
+     */
+    private function parseArrayShapeUnsealedType(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens) : Ast\Type\ArrayShapeUnsealedTypeNode
+    {
+        $startLine = $tokens->currentTokenLine();
+        $startIndex = $tokens->currentTokenIndex();
+        $tokens->consumeTokenType(Lexer::TOKEN_OPEN_ANGLE_BRACKET);
+        $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+        $valueType = $this->parse($tokens);
+        $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+        $keyType = null;
+        if ($tokens->tryConsumeTokenType(Lexer::TOKEN_COMMA)) {
+            $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+            $keyType = $valueType;
+            $valueType = $this->parse($tokens);
+            $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+        }
+        $tokens->consumeTokenType(Lexer::TOKEN_CLOSE_ANGLE_BRACKET);
+        return $this->enrichWithAttributes($tokens, new Ast\Type\ArrayShapeUnsealedTypeNode($valueType, $keyType), $startLine, $startIndex);
+    }
+    /**
+     * @phpstan-impure
+     */
+    private function parseListShapeUnsealedType(\PHPStan\PhpDocParser\Parser\TokenIterator $tokens) : Ast\Type\ArrayShapeUnsealedTypeNode
+    {
+        $startLine = $tokens->currentTokenLine();
+        $startIndex = $tokens->currentTokenIndex();
+        $tokens->consumeTokenType(Lexer::TOKEN_OPEN_ANGLE_BRACKET);
+        $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+        $valueType = $this->parse($tokens);
+        $tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL);
+        $tokens->consumeTokenType(Lexer::TOKEN_CLOSE_ANGLE_BRACKET);
+        return $this->enrichWithAttributes($tokens, new Ast\Type\ArrayShapeUnsealedTypeNode($valueType, null), $startLine, $startIndex);
     }
     /**
      * @phpstan-impure

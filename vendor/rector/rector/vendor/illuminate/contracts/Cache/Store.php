@@ -1,13 +1,13 @@
 <?php
 
-namespace RectorPrefix202405\Illuminate\Contracts\Cache;
+namespace RectorPrefix202410\Illuminate\Contracts\Cache;
 
 interface Store
 {
     /**
      * Retrieve an item from the cache by key.
      *
-     * @param  string|array  $key
+     * @param  string  $key
      * @return mixed
      */
     public function get($key);

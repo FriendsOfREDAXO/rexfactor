@@ -20,7 +20,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VendorLocker\ParentClassMethodTypeOverrideGuard;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\AddReturnTypeDeclarationRector\AddReturnTypeDeclarationRectorTest
  */
@@ -57,7 +57,6 @@ final class AddReturnTypeDeclarationRector extends AbstractRector implements Con
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        $arrayType = new ArrayType(new MixedType(), new MixedType());
         return new RuleDefinition('Changes defined return typehint of method and class.', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
@@ -74,7 +73,7 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-, [new AddReturnTypeDeclaration('SomeClass', 'getData', $arrayType)])]);
+, [new AddReturnTypeDeclaration('SomeClass', 'getData', new ArrayType(new MixedType(), new MixedType()))])]);
     }
     /**
      * @return array<class-string<Node>>
@@ -119,7 +118,7 @@ CODE_SAMPLE
         if ($newType instanceof MixedType) {
             $className = (string) $this->nodeNameResolver->getName($class);
             $currentObjectType = new ObjectType($className);
-            if (!$objectType->equals($currentObjectType) && $classMethod->returnType !== null) {
+            if (!$objectType->equals($currentObjectType) && $classMethod->returnType instanceof Node) {
                 return;
             }
         }

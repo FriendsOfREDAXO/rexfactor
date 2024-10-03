@@ -22,8 +22,6 @@ use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @changelog https://3v4l.org/bfsdY
- *
  * @see \Rector\Tests\CodeQuality\Rector\Foreach_\SimplifyForeachToCoalescingRector\SimplifyForeachToCoalescingRectorTest
  */
 final class SimplifyForeachToCoalescingRector extends AbstractRector implements MinPhpVersionInterface
@@ -131,6 +129,10 @@ CODE_SAMPLE
             return null;
         }
         if ($if->else instanceof Else_ || $if->elseifs !== []) {
+            return null;
+        }
+        $foreachExprType = $this->nodeTypeResolver->getNativeType($foreach->expr);
+        if (!$foreachExprType->isArray()->yes()) {
             return null;
         }
         $innerStmt = $if->stmts[0];

@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\TypeDeclaration\PHPStan;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\GroupUse;
@@ -22,9 +22,6 @@ use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\NonExistingObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\ShortenedGenericObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
-use Rector\TypeDeclaration\Contract\PHPStan\TypeWithClassTypeSpecifierInterface;
-use Rector\TypeDeclaration\PHPStan\TypeSpecifier\SameNamespacedTypeSpecifier;
-use Rector\TypeDeclaration\PHPStan\TypeSpecifier\SelfStaticParentTypeSpecifier;
 final class ObjectTypeSpecifier
 {
     /**
@@ -37,35 +34,17 @@ final class ObjectTypeSpecifier
      * @var \Rector\Naming\Naming\UseImportsResolver
      */
     private $useImportsResolver;
-    /**
-     * @var TypeWithClassTypeSpecifierInterface[]
-     */
-    private $typeWithClassTypeSpecifiers = [];
-    public function __construct(ReflectionProvider $reflectionProvider, UseImportsResolver $useImportsResolver, SelfStaticParentTypeSpecifier $selfStaticParentTypeSpecifier, SameNamespacedTypeSpecifier $sameNamespacedTypeSpecifier)
+    public function __construct(ReflectionProvider $reflectionProvider, UseImportsResolver $useImportsResolver)
     {
         $this->reflectionProvider = $reflectionProvider;
         $this->useImportsResolver = $useImportsResolver;
-        $this->typeWithClassTypeSpecifiers = [$selfStaticParentTypeSpecifier, $sameNamespacedTypeSpecifier];
     }
     /**
      * @return \PHPStan\Type\TypeWithClassName|\Rector\StaticTypeMapper\ValueObject\Type\NonExistingObjectType|\PHPStan\Type\UnionType|\PHPStan\Type\MixedType
      */
     public function narrowToFullyQualifiedOrAliasedObjectType(Node $node, ObjectType $objectType, ?\PHPStan\Analyser\Scope $scope)
     {
-        if ($scope instanceof Scope) {
-            foreach ($this->typeWithClassTypeSpecifiers as $typeWithClassTypeSpecifier) {
-                if ($typeWithClassTypeSpecifier->match($objectType, $scope)) {
-                    return $typeWithClassTypeSpecifier->resolveObjectReferenceType($objectType, $scope);
-                }
-            }
-        }
         $uses = $this->useImportsResolver->resolve();
-        if ($uses === []) {
-            if (!$this->reflectionProvider->hasClass($objectType->getClassName())) {
-                return new NonExistingObjectType($objectType->getClassName());
-            }
-            return new FullyQualifiedObjectType($objectType->getClassName(), null, $objectType->getClassReflection());
-        }
         $aliasedObjectType = $this->matchAliasedObjectType($objectType, $uses);
         if ($aliasedObjectType instanceof AliasedObjectType) {
             return $aliasedObjectType;
@@ -78,11 +57,21 @@ final class ObjectTypeSpecifier
         if ($this->reflectionProvider->hasClass($className)) {
             return new FullyQualifiedObjectType($className);
         }
+        // probably in same namespace
+        if ($scope instanceof Scope) {
+            $namespaceName = $scope->getNamespace();
+            if ($namespaceName !== null) {
+                $newClassName = $namespaceName . '\\' . $className;
+                if ($this->reflectionProvider->hasClass($newClassName)) {
+                    return new FullyQualifiedObjectType($newClassName);
+                }
+            }
+        }
         // invalid type
         return new NonExistingObjectType($className);
     }
     /**
-     * @param Use_[]|GroupUse[] $uses
+     * @param array<Use_|GroupUse> $uses
      */
     private function matchAliasedObjectType(ObjectType $objectType, array $uses) : ?AliasedObjectType
     {
@@ -120,7 +109,7 @@ final class ObjectTypeSpecifier
         return null;
     }
     /**
-     * @param Use_[]|GroupUse[] $uses
+     * @param array<Use_|GroupUse> $uses
      * @return \Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType|\Rector\StaticTypeMapper\ValueObject\Type\ShortenedGenericObjectType|null
      */
     private function matchShortenedObjectType(ObjectType $objectType, array $uses)

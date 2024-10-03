@@ -7,6 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\TryCatch;
 use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
+use Rector\DeadCode\NodeAnalyzer\ExprUsedInNodeAnalyzer;
 use Rector\NodeManipulator\StmtsManipulator;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\Rector\AbstractRector;
@@ -15,8 +16,6 @@ use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @changelog https://wiki.php.net/rfc/non-capturing_catches
- *
  * @see \Rector\Tests\Php80\Rector\Catch_\RemoveUnusedVariableInCatchRector\RemoveUnusedVariableInCatchRectorTest
  */
 final class RemoveUnusedVariableInCatchRector extends AbstractRector implements MinPhpVersionInterface
@@ -31,10 +30,16 @@ final class RemoveUnusedVariableInCatchRector extends AbstractRector implements 
      * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
-    public function __construct(StmtsManipulator $stmtsManipulator, BetterNodeFinder $betterNodeFinder)
+    /**
+     * @readonly
+     * @var \Rector\DeadCode\NodeAnalyzer\ExprUsedInNodeAnalyzer
+     */
+    private $exprUsedInNodeAnalyzer;
+    public function __construct(StmtsManipulator $stmtsManipulator, BetterNodeFinder $betterNodeFinder, ExprUsedInNodeAnalyzer $exprUsedInNodeAnalyzer)
     {
         $this->stmtsManipulator = $stmtsManipulator;
         $this->betterNodeFinder = $betterNodeFinder;
+        $this->exprUsedInNodeAnalyzer = $exprUsedInNodeAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -89,8 +94,10 @@ CODE_SAMPLE
                 }
                 /** @var string $variableName */
                 $variableName = $this->getName($caughtVar);
-                $isVariableUsed = (bool) $this->betterNodeFinder->findVariableOfName($catch->stmts, $variableName);
-                if ($isVariableUsed) {
+                $isFoundInCatchStmts = (bool) $this->betterNodeFinder->findFirst($catch->stmts, function (Node $subNode) use($caughtVar) : bool {
+                    return $this->exprUsedInNodeAnalyzer->isUsed($subNode, $caughtVar);
+                });
+                if ($isFoundInCatchStmts) {
                     continue;
                 }
                 if ($this->stmtsManipulator->isVariableUsedInNextStmt($node, $key + 1, $variableName)) {

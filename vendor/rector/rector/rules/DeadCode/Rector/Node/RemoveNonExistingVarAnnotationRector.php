@@ -34,8 +34,6 @@ use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\DeadCode\Rector\Node\RemoveNonExistingVarAnnotationRector\RemoveNonExistingVarAnnotationRectorTest
- *
- * @changelog https://github.com/phpstan/phpstan/commit/d17e459fd9b45129c5deafe12bca56f30ea5ee99#diff-9f3541876405623b0d18631259763dc1
  */
 final class RemoveNonExistingVarAnnotationRector extends AbstractRector
 {
@@ -147,6 +145,9 @@ CODE_SAMPLE
             $comments = $node->getComments();
             if (isset($comments[1])) {
                 // skip edge case with double comment, as impossible to resolve by PHPStan doc parser
+                continue;
+            }
+            if ($this->stmtsManipulator->isVariableUsedInNextStmt($node, $key + 1, $variableName)) {
                 continue;
             }
             $phpDocInfo->removeByType(VarTagValueNode::class);

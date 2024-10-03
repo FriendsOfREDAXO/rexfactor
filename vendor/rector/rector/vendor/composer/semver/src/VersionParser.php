@@ -8,12 +8,12 @@
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
-namespace RectorPrefix202405\Composer\Semver;
+namespace RectorPrefix202410\Composer\Semver;
 
-use RectorPrefix202405\Composer\Semver\Constraint\ConstraintInterface;
-use RectorPrefix202405\Composer\Semver\Constraint\MatchAllConstraint;
-use RectorPrefix202405\Composer\Semver\Constraint\MultiConstraint;
-use RectorPrefix202405\Composer\Semver\Constraint\Constraint;
+use RectorPrefix202410\Composer\Semver\Constraint\ConstraintInterface;
+use RectorPrefix202410\Composer\Semver\Constraint\MatchAllConstraint;
+use RectorPrefix202410\Composer\Semver\Constraint\MultiConstraint;
+use RectorPrefix202410\Composer\Semver\Constraint\Constraint;
 /**
  * Version parser.
  *
@@ -72,10 +72,14 @@ class VersionParser
      * @param string $stability
      *
      * @return string
+     * @phpstan-return 'stable'|'RC'|'beta'|'alpha'|'dev'
      */
     public static function normalizeStability($stability)
     {
         $stability = \strtolower((string) $stability);
+        if (!\in_array($stability, array('stable', 'rc', 'beta', 'alpha', 'dev'), \true)) {
+            throw new \InvalidArgumentException('Invalid stability string "' . $stability . '", expected one of stable, RC, beta, alpha or dev');
+        }
         return $stability === 'rc' ? 'RC' : $stability;
     }
     /**

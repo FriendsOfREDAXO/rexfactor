@@ -3,10 +3,11 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Set;
 
+use Rector\Set\Contract\SetListInterface;
 /**
  * @api
  */
-final class SymfonySetList
+final class SymfonySetList implements SetListInterface
 {
     /**
      * @var string
@@ -116,6 +117,14 @@ final class SymfonySetList
      * @var string
      */
     public const SYMFONY_64 = __DIR__ . '/../../config/sets/symfony/symfony64.php';
+    /**
+     * @var string
+     */
+    public const SYMFONY_70 = __DIR__ . '/../../config/sets/symfony/symfony70.php';
+    /**
+     * @var string
+     */
+    public const SYMFONY_71 = __DIR__ . '/../../config/sets/symfony/symfony71.php';
     /**
      * @var string
      */

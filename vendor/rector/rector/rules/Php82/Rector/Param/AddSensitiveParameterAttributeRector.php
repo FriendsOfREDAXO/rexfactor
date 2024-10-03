@@ -15,7 +15,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202405\Webmozart\Assert\Assert;
+use RectorPrefix202410\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Php82\Rector\Param\AddSensitiveParameterAttributeRector\AddSensitiveParameterAttributeRectorTest
  */
@@ -78,7 +78,7 @@ class SomeClass
     }
 }
 CODE_SAMPLE
-, [\Rector\Php82\Rector\Param\AddSensitiveParameterAttributeRector::SENSITIVE_PARAMETERS => ['password']])]);
+, [self::SENSITIVE_PARAMETERS => ['password']])]);
     }
     public function provideMinPhpVersion() : int
     {

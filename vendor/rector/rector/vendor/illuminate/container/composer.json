@@ -14,8 +14,8 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "illuminate\/contracts": "^10.0",
+        "php": "^8.2",
+        "illuminate\/contracts": "^11.0",
         "psr\/container": "^1.1.1|^2.0.1"
     },
     "provide": {
@@ -23,12 +23,12 @@
     },
     "autoload": {
         "psr-4": {
-            "RectorPrefix202405\\Illuminate\\Container\\": ""
+            "RectorPrefix202410\\Illuminate\\Container\\": ""
         }
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "10.x-dev"
+            "dev-master": "11.x-dev"
         }
     },
     "config": {

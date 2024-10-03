@@ -8,14 +8,11 @@ use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Expr\Yield_;
-use PhpParser\Node\Expr\YieldFrom;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Function_;
-use PhpParser\Node\Stmt\Return_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
@@ -27,6 +24,7 @@ use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\Rector\AbstractScopeAwareRector;
+use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
 use Rector\ValueObject\PhpVersion;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
@@ -63,13 +61,19 @@ final class ReturnTypeFromStrictNewArrayRector extends AbstractScopeAwareRector 
      * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
     private $betterNodeFinder;
-    public function __construct(PhpDocTypeChanger $phpDocTypeChanger, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnTypeInferer $returnTypeInferer, PhpDocInfoFactory $phpDocInfoFactory, BetterNodeFinder $betterNodeFinder)
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
+     */
+    private $returnAnalyzer;
+    public function __construct(PhpDocTypeChanger $phpDocTypeChanger, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnTypeInferer $returnTypeInferer, PhpDocInfoFactory $phpDocInfoFactory, BetterNodeFinder $betterNodeFinder, ReturnAnalyzer $returnAnalyzer)
     {
         $this->phpDocTypeChanger = $phpDocTypeChanger;
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
         $this->returnTypeInferer = $returnTypeInferer;
         $this->phpDocInfoFactory = $phpDocInfoFactory;
         $this->betterNodeFinder = $betterNodeFinder;
+        $this->returnAnalyzer = $returnAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -102,10 +106,10 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [ClassMethod::class, Function_::class, Closure::class];
+        return [ClassMethod::class, Function_::class];
     }
     /**
-     * @param ClassMethod|Function_|Closure $node
+     * @param ClassMethod|Function_ $node
      */
     public function refactorWithScope(Node $node, Scope $scope) : ?Node
     {
@@ -117,20 +121,16 @@ CODE_SAMPLE
         if ($stmts === null) {
             return null;
         }
-        $variable = $this->matchArrayAssignedVariable($stmts);
-        if (!$variable instanceof Variable) {
+        $variables = $this->matchArrayAssignedVariable($stmts);
+        if ($variables === []) {
             return null;
         }
-        // 2. skip yields
-        if ($this->betterNodeFinder->hasInstancesOfInFunctionLikeScoped($node, [Yield_::class, YieldFrom::class])) {
+        $returns = $this->betterNodeFinder->findReturnsScoped($node);
+        if (!$this->returnAnalyzer->hasOnlyReturnWithExpr($node, $returns)) {
             return null;
         }
-        /** @var Return_[] $returns */
-        $returns = $this->betterNodeFinder->findInstancesOfInFunctionLikeScoped($node, Return_::class);
-        if ($returns === []) {
-            return null;
-        }
-        if ($this->isVariableOverriddenWithNonArray($node, $variable)) {
+        $variables = $this->matchVariableNotOverriddenByNonArray($node, $variables);
+        if ($variables === []) {
             return null;
         }
         if (\count($returns) > 1) {
@@ -139,6 +139,9 @@ CODE_SAMPLE
         }
         $onlyReturn = $returns[0];
         if (!$onlyReturn->expr instanceof Variable) {
+            return null;
+        }
+        if (!$this->nodeComparator->isNodeEqual($onlyReturn->expr, $variables)) {
             return null;
         }
         $returnType = $this->nodeTypeResolver->getNativeType($onlyReturn->expr);
@@ -170,7 +173,7 @@ CODE_SAMPLE
      */
     private function shouldSkip($node, Scope $scope) : bool
     {
-        if ($node->returnType !== null) {
+        if ($node->returnType instanceof Node) {
             return \true;
         }
         return $node instanceof ClassMethod && $this->classMethodReturnTypeOverrideGuard->shouldSkipClassMethod($node, $scope);
@@ -193,9 +196,11 @@ CODE_SAMPLE
         $this->phpDocTypeChanger->changeReturnType($node, $phpDocInfo, $narrowArrayType);
     }
     /**
-     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $functionLike
+     * @param Variable[] $variables
+     * @return Variable[]
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_ $functionLike
      */
-    private function isVariableOverriddenWithNonArray($functionLike, Variable $variable) : bool
+    private function matchVariableNotOverriddenByNonArray($functionLike, array $variables) : array
     {
         // is variable overriden?
         /** @var Assign[] $assigns */
@@ -204,24 +209,28 @@ CODE_SAMPLE
             if (!$assign->var instanceof Variable) {
                 continue;
             }
-            if (!$this->nodeNameResolver->areNamesEqual($assign->var, $variable)) {
-                continue;
-            }
-            if ($assign->expr instanceof Array_) {
-                continue;
-            }
-            $nativeType = $this->nodeTypeResolver->getNativeType($assign->expr);
-            if (!$nativeType->isArray()->yes()) {
-                return \true;
+            foreach ($variables as $key => $variable) {
+                if (!$this->nodeNameResolver->areNamesEqual($assign->var, $variable)) {
+                    continue;
+                }
+                if ($assign->expr instanceof Array_) {
+                    continue;
+                }
+                $nativeType = $this->nodeTypeResolver->getNativeType($assign->expr);
+                if (!$nativeType->isArray()->yes()) {
+                    unset($variables[$key]);
+                }
             }
         }
-        return \false;
+        return $variables;
     }
     /**
      * @param Stmt[] $stmts
+     * @return Variable[]
      */
-    private function matchArrayAssignedVariable(array $stmts) : ?\PhpParser\Node\Expr\Variable
+    private function matchArrayAssignedVariable(array $stmts) : array
     {
+        $variables = [];
         foreach ($stmts as $stmt) {
             if (!$stmt instanceof Expression) {
                 continue;
@@ -235,10 +244,10 @@ CODE_SAMPLE
             }
             $nativeType = $this->nodeTypeResolver->getNativeType($assign->expr);
             if ($nativeType->isArray()->yes()) {
-                return $assign->var;
+                $variables[] = $assign->var;
             }
         }
-        return null;
+        return $variables;
     }
     private function shouldAddReturnArrayDocType(ArrayType $arrayType) : bool
     {

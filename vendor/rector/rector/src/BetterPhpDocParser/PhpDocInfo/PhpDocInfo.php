@@ -5,7 +5,9 @@ namespace Rector\BetterPhpDocParser\PhpDocInfo;
 
 use PHPStan\PhpDocParser\Ast\ConstExpr\ConstFetchNode;
 use PHPStan\PhpDocParser\Ast\Node;
+use PHPStan\PhpDocParser\Ast\PhpDoc\ExtendsTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\GenericTagValueNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\ImplementsTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\InvalidTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\MethodTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
@@ -15,7 +17,6 @@ use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PropertyTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
-use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\VarTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type\ConstTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
@@ -30,6 +31,7 @@ use Rector\BetterPhpDocParser\PhpDocNodeFinder\PhpDocNodeByTypeFinder;
 use Rector\BetterPhpDocParser\ValueObject\Parser\BetterTokenIterator;
 use Rector\BetterPhpDocParser\ValueObject\PhpDocAttributeKey;
 use Rector\BetterPhpDocParser\ValueObject\Type\ShortenedIdentifierTypeNode;
+use Rector\Exception\ShouldNotHappenException;
 use Rector\PhpDocParser\PhpDocParser\PhpDocNodeTraverser;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 /**
@@ -70,7 +72,7 @@ final class PhpDocInfo
     /**
      * @var array<class-string<PhpDocTagValueNode>, string>
      */
-    private const TAGS_TYPES_TO_NAMES = [ReturnTagValueNode::class => '@return', ParamTagValueNode::class => '@param', VarTagValueNode::class => '@var', MethodTagValueNode::class => '@method', PropertyTagValueNode::class => '@property'];
+    private const TAGS_TYPES_TO_NAMES = [ReturnTagValueNode::class => '@return', ParamTagValueNode::class => '@param', VarTagValueNode::class => '@var', MethodTagValueNode::class => '@method', PropertyTagValueNode::class => '@property', ExtendsTagValueNode::class => '@extends', ImplementsTagValueNode::class => '@implements'];
     /**
      * @var bool
      */
@@ -242,11 +244,11 @@ final class PhpDocInfo
      * @template T of \PHPStan\PhpDocParser\Ast\Node
      * @param class-string<T> $typeToRemove
      */
-    public function removeByType(string $typeToRemove) : bool
+    public function removeByType(string $typeToRemove, ?string $name = null) : bool
     {
         $hasChanged = \false;
         $phpDocNodeTraverser = new PhpDocNodeTraverser();
-        $phpDocNodeTraverser->traverseWithCallable($this->phpDocNode, '', static function (Node $node) use($typeToRemove, &$hasChanged) : ?int {
+        $phpDocNodeTraverser->traverseWithCallable($this->phpDocNode, '', static function (Node $node) use($typeToRemove, &$hasChanged, $name) : ?int {
             if ($node instanceof PhpDocTagNode && $node->value instanceof $typeToRemove) {
                 // keep special annotation for tools
                 if (\strncmp($node->name, '@psalm-', \strlen('@psalm-')) === 0) {
@@ -254,6 +256,9 @@ final class PhpDocInfo
                 }
                 if (\strncmp($node->name, '@phpstan-', \strlen('@phpstan-')) === 0) {
                     return null;
+                }
+                if ($name !== null && $node->value instanceof VarTagValueNode && $node->value->variableName !== '$' . \ltrim($name, '$')) {
+                    return PhpDocNodeTraverser::DONT_TRAVERSE_CHILDREN;
                 }
                 $hasChanged = \true;
                 return PhpDocNodeTraverser::NODE_REMOVE;
@@ -294,7 +299,7 @@ final class PhpDocInfo
         }
         $name = $this->resolveNameForPhpDocTagValueNode($phpDocTagValueNode);
         if (!\is_string($name)) {
-            return;
+            throw new ShouldNotHappenException(\sprintf('Name could not be resolved for "%s" tag value node. Complete it to %s::TAGS_TYPES_TO_NAMES constant', \get_class($phpDocTagValueNode), self::class));
         }
         $phpDocTagNode = new PhpDocTagNode($name, $phpDocTagValueNode);
         $this->addPhpDocTagNode($phpDocTagNode);
@@ -353,22 +358,6 @@ final class PhpDocInfo
             $templateNames[] = $templateTagValueNode->name;
         }
         return $templateNames;
-    }
-    /**
-     * @return TemplateTagValueNode[]
-     */
-    public function getTemplateTagValueNodes() : array
-    {
-        return $this->phpDocNode->getTemplateTagValues();
-    }
-    /**
-     * @deprecated Change doc block and print directly in the node instead
-     * Should be handled by attributes of phpdoc node - if stard_and_end is missing in one of nodes, it has been changed
-     *
-     * @api
-     */
-    public function markAsChanged() : void
-    {
     }
     public function makeMultiLined() : void
     {

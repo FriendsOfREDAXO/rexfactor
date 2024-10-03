@@ -9,6 +9,7 @@ use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Declare_;
 use PhpParser\Node\Stmt\DeclareDeclare;
+use PhpParser\Node\Stmt\InlineHTML;
 use PhpParser\Node\Stmt\Nop;
 use Rector\ChangesReporting\ValueObject\RectorWithLineChange;
 use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
@@ -48,8 +49,8 @@ CODE_SAMPLE
 )]);
     }
     /**
-     * @param Node[] $nodes
-     * @return Node[]|null
+     * @param Stmt[] $nodes
+     * @return Stmt[]|null
      */
     public function beforeTraverse(array $nodes) : ?array
     {
@@ -58,15 +59,17 @@ CODE_SAMPLE
         if ($this->skipper->shouldSkipElementAndFilePath(self::class, $filePath)) {
             return null;
         }
-        $newStmts = $this->file->getNewStmts();
-        if ($newStmts === []) {
+        if ($nodes === []) {
             return null;
         }
-        $rootStmt = \current($newStmts);
+        $rootStmt = \current($nodes);
         $stmt = $rootStmt;
         if ($rootStmt instanceof FileWithoutNamespace) {
             $currentStmt = \current($rootStmt->stmts);
             if (!$currentStmt instanceof Stmt) {
+                return null;
+            }
+            if ($currentStmt instanceof InlineHTML) {
                 return null;
             }
             $nodes = $rootStmt->stmts;

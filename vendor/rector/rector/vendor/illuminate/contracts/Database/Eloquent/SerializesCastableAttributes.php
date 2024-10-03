@@ -1,8 +1,8 @@
 <?php
 
-namespace RectorPrefix202405\Illuminate\Contracts\Database\Eloquent;
+namespace RectorPrefix202410\Illuminate\Contracts\Database\Eloquent;
 
-use RectorPrefix202405\Illuminate\Database\Eloquent\Model;
+use RectorPrefix202410\Illuminate\Database\Eloquent\Model;
 interface SerializesCastableAttributes
 {
     /**
@@ -11,7 +11,7 @@ interface SerializesCastableAttributes
      * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $key
      * @param  mixed  $value
-     * @param  array  $attributes
+     * @param  array<string, mixed>  $attributes
      * @return mixed
      */
     public function serialize(Model $model, string $key, $value, array $attributes);

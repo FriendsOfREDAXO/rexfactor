@@ -5,9 +5,7 @@ namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
 use PhpParser\Node;
 use PhpParser\Node\ComplexType;
-use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
@@ -16,13 +14,16 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\UnionType as PhpParserUnionType;
-use PhpParser\NodeTraverser;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\UnionType;
 use Rector\Php\PhpVersionProvider;
+use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\Rector\AbstractScopeAwareRector;
+use Rector\StaticTypeMapper\StaticTypeMapper;
+use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\TypeDeclaration\NodeAnalyzer\TypeNodeUnwrapper;
 use Rector\TypeDeclaration\TypeAnalyzer\ReturnStrictTypeAnalyzer;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
@@ -53,6 +54,11 @@ final class ReturnTypeFromStrictTypedCallRector extends AbstractScopeAwareRector
     private $returnTypeInferer;
     /**
      * @readonly
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    /**
+     * @readonly
      * @var \Rector\Php\PhpVersionProvider
      */
     private $phpVersionProvider;
@@ -61,13 +67,26 @@ final class ReturnTypeFromStrictTypedCallRector extends AbstractScopeAwareRector
      * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
     private $classMethodReturnTypeOverrideGuard;
-    public function __construct(TypeNodeUnwrapper $typeNodeUnwrapper, ReturnStrictTypeAnalyzer $returnStrictTypeAnalyzer, ReturnTypeInferer $returnTypeInferer, PhpVersionProvider $phpVersionProvider, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard)
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
+     */
+    private $returnAnalyzer;
+    /**
+     * @readonly
+     * @var \Rector\StaticTypeMapper\StaticTypeMapper
+     */
+    private $staticTypeMapper;
+    public function __construct(TypeNodeUnwrapper $typeNodeUnwrapper, ReturnStrictTypeAnalyzer $returnStrictTypeAnalyzer, ReturnTypeInferer $returnTypeInferer, BetterNodeFinder $betterNodeFinder, PhpVersionProvider $phpVersionProvider, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnAnalyzer $returnAnalyzer, StaticTypeMapper $staticTypeMapper)
     {
         $this->typeNodeUnwrapper = $typeNodeUnwrapper;
         $this->returnStrictTypeAnalyzer = $returnStrictTypeAnalyzer;
         $this->returnTypeInferer = $returnTypeInferer;
+        $this->betterNodeFinder = $betterNodeFinder;
         $this->phpVersionProvider = $phpVersionProvider;
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
+        $this->returnAnalyzer = $returnAnalyzer;
+        $this->staticTypeMapper = $staticTypeMapper;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -106,26 +125,33 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [ClassMethod::class, Function_::class, Closure::class];
+        return [ClassMethod::class, Function_::class];
     }
     public function provideMinPhpVersion() : int
     {
         return PhpVersionFeature::SCALAR_TYPES;
     }
     /**
-     * @param ClassMethod|Function_|Closure $node
+     * @param ClassMethod|Function_ $node
      */
     public function refactorWithScope(Node $node, Scope $scope) : ?Node
     {
+        // already filled → skip
+        if ($node->returnType instanceof Node) {
+            return null;
+        }
         if ($node->stmts === null) {
             return null;
         }
         if ($this->shouldSkip($node, $scope)) {
             return null;
         }
-        $currentScopeReturns = $this->findCurrentScopeReturns($node);
+        $currentScopeReturns = $this->betterNodeFinder->findReturnsScoped($node);
         $returnedStrictTypes = $this->returnStrictTypeAnalyzer->collectStrictReturnTypes($currentScopeReturns, $scope);
         if ($returnedStrictTypes === []) {
+            return null;
+        }
+        if (!$this->returnAnalyzer->hasOnlyReturnWithExpr($node, $currentScopeReturns)) {
             return null;
         }
         if (\count($returnedStrictTypes) === 1) {
@@ -134,7 +160,14 @@ CODE_SAMPLE
         if ($this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::UNION_TYPES)) {
             /** @var PhpParserUnionType[] $returnedStrictTypes */
             $unwrappedTypes = $this->typeNodeUnwrapper->unwrapNullableUnionTypes($returnedStrictTypes);
-            $node->returnType = new PhpParserUnionType($unwrappedTypes);
+            $unionType = new PhpParserUnionType($unwrappedTypes);
+            $type = $this->staticTypeMapper->mapPhpParserNodePHPStanType($unionType);
+            $returnType = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($type, TypeKind::RETURN);
+            // verify type transformed into node
+            if (!$returnType instanceof Node) {
+                return null;
+            }
+            $node->returnType = $unionType;
             return $node;
         }
         return null;
@@ -170,7 +203,7 @@ CODE_SAMPLE
      */
     private function shouldSkip($node, Scope $scope) : bool
     {
-        if ($node->returnType !== null) {
+        if ($node->returnType instanceof Node) {
             return \true;
         }
         if ($node instanceof ClassMethod && $this->classMethodReturnTypeOverrideGuard->shouldSkipClassMethod($node, $scope)) {
@@ -196,31 +229,5 @@ CODE_SAMPLE
         $returnType = $resolvedType instanceof ObjectType ? new FullyQualified($resolvedType->getClassName()) : $returnedStrictTypeNode;
         $functionLike->returnType = $returnType;
         return $functionLike;
-    }
-    /**
-     * @return Return_[]
-     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $node
-     */
-    private function findCurrentScopeReturns($node) : array
-    {
-        $currentScopeReturns = [];
-        if ($node->stmts === null) {
-            return [];
-        }
-        $this->traverseNodesWithCallable($node->stmts, static function (Node $node) use(&$currentScopeReturns) : ?int {
-            // skip scope nesting
-            if ($node instanceof FunctionLike) {
-                return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
-            }
-            if (!$node instanceof Return_) {
-                return null;
-            }
-            if (!$node->expr instanceof Expr) {
-                return null;
-            }
-            $currentScopeReturns[] = $node;
-            return null;
-        });
-        return $currentScopeReturns;
     }
 }

@@ -3,14 +3,13 @@
 declare (strict_types=1);
 namespace Rector\ChangesReporting\Output;
 
-use RectorPrefix202405\Nette\Utils\Strings;
-use Rector\ChangesReporting\Annotation\RectorsChangelogResolver;
+use RectorPrefix202410\Nette\Utils\Strings;
 use Rector\ChangesReporting\Contract\Output\OutputFormatterInterface;
 use Rector\ValueObject\Configuration;
 use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\ProcessResult;
 use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202405\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202410\Symfony\Component\Console\Style\SymfonyStyle;
 final class ConsoleOutputFormatter implements OutputFormatterInterface
 {
     /**
@@ -18,11 +17,6 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
      * @var \Symfony\Component\Console\Style\SymfonyStyle
      */
     private $symfonyStyle;
-    /**
-     * @readonly
-     * @var \Rector\ChangesReporting\Annotation\RectorsChangelogResolver
-     */
-    private $rectorsChangelogResolver;
     /**
      * @var string
      */
@@ -32,17 +26,16 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
      * @see https://regex101.com/r/q8I66g/1
      */
     private const ON_LINE_REGEX = '# on line #';
-    public function __construct(SymfonyStyle $symfonyStyle, RectorsChangelogResolver $rectorsChangelogResolver)
+    public function __construct(SymfonyStyle $symfonyStyle)
     {
         $this->symfonyStyle = $symfonyStyle;
-        $this->rectorsChangelogResolver = $rectorsChangelogResolver;
     }
     public function report(ProcessResult $processResult, Configuration $configuration) : void
     {
         if ($configuration->shouldShowDiffs()) {
-            $this->reportFileDiffs($processResult->getFileDiffs());
+            $this->reportFileDiffs($processResult->getFileDiffs(), $configuration->isReportingWithRealPath());
         }
-        $this->reportErrors($processResult->getSystemErrors());
+        $this->reportErrors($processResult->getSystemErrors(), $configuration->isReportingWithRealPath());
         if ($processResult->getSystemErrors() !== []) {
             return;
         }
@@ -60,7 +53,7 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
     /**
      * @param FileDiff[] $fileDiffs
      */
-    private function reportFileDiffs(array $fileDiffs) : void
+    private function reportFileDiffs(array $fileDiffs, bool $absoluteFilePath) : void
     {
         if (\count($fileDiffs) <= 0) {
             return;
@@ -71,20 +64,19 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
         $this->symfonyStyle->title($message);
         $i = 0;
         foreach ($fileDiffs as $fileDiff) {
-            $relativeFilePath = $fileDiff->getRelativeFilePath();
+            $filePath = $absoluteFilePath ? $fileDiff->getAbsoluteFilePath() ?? '' : $fileDiff->getRelativeFilePath();
             // append line number for faster file jump in diff
             $firstLineNumber = $fileDiff->getFirstLineNumber();
             if ($firstLineNumber !== null) {
-                $relativeFilePath .= ':' . $firstLineNumber;
+                $filePath .= ':' . $firstLineNumber;
             }
-            $message = \sprintf('<options=bold>%d) %s</>', ++$i, $relativeFilePath);
+            $message = \sprintf('<options=bold>%d) %s</>', ++$i, $filePath);
             $this->symfonyStyle->writeln($message);
             $this->symfonyStyle->newLine();
             $this->symfonyStyle->writeln($fileDiff->getDiffConsoleFormatted());
-            $rectorsChangelogsLines = $this->createRectorChangelogLines($fileDiff);
             if ($fileDiff->getRectorChanges() !== []) {
                 $this->symfonyStyle->writeln('<options=underscore>Applied rules:</>');
-                $this->symfonyStyle->listing($rectorsChangelogsLines);
+                $this->symfonyStyle->listing($fileDiff->getRectorShortClasses());
                 $this->symfonyStyle->newLine();
             }
         }
@@ -92,12 +84,13 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
     /**
      * @param SystemError[] $errors
      */
-    private function reportErrors(array $errors) : void
+    private function reportErrors(array $errors, bool $absoluteFilePath) : void
     {
         foreach ($errors as $error) {
             $errorMessage = $error->getMessage();
             $errorMessage = $this->normalizePathsToRelativeWithLine($errorMessage);
-            $message = \sprintf('Could not process %s%s, due to: %s"%s".', $error->getFile() !== null ? '"' . $error->getFile() . '" file' : 'some files', $error->getRectorClass() !== null ? ' by "' . $error->getRectorClass() . '"' : '', \PHP_EOL, $errorMessage);
+            $filePath = $absoluteFilePath ? $error->getAbsoluteFilePath() : $error->getRelativeFilePath();
+            $message = \sprintf('Could not process %s%s, due to: %s"%s".', $filePath !== null ? '"' . $filePath . '" file' : 'some files', $error->getRectorClass() !== null ? ' by "' . $error->getRectorClass() . '"' : '', \PHP_EOL, $errorMessage);
             if ($error->getLine() !== null) {
                 $message .= ' On line: ' . $error->getLine();
             }
@@ -116,19 +109,6 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
         if ($changeCount === 0) {
             return 'Rector is done!';
         }
-        return \sprintf('%d file%s %s by Rector', $changeCount, $changeCount > 1 ? 's' : '', $configuration->isDryRun() ? 'would have changed (dry-run)' : ($changeCount === 1 ? 'has' : 'have') . ' been changed');
-    }
-    /**
-     * @return string[]
-     */
-    private function createRectorChangelogLines(FileDiff $fileDiff) : array
-    {
-        $rectorsChangelogs = $this->rectorsChangelogResolver->resolveIncludingMissing($fileDiff->getRectorClasses());
-        $rectorsChangelogsLines = [];
-        foreach ($rectorsChangelogs as $rectorClass => $changelog) {
-            $rectorShortClass = (string) Strings::after($rectorClass, '\\', -1);
-            $rectorsChangelogsLines[] = $changelog === null ? $rectorShortClass : $rectorShortClass . ' (' . $changelog . ')';
-        }
-        return $rectorsChangelogsLines;
+        return \sprintf('%d file%s %s by Rector', $changeCount, $changeCount > 1 ? 's' : '', $configuration->isDryRun() ? 'would have been changed (dry-run)' : ($changeCount === 1 ? 'has' : 'have') . ' been changed');
     }
 }

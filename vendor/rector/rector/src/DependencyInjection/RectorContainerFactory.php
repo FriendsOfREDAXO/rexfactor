@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\DependencyInjection;
 
-use RectorPrefix202405\Illuminate\Container\Container;
+use RectorPrefix202410\Illuminate\Container\Container;
 use Rector\Autoloading\BootstrapFilesIncluder;
 use Rector\Caching\Detector\ChangedFilesDetector;
 use Rector\ValueObject\Bootstrap\BootstrapConfigs;
@@ -29,11 +29,11 @@ final class RectorContainerFactory
     private function createFromConfigs(array $configFiles) : Container
     {
         $lazyContainerFactory = new \Rector\DependencyInjection\LazyContainerFactory();
-        $container = $lazyContainerFactory->create();
+        $rectorConfig = $lazyContainerFactory->create();
         foreach ($configFiles as $configFile) {
-            $container->import($configFile);
+            $rectorConfig->import($configFile);
         }
-        $container->boot();
-        return $container;
+        $rectorConfig->boot();
+        return $rectorConfig;
     }
 }

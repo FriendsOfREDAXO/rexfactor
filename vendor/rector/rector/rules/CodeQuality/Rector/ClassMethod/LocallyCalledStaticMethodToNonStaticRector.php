@@ -4,6 +4,8 @@ declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ArrowFunction;
+use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
@@ -117,11 +119,38 @@ CODE_SAMPLE
         }
         // replace all the calls
         $classMethodName = $this->getName($classMethod);
-        $this->traverseNodesWithCallable($class, function (Node $node) use($classMethodName) : ?MethodCall {
+        $className = $this->getName($class) ?? '';
+        $shouldSkip = \false;
+        $this->traverseNodesWithCallable($class->getMethods(), function (Node $node) use(&$shouldSkip, $classMethodName, $className) : ?int {
+            if (($node instanceof Closure || $node instanceof ArrowFunction) && $node->static) {
+                $this->traverseNodesWithCallable($node->getStmts(), function (Node $subNode) use(&$shouldSkip, $classMethodName, $className) : ?int {
+                    if (!$subNode instanceof StaticCall) {
+                        return null;
+                    }
+                    if (!$this->isNames($subNode->class, ['self', 'static', $className])) {
+                        return null;
+                    }
+                    if (!$this->isName($subNode->name, $classMethodName)) {
+                        return null;
+                    }
+                    $shouldSkip = \true;
+                    return NodeTraverser::STOP_TRAVERSAL;
+                });
+                if ($shouldSkip) {
+                    return NodeTraverser::STOP_TRAVERSAL;
+                }
+                return null;
+            }
+            return null;
+        });
+        if ($shouldSkip) {
+            return null;
+        }
+        $this->traverseNodesWithCallable($class->getMethods(), function (Node $node) use($classMethodName, $className) : ?MethodCall {
             if (!$node instanceof StaticCall) {
                 return null;
             }
-            if (!$this->isNames($node->class, ['self', 'static'])) {
+            if (!$this->isNames($node->class, ['self', 'static', $className])) {
                 return null;
             }
             if (!$this->isName($node->name, $classMethodName)) {
@@ -139,6 +168,7 @@ CODE_SAMPLE
      */
     private function isClassMethodCalledInAnotherStaticClassMethod(Class_ $class, ClassMethod $classMethod) : bool
     {
+        $currentClassNamespacedName = (string) $this->getName($class);
         $currentClassMethodName = $this->getName($classMethod);
         $isInsideStaticClassMethod = \false;
         // check if called stati call somewhere in class, but only in static methods
@@ -147,11 +177,11 @@ CODE_SAMPLE
             if (!$checkedClassMethod->isStatic()) {
                 continue;
             }
-            $this->traverseNodesWithCallable($checkedClassMethod, function (Node $node) use($currentClassMethodName, &$isInsideStaticClassMethod) : ?int {
+            $this->traverseNodesWithCallable($checkedClassMethod, function (Node $node) use($currentClassNamespacedName, $currentClassMethodName, &$isInsideStaticClassMethod) : ?int {
                 if (!$node instanceof StaticCall) {
                     return null;
                 }
-                if (!$this->isNames($node->class, ['self', 'static'])) {
+                if (!$this->isNames($node->class, ['self', 'static', $currentClassNamespacedName])) {
                     return null;
                 }
                 if (!$this->isName($node->name, $currentClassMethodName)) {

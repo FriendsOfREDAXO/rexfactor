@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
@@ -165,8 +165,7 @@ CODE_SAMPLE
         if (!$dataProviderClassMethod instanceof ClassMethod) {
             return new MixedType();
         }
-        /** @var Return_[] $returns */
-        $returns = $this->betterNodeFinder->findInstancesOfInFunctionLikeScoped($dataProviderClassMethod, Return_::class);
+        $returns = $this->betterNodeFinder->findReturnsScoped($dataProviderClassMethod);
         if ($returns !== []) {
             return $this->resolveReturnStaticArrayTypeByParameterPosition($returns, $parameterPosition);
         }
@@ -306,6 +305,9 @@ CODE_SAMPLE
         $hasChanged = \false;
         foreach ($classMethod->getParams() as $parameterPosition => $param) {
             if ($param->type instanceof Node) {
+                continue;
+            }
+            if ($param->variadic) {
                 continue;
             }
             $paramTypes = [];

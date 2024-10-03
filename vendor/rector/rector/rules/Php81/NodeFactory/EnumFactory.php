@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Php81\NodeFactory;
 
-use RectorPrefix202405\Nette\Utils\Strings;
+use RectorPrefix202410\Nette\Utils\Strings;
 use PhpParser\BuilderFactory;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
@@ -15,7 +15,6 @@ use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Enum_;
 use PhpParser\Node\Stmt\EnumCase;
-use PhpParser\Node\Stmt\Return_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\MethodTagValueNode;
 use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocTagNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
@@ -142,8 +141,7 @@ final class EnumFactory
         if (!$classMethod instanceof ClassMethod) {
             return [];
         }
-        /** @var Return_[] $returns */
-        $returns = $this->betterNodeFinder->findInstancesOfInFunctionLikeScoped($classMethod, Return_::class);
+        $returns = $this->betterNodeFinder->findReturnsScoped($classMethod);
         /** @var array<int|string, mixed> $mapping */
         $mapping = [];
         foreach ($returns as $return) {

@@ -4,13 +4,18 @@ declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Return_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\Type;
+use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
+use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\Rector\AbstractScopeAwareRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
-use Rector\TypeDeclaration\TypeAnalyzer\StrictReturnClassConstReturnTypeAnalyzer;
+use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\ValueObject\PhpVersion;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
@@ -23,11 +28,6 @@ final class ReturnTypeFromStrictConstantReturnRector extends AbstractScopeAwareR
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeAnalyzer\StrictReturnClassConstReturnTypeAnalyzer
-     */
-    private $strictReturnClassConstReturnTypeAnalyzer;
-    /**
-     * @readonly
      * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
     private $classMethodReturnTypeOverrideGuard;
@@ -36,11 +36,28 @@ final class ReturnTypeFromStrictConstantReturnRector extends AbstractScopeAwareR
      * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
     private $staticTypeMapper;
-    public function __construct(StrictReturnClassConstReturnTypeAnalyzer $strictReturnClassConstReturnTypeAnalyzer, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, StaticTypeMapper $staticTypeMapper)
+    /**
+     * @readonly
+     * @var \Rector\PhpParser\Node\BetterNodeFinder
+     */
+    private $betterNodeFinder;
+    /**
+     * @readonly
+     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
+     */
+    private $typeFactory;
+    /**
+     * @readonly
+     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
+     */
+    private $returnAnalyzer;
+    public function __construct(ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, StaticTypeMapper $staticTypeMapper, BetterNodeFinder $betterNodeFinder, TypeFactory $typeFactory, ReturnAnalyzer $returnAnalyzer)
     {
-        $this->strictReturnClassConstReturnTypeAnalyzer = $strictReturnClassConstReturnTypeAnalyzer;
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
         $this->staticTypeMapper = $staticTypeMapper;
+        $this->betterNodeFinder = $betterNodeFinder;
+        $this->typeFactory = $typeFactory;
+        $this->returnAnalyzer = $returnAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -83,10 +100,14 @@ CODE_SAMPLE
         if ($node->returnType instanceof Node) {
             return null;
         }
+        $returns = $this->betterNodeFinder->findReturnsScoped($node);
+        if (!$this->returnAnalyzer->hasOnlyReturnWithExpr($node, $returns)) {
+            return null;
+        }
         if ($this->classMethodReturnTypeOverrideGuard->shouldSkipClassMethod($node, $scope)) {
             return null;
         }
-        $matchedType = $this->strictReturnClassConstReturnTypeAnalyzer->matchAlwaysReturnConstFetch($node);
+        $matchedType = $this->matchAlwaysReturnConstFetch($returns);
         if (!$matchedType instanceof Type) {
             return null;
         }
@@ -103,5 +124,19 @@ CODE_SAMPLE
     public function provideMinPhpVersion() : int
     {
         return PhpVersion::PHP_70;
+    }
+    /**
+     * @param Return_[] $returns
+     */
+    private function matchAlwaysReturnConstFetch(array $returns) : ?Type
+    {
+        $classConstFetchTypes = [];
+        foreach ($returns as $return) {
+            if (!$return->expr instanceof ClassConstFetch && !$return->expr instanceof ConstFetch) {
+                return null;
+            }
+            $classConstFetchTypes[] = $this->nodeTypeResolver->getType($return->expr);
+        }
+        return $this->typeFactory->createMixedPassedOrUnionType($classConstFetchTypes);
     }
 }

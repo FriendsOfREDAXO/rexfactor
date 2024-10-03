@@ -7,8 +7,8 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\Property;
+use PHPStan\PhpDocParser\Ast\PhpDoc\VarTagValueNode;
 use PHPStan\Reflection\ClassReflection;
-use PHPStan\Type\ObjectType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Naming\Naming\PropertyNaming;
@@ -75,7 +75,6 @@ final class MatchPropertyTypeExpectedNameResolver
         if (!$expectedName instanceof ExpectedName) {
             return null;
         }
-        $propertyName = $this->nodeNameResolver->getName($property);
         // skip if already has suffix
         if (\substr_compare($propertyName, $expectedName->getName(), -\strlen($expectedName->getName())) === 0 || \substr_compare($propertyName, \ucfirst($expectedName->getName()), -\strlen(\ucfirst($expectedName->getName()))) === 0) {
             return null;
@@ -84,23 +83,15 @@ final class MatchPropertyTypeExpectedNameResolver
     }
     private function resolveExpectedName(Property $property) : ?ExpectedName
     {
-        $phpDocInfo = $this->phpDocInfoFactory->createFromNode($property);
-        $isPhpDocInfo = $phpDocInfo instanceof PhpDocInfo;
         // property type first
         if ($property->type instanceof Node) {
             $propertyType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($property->type);
-            // not has docblock, use property type
-            if (!$isPhpDocInfo) {
-                return $this->propertyNaming->getExpectedNameFromType($propertyType);
-            }
-            // @var type is ObjectType, use property type
-            $varType = $phpDocInfo->getVarType();
-            if ($varType instanceof ObjectType) {
-                return $this->propertyNaming->getExpectedNameFromType($propertyType);
-            }
+            return $this->propertyNaming->getExpectedNameFromType($propertyType);
         }
         // fallback to docblock
-        if ($isPhpDocInfo) {
+        $phpDocInfo = $this->phpDocInfoFactory->createFromNode($property);
+        $hasVarTag = $phpDocInfo instanceof PhpDocInfo && $phpDocInfo->getVarTagValueNode() instanceof VarTagValueNode;
+        if ($hasVarTag) {
             return $this->propertyNaming->getExpectedNameFromType($phpDocInfo->getVarType());
         }
         return null;

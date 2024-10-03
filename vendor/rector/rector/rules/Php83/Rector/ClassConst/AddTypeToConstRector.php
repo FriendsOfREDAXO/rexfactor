@@ -8,6 +8,7 @@ use PhpParser\Node\Const_;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\BinaryOp\Concat;
+use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\UnaryMinus;
 use PhpParser\Node\Expr\UnaryPlus;
@@ -48,7 +49,7 @@ final class AddTypeToConstRector extends AbstractRector implements MinPhpVersion
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Add type to constants', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Add type to constants based on their value', [new CodeSample(<<<'CODE_SAMPLE'
 final class SomeClass
 {
     public const TYPE = 'some_type';
@@ -85,7 +86,7 @@ CODE_SAMPLE
         $parentClassReflections = $this->getParentReflections($className);
         $hasChanged = \false;
         foreach ($classConsts as $classConst) {
-            $valueType = null;
+            $valueTypes = [];
             // If a type is set, skip
             if ($classConst->type !== null) {
                 continue;
@@ -97,9 +98,20 @@ CODE_SAMPLE
                 if ($this->canBeInherited($classConst, $node)) {
                     continue;
                 }
-                $valueType = $this->findValueType($constNode->value);
+                $valueTypes[] = $this->findValueType($constNode->value);
             }
-            if (!($valueType ?? null) instanceof Identifier) {
+            if ($valueTypes === []) {
+                continue;
+            }
+            if (\count($valueTypes) > 1) {
+                $valueTypes = \array_unique($valueTypes, \SORT_REGULAR);
+            }
+            // once more verify after uniquate
+            if (\count($valueTypes) > 1) {
+                continue;
+            }
+            $valueType = \current($valueTypes);
+            if (!$valueType instanceof Identifier) {
                 continue;
             }
             $classConst->type = $valueType;
@@ -141,8 +153,8 @@ CODE_SAMPLE
         if ($expr instanceof DNumber) {
             return new Identifier('float');
         }
-        if ($expr instanceof ConstFetch) {
-            if ($expr->name->toLowerString() === 'null') {
+        if ($expr instanceof ConstFetch || $expr instanceof ClassConstFetch) {
+            if ($expr instanceof ConstFetch && $expr->name->toLowerString() === 'null') {
                 return new Identifier('null');
             }
             $type = $this->nodeTypeResolver->getNativeType($expr);

@@ -8,12 +8,12 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202405\Symfony\Component\Console\Completion;
+namespace RectorPrefix202410\Symfony\Component\Console\Completion;
 
-use RectorPrefix202405\Symfony\Component\Console\Exception\RuntimeException;
-use RectorPrefix202405\Symfony\Component\Console\Input\ArgvInput;
-use RectorPrefix202405\Symfony\Component\Console\Input\InputDefinition;
-use RectorPrefix202405\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202410\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202410\Symfony\Component\Console\Input\ArgvInput;
+use RectorPrefix202410\Symfony\Component\Console\Input\InputDefinition;
+use RectorPrefix202410\Symfony\Component\Console\Input\InputOption;
 /**
  * An input specialized for shell completion.
  *
@@ -62,7 +62,7 @@ final class CompletionInput extends ArgvInput
      * Create an input based on an COMP_WORDS token list.
      *
      * @param string[] $tokens       the set of split tokens (e.g. COMP_WORDS or argv)
-     * @param          $currentIndex the index of the cursor (e.g. COMP_CWORD)
+     * @param int      $currentIndex the index of the cursor (e.g. COMP_CWORD)
      */
     public static function fromTokens(array $tokens, int $currentIndex) : self
     {
