@@ -2,8 +2,8 @@
     "require": {
         "php": ">=7.4",
         "rector/rector": "1.2.6",
-        "friendsofphp/php-cs-fixer": "3.38.2",
-        "redaxo/php-cs-fixer-config": "^1.0"
+        "friendsofphp/php-cs-fixer": "3.64.0",
+        "redaxo/php-cs-fixer-config": "^2.0"
     },
     "config": {
         "platform": {
