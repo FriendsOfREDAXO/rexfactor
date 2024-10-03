@@ -29,7 +29,7 @@ page:
 
 requires:
     php:
-        version: '>=7.4, <8.4'
+        version: '>=7.4, <8.5'
     redaxo: '^5.14'
 
 installer_ignore:
