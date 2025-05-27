@@ -36,6 +36,16 @@ final class MethodChainingIndentationFixer extends AbstractFixer implements Whit
         );
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * Must run after NoSpaceAroundDoubleColonFixer.
+     */
+    public function getPriority(): int
+    {
+        return 0;
+    }
+
     public function isCandidate(Tokens $tokens): bool
     {
         return $tokens->isAnyTokenKindsFound(Token::getObjectOperatorKinds());
@@ -51,8 +61,12 @@ final class MethodChainingIndentationFixer extends AbstractFixer implements Whit
             }
 
             $endParenthesisIndex = $tokens->getNextTokenOfKind($index, ['(', ';', ',', [T_CLOSE_TAG]]);
+            $previousEndParenthesisIndex = $tokens->getPrevTokenOfKind($index, [')']);
 
-            if (null === $endParenthesisIndex || !$tokens[$endParenthesisIndex]->equals('(')) {
+            if (
+                null === $endParenthesisIndex
+                || !$tokens[$endParenthesisIndex]->equals('(') && null === $previousEndParenthesisIndex
+            ) {
                 continue;
             }
 
@@ -78,6 +92,10 @@ final class MethodChainingIndentationFixer extends AbstractFixer implements Whit
 
             if ($currentIndent !== $expectedIndent) {
                 $tokens[$index - 1] = new Token([T_WHITESPACE, $lineEnding.$expectedIndent]);
+            }
+
+            if (!$tokens[$endParenthesisIndex]->equals('(')) {
+                continue;
             }
 
             $endParenthesisIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $endParenthesisIndex);

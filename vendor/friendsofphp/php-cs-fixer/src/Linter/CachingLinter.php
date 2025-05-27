@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Linter;
 
+use PhpCsFixer\Hasher;
+
 /**
  * @author Dariusz Rumiński <dariusz.ruminski@gmail.com>
  *
@@ -40,23 +42,15 @@ final class CachingLinter implements LinterInterface
 
     public function lintFile(string $path): LintingResultInterface
     {
-        $checksum = md5(file_get_contents($path));
+        $checksum = Hasher::calculate(file_get_contents($path));
 
-        if (!isset($this->cache[$checksum])) {
-            $this->cache[$checksum] = $this->sublinter->lintFile($path);
-        }
-
-        return $this->cache[$checksum];
+        return $this->cache[$checksum] ??= $this->sublinter->lintFile($path);
     }
 
     public function lintSource(string $source): LintingResultInterface
     {
-        $checksum = md5($source);
+        $checksum = Hasher::calculate($source);
 
-        if (!isset($this->cache[$checksum])) {
-            $this->cache[$checksum] = $this->sublinter->lintSource($source);
-        }
-
-        return $this->cache[$checksum];
+        return $this->cache[$checksum] ??= $this->sublinter->lintSource($source);
     }
 }

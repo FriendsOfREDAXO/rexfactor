@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Console\Command;
 
+use PhpCsFixer\Console\Application;
 use PhpCsFixer\Console\SelfUpdate\NewVersionCheckerInterface;
 use PhpCsFixer\PharCheckerInterface;
 use PhpCsFixer\Preg;
@@ -81,9 +82,9 @@ final class SelfUpdateCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity() && $output instanceof ConsoleOutputInterface) {
+        if ($output instanceof ConsoleOutputInterface) {
             $stdErr = $output->getErrorOutput();
-            $stdErr->writeln($this->getApplication()->getLongVersion());
+            $stdErr->writeln(Application::getAboutWithRuntime(true));
         }
 
         if (!$this->toolInfo->isInstalledAsPhar()) {
@@ -100,7 +101,7 @@ final class SelfUpdateCommand extends Command
             $latestVersion = $this->versionChecker->getLatestVersion();
             $latestVersionOfCurrentMajor = $this->versionChecker->getLatestVersionOfMajor($currentMajor);
         } catch (\Exception $exception) {
-            $output->writeln(sprintf(
+            $output->writeln(\sprintf(
                 '<error>Unable to determine newest version: %s</error>',
                 $exception->getMessage()
             ));
@@ -120,8 +121,8 @@ final class SelfUpdateCommand extends Command
             0 !== $this->versionChecker->compareVersions($latestVersionOfCurrentMajor, $latestVersion)
             && true !== $input->getOption('force')
         ) {
-            $output->writeln(sprintf('<info>A new major version of PHP CS Fixer is available</info> (<comment>%s</comment>)', $latestVersion));
-            $output->writeln(sprintf('<info>Before upgrading please read</info> https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/blob/%s/UPGRADE-v%s.md', $latestVersion, $currentMajor + 1));
+            $output->writeln(\sprintf('<info>A new major version of PHP CS Fixer is available</info> (<comment>%s</comment>)', $latestVersion));
+            $output->writeln(\sprintf('<info>Before upgrading please read</info> https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/blob/%s/UPGRADE-v%s.md', $latestVersion, $currentMajor + 1));
             $output->writeln('<info>If you are ready to upgrade run this command with</info> <comment>-f</comment>');
             $output->writeln('<info>Checking for new minor/patch version...</info>');
 
@@ -134,10 +135,14 @@ final class SelfUpdateCommand extends Command
             $remoteTag = $latestVersionOfCurrentMajor;
         }
 
-        $localFilename = realpath($_SERVER['argv'][0]) ?: $_SERVER['argv'][0];
+        $localFilename = $_SERVER['argv'][0];
+        $realPath = realpath($localFilename);
+        if (false !== $realPath) {
+            $localFilename = $realPath;
+        }
 
         if (!is_writable($localFilename)) {
-            $output->writeln(sprintf('<error>No permission to update</error> "%s" <error>file.</error>', $localFilename));
+            $output->writeln(\sprintf('<error>No permission to update</error> "%s" <error>file.</error>', $localFilename));
 
             return 1;
         }
@@ -146,7 +151,7 @@ final class SelfUpdateCommand extends Command
         $remoteFilename = $this->toolInfo->getPharDownloadUri($remoteTag);
 
         if (false === @copy($remoteFilename, $tempFilename)) {
-            $output->writeln(sprintf('<error>Unable to download new version</error> %s <error>from the server.</error>', $remoteTag));
+            $output->writeln(\sprintf('<error>Unable to download new version</error> %s <error>from the server.</error>', $remoteTag));
 
             return 1;
         }
@@ -156,7 +161,7 @@ final class SelfUpdateCommand extends Command
         $pharInvalidityReason = $this->pharChecker->checkFileValidity($tempFilename);
         if (null !== $pharInvalidityReason) {
             unlink($tempFilename);
-            $output->writeln(sprintf('<error>The download of</error> %s <error>is corrupt (%s).</error>', $remoteTag, $pharInvalidityReason));
+            $output->writeln(\sprintf('<error>The download of</error> %s <error>is corrupt (%s).</error>', $remoteTag, $pharInvalidityReason));
             $output->writeln('<error>Please re-run the "self-update" command to try again.</error>');
 
             return 1;
@@ -164,7 +169,7 @@ final class SelfUpdateCommand extends Command
 
         rename($tempFilename, $localFilename);
 
-        $output->writeln(sprintf('<info>PHP CS Fixer updated</info> (<comment>%s</comment> -> <comment>%s</comment>)', $currentVersion, $remoteTag));
+        $output->writeln(\sprintf('<info>PHP CS Fixer updated</info> (<comment>%s</comment> -> <comment>%s</comment>)', $currentVersion, $remoteTag));
 
         return 0;
     }

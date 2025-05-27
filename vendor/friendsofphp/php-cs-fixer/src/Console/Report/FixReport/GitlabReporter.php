@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Console\Report\FixReport;
 
+use PhpCsFixer\Console\Application;
 use SebastianBergmann\Diff\Chunk;
+use SebastianBergmann\Diff\Diff;
 use SebastianBergmann\Diff\Parser;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 
@@ -24,6 +26,8 @@ use Symfony\Component\Console\Formatter\OutputFormatter;
  * @see https://github.com/codeclimate/platform/blob/master/spec/analyzers/SPEC.md#data-types
  *
  * @author Hans-Christian Otto <c.otto@suora.com>
+ *
+ * @readonly
  *
  * @internal
  */
@@ -46,24 +50,20 @@ final class GitlabReporter implements ReporterInterface
      */
     public function generate(ReportSummary $reportSummary): string
     {
+        $about = Application::getAbout();
+
         $report = [];
         foreach ($reportSummary->getChanged() as $fileName => $change) {
-            $diffs = $this->diffParser->parse($change['diff']);
-            $firstChunk = isset($diffs[0]) ? $diffs[0]->getChunks() : [];
-            $firstChunk = array_shift($firstChunk);
             foreach ($change['appliedFixers'] as $fixerName) {
                 $report[] = [
-                    'check_name' => $fixerName,
-                    'description' => $fixerName,
+                    'check_name' => 'PHP-CS-Fixer.'.$fixerName,
+                    'description' => 'PHP-CS-Fixer.'.$fixerName.' by '.$about,
                     'categories' => ['Style'],
                     'fingerprint' => md5($fileName.$fixerName),
                     'severity' => 'minor',
                     'location' => [
                         'path' => $fileName,
-                        'lines' => [
-                            'begin' => $firstChunk instanceof Chunk ? $firstChunk->getStart() : 0,
-                            'end' => $firstChunk instanceof Chunk ? $firstChunk->getStartRange() : 0,
-                        ],
+                        'lines' => self::getLines($this->diffParser->parse($change['diff'])),
                     ],
                 ];
             }
@@ -72,5 +72,25 @@ final class GitlabReporter implements ReporterInterface
         $jsonString = json_encode($report, JSON_THROW_ON_ERROR);
 
         return $reportSummary->isDecoratedOutput() ? OutputFormatter::escape($jsonString) : $jsonString;
+    }
+
+    /**
+     * @param list<Diff> $diffs
+     *
+     * @return array{begin: int, end: int}
+     */
+    private static function getLines(array $diffs): array
+    {
+        if (isset($diffs[0])) {
+            $firstDiff = $diffs[0];
+
+            $firstChunk = \Closure::bind(static fn (Diff $diff) => array_shift($diff->chunks), null, $firstDiff)($firstDiff);
+
+            if ($firstChunk instanceof Chunk) {
+                return \Closure::bind(static fn (Chunk $chunk): array => ['begin' => $chunk->start, 'end' => $chunk->startRange], null, $firstChunk)($firstChunk);
+            }
+        }
+
+        return ['begin' => 0, 'end' => 0];
     }
 }

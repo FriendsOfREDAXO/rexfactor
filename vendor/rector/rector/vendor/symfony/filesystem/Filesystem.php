@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202410\Symfony\Component\Filesystem;
+namespace RectorPrefix202411\Symfony\Component\Filesystem;
 
-use RectorPrefix202410\Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use RectorPrefix202410\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
-use RectorPrefix202410\Symfony\Component\Filesystem\Exception\IOException;
+use RectorPrefix202411\Symfony\Component\Filesystem\Exception\FileNotFoundException;
+use RectorPrefix202411\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
+use RectorPrefix202411\Symfony\Component\Filesystem\Exception\IOException;
 /**
  * Provides basic utility to manipulate the file system.
  *
@@ -44,7 +44,7 @@ class Filesystem
         }
         $this->mkdir(\dirname($targetFile));
         $doCopy = \true;
-        if (!$overwriteNewerFiles && null === \parse_url($originFile, \PHP_URL_HOST) && \is_file($targetFile)) {
+        if (!$overwriteNewerFiles && !\parse_url($originFile, \PHP_URL_HOST) && \is_file($targetFile)) {
             $doCopy = \filemtime($originFile) > \filemtime($targetFile);
         }
         if ($doCopy) {
@@ -212,6 +212,7 @@ class Filesystem
      * Change the owner of an array of files or directories.
      *
      * This method always throws on Windows, as the underlying PHP function is not supported.
+     *
      * @see https://www.php.net/chown
      *
      * @param string|int $user      A user name or number
@@ -243,6 +244,7 @@ class Filesystem
      * Change the group of an array of files or directories.
      *
      * This method always throws on Windows, as the underlying PHP function is not supported.
+     *
      * @see https://www.php.net/chgrp
      *
      * @param string|int $group     A group name or number

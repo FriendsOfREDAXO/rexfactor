@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PostRector\Rector;
 
-use RectorPrefix202410\Nette\Utils\Strings;
+use RectorPrefix202411\Nette\Utils\Strings;
 use PhpParser\Comment;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
@@ -41,23 +41,31 @@ final class UnusedImportRemovingPostRector extends \Rector\PostRector\Rector\Abs
             return null;
         }
         $hasChanged = \false;
-        $namespaceName = $node instanceof Namespace_ && $node->name instanceof Name ? $node->name : null;
-        $names = $this->resolveUsedPhpAndDocNames($node);
-        foreach ($node->stmts as $key => $namespaceStmt) {
-            if (!$namespaceStmt instanceof Use_) {
+        $namespaceOriginalCase = $node instanceof Namespace_ && $node->name instanceof Name ? $node->name->toString() : null;
+        $namesInOriginalCase = $this->resolveUsedPhpAndDocNames($node);
+        $namesInLowerCase = \array_map(\Closure::fromCallable('strtolower'), $namesInOriginalCase);
+        foreach ($node->stmts as $key => $stmt) {
+            if (!$stmt instanceof Use_) {
                 continue;
             }
-            if ($namespaceStmt->uses === []) {
+            if ($stmt->uses === [] || $namesInOriginalCase === []) {
                 unset($node->stmts[$key]);
                 $hasChanged = \true;
                 continue;
             }
-            $useUse = $namespaceStmt->uses[0];
-            if ($this->isUseImportUsed($useUse, $names, $namespaceName)) {
-                continue;
+            $isCaseSensitive = $stmt->type === Use_::TYPE_CONSTANT;
+            $names = $isCaseSensitive ? $namesInOriginalCase : $namesInLowerCase;
+            $namespaceName = $namespaceOriginalCase === null ? null : ($isCaseSensitive ? $namespaceOriginalCase : \strtolower($namespaceOriginalCase));
+            foreach ($stmt->uses as $useUseKey => $useUse) {
+                if ($this->isUseImportUsed($useUse, $isCaseSensitive, $names, $namespaceName)) {
+                    continue;
+                }
+                unset($stmt->uses[$useUseKey]);
+                $hasChanged = \true;
             }
-            unset($node->stmts[$key]);
-            $hasChanged = \true;
+            if ($stmt->uses === []) {
+                unset($node->stmts[$key]);
+            }
         }
         if ($hasChanged === \false) {
             return null;
@@ -140,20 +148,22 @@ final class UnusedImportRemovingPostRector extends \Rector\PostRector\Rector\Abs
         return \array_unique($names);
     }
     /**
-     * @param string[]  $names
+     * @param string[] $names
      */
-    private function isUseImportUsed(UseUse $useUse, array $names, ?Name $namespaceName) : bool
+    private function isUseImportUsed(UseUse $useUse, bool $isCaseSensitive, array $names, ?string $namespaceName) : bool
     {
         $comparedName = $useUse->alias instanceof Identifier ? $useUse->alias->toString() : $useUse->name->toString();
+        if (!$isCaseSensitive) {
+            $comparedName = \strtolower($comparedName);
+        }
         if (\in_array($comparedName, $names, \true)) {
             return \true;
         }
-        $namespacedPrefix = Strings::after($comparedName, '\\', -1) . '\\';
+        $lastName = Strings::after($comparedName, '\\', -1);
+        $namespacedPrefix = $lastName . '\\';
         if ($namespacedPrefix === '\\') {
             $namespacedPrefix = $comparedName . '\\';
         }
-        $lastName = $useUse->name->getLast();
-        $namespaceName = $namespaceName instanceof Name ? $namespaceName->toString() : null;
         // match partial import
         foreach ($names as $name) {
             if ($this->isSubNamespace($name, $comparedName, $namespacedPrefix)) {

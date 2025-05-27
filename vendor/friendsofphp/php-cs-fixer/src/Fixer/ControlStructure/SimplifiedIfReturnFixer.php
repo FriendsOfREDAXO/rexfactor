@@ -27,7 +27,7 @@ use PhpCsFixer\Tokenizer\Tokens;
 final class SimplifiedIfReturnFixer extends AbstractFixer
 {
     /**
-     * @var list<array{isNegative: bool, sequence: array<int, list<int|string>|string>}>
+     * @var list<array{isNegative: bool, sequence: non-empty-list<array{0: int, 1?: string}|string>}>
      */
     private array $sequences = [
         [
@@ -106,7 +106,7 @@ final class SimplifiedIfReturnFixer extends AbstractFixer
                     continue;
                 }
 
-                $firstSequenceIndex = key($sequenceFound);
+                $firstSequenceIndex = array_key_first($sequenceFound);
 
                 if ($firstSequenceIndex !== $firstCandidateIndex) {
                     continue;
