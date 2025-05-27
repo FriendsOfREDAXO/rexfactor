@@ -23,6 +23,7 @@ final class RexFactor
     private const CODE_QUALITY = 'Improve Code Quality';
     private const MISC_MIGRATIONS = 'Misc';
     private const REX_CODE_STYLE_SETNAME = 'REX_CODE_STYLE';
+    private const REX_CODE_STYLE_V2_SETNAME = 'REX_CODE_STYLE_V2';
 
     private const USE_CASES = [
         self::PHP_MIGRATIONS => [
@@ -32,6 +33,7 @@ final class RexFactor
             'PHP_80' => 'PHP 8.0',
             'PHP_81' => 'PHP 8.1',
             'PHP_82' => 'PHP 8.2',
+            'PHP_83' => 'PHP 8.3',
         ],
         self::CODE_QUALITY => [
             'CODE_QUALITY' => 'Unify code quality',
@@ -53,6 +55,7 @@ final class RexFactor
         ],
         self::MISC_MIGRATIONS => [
             self::REX_CODE_STYLE_SETNAME => 'REDAXO specific code style v1',
+            self::REX_CODE_STYLE_V2_SETNAME => 'REDAXO specific code style v2 (requires PHP >= 8.1)',
             'CODING_STYLE' => 'More explicit coding style',
             DeclareStrictTypesRector::class => 'PHP Strict Types',
         ],
@@ -69,7 +72,7 @@ final class RexFactor
         foreach ($useCases as $groupLabel => $groupSetLists) {
             foreach ($groupSetLists as $setList => $label) {
                 // rex code style is not a rector set. skip it from validation.
-                if ($setList === self::REX_CODE_STYLE_SETNAME) {
+                if ($setList === self::REX_CODE_STYLE_SETNAME || $setList === self::REX_CODE_STYLE_V2_SETNAME) {
                     continue;
                 }
                 // allow to configure rector rules
@@ -118,11 +121,24 @@ final class RexFactor
         $processPath = self::getPathToProcess($addonName, $addonPath);
         $processPath = array_map('escapeshellarg', $processPath);
 
-        if ($setName === self::REX_CODE_STYLE_SETNAME) {
+        if ($setName === self::REX_CODE_STYLE_SETNAME || $setName === self::REX_CODE_STYLE_V2_SETNAME) {
             $csfixerBinPath = self::csfixerBinpath();
-            $configPath = realpath(__DIR__.'/../.php-cs-fixer.php');
-            if ($configPath === false) {
-                throw new RuntimeException('php-cs-fixer config not found');
+            
+            // Choose the appropriate config file based on the selected code style version
+            if ($setName === self::REX_CODE_STYLE_V2_SETNAME) {
+                // Check if PHP version is compatible with v2
+                if (PHP_VERSION_ID < 80100) {
+                    throw new RuntimeException('REDAXO specific code style v2 requires PHP 8.1 or higher');
+                }
+                $configPath = realpath(__DIR__.'/../.php-cs-fixer-v2.php');
+                if ($configPath === false) {
+                    throw new RuntimeException('php-cs-fixer v2 config not found');
+                }
+            } else {
+                $configPath = realpath(__DIR__.'/../.php-cs-fixer.php');
+                if ($configPath === false) {
+                    throw new RuntimeException('php-cs-fixer config not found');
+                }
             }
 
             $cmd = $csfixerBinPath .' fix '. implode(' ', $processPath) . ' --config='. escapeshellarg($configPath). ($preview ? ' --dry-run --diff' : '') .' --path-mode=intersection --format=json';
@@ -198,7 +214,9 @@ final class RexFactor
 
         $tpl = str_replace('%%RECTOR_SETS%%', $setListClass, $tpl);
         $tpl = str_replace('%%RECTOR_RULES%%', $rulesListClass, $tpl);
-        if ($targetVersion === TargetVersion::PHP8_1) {
+        if ($targetVersion === TargetVersion::PHP8_3) {
+            $tpl = str_replace('%%TARGET_PHP_VERSION%%', '80300', $tpl);
+        } elseif ($targetVersion === TargetVersion::PHP8_1) {
             $tpl = str_replace('%%TARGET_PHP_VERSION%%', '80100', $tpl);
         } elseif ($targetVersion === TargetVersion::PHP7_2_COMPAT) {
             $tpl = str_replace('%%TARGET_PHP_VERSION%%', '70200', $tpl);
