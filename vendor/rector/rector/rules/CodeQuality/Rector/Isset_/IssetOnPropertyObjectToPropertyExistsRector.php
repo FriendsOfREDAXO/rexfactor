@@ -6,6 +6,7 @@ namespace Rector\CodeQuality\Rector\Isset_;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
 use PhpParser\Node\Expr\BinaryOp\BooleanOr;
 use PhpParser\Node\Expr\BinaryOp\Identical;
@@ -20,10 +21,10 @@ use PHPStan\Reflection\Php\PhpPropertyReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\TypeCombinator;
-use PHPStan\Type\TypeWithClassName;
 use Rector\PhpParser\Node\Value\ValueResolver;
 use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -33,19 +34,16 @@ final class IssetOnPropertyObjectToPropertyExistsRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(ReflectionProvider $reflectionProvider, ReflectionResolver $reflectionResolver, ValueResolver $valueResolver)
     {
         $this->reflectionProvider = $reflectionProvider;
@@ -54,7 +52,7 @@ final class IssetOnPropertyObjectToPropertyExistsRector extends AbstractRector
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Change isset on property object to property_exists() and not null check', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Change isset on property object to `property_exists()` and not null check', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     private $x;
@@ -119,6 +117,10 @@ CODE_SAMPLE
             if (!$classReflection instanceof ClassReflection) {
                 continue;
             }
+            // possibly by docblock
+            if ($issetExpr->var instanceof ArrayDimFetch) {
+                continue;
+            }
             if (!$classReflection->hasProperty($propertyFetchName) || $classReflection->isBuiltin()) {
                 $newNodes[] = $this->replaceToPropertyExistsWithNullCheck($issetExpr->var, $propertyFetchName, $issetExpr, $isNegated);
             } elseif ($isNegated) {
@@ -176,15 +178,16 @@ CODE_SAMPLE
     private function matchPropertyTypeClassReflection(PropertyFetch $propertyFetch) : ?ClassReflection
     {
         $propertyFetchVarType = $this->getType($propertyFetch->var);
-        if (!$propertyFetchVarType instanceof TypeWithClassName) {
+        $className = ClassNameFromObjectTypeResolver::resolve($propertyFetchVarType);
+        if ($className === null) {
             return null;
         }
-        if ($propertyFetchVarType->getClassName() === 'stdClass') {
+        if ($className === 'stdClass') {
             return null;
         }
-        if (!$this->reflectionProvider->hasClass($propertyFetchVarType->getClassName())) {
+        if (!$this->reflectionProvider->hasClass($className)) {
             return null;
         }
-        return $this->reflectionProvider->getClass($propertyFetchVarType->getClassName());
+        return $this->reflectionProvider->getClass($className);
     }
 }

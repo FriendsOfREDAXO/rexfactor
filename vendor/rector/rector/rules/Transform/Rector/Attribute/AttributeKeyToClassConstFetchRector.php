@@ -22,7 +22,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\AttributeKeyToClassConstFetch;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @api used in rector-doctrine
  * @see \Rector\Tests\Transform\Rector\Attribute\AttributeKeyToClassConstFetchRector\AttributeKeyToClassConstFetchRectorTest
@@ -31,13 +31,12 @@ final class AttributeKeyToClassConstFetchRector extends AbstractRector implement
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @var AttributeKeyToClassConstFetch[]
      */
-    private $attributeKeysToClassConstFetches = [];
+    private array $attributeKeysToClassConstFetches = [];
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;

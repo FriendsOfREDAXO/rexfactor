@@ -4,8 +4,8 @@ declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\FuncCall;
 
 use PhpParser\Node;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Scalar\String_;
@@ -23,16 +23,15 @@ final class CompactToVariablesRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\CodeQuality\CompactConverter
      */
-    private $compactConverter;
+    private CompactConverter $compactConverter;
     public function __construct(CompactConverter $compactConverter)
     {
         $this->compactConverter = $compactConverter;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Change compact() call to own array', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Change `compact()` call to own array', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()
@@ -85,7 +84,7 @@ CODE_SAMPLE
         if (!$firstValueStaticType instanceof ConstantArrayType) {
             return null;
         }
-        if ($firstValueStaticType->getItemType() instanceof MixedType) {
+        if ($firstValueStaticType->getIterableValueType() instanceof MixedType) {
             return null;
         }
         return $this->refactorAssignArray($firstValueStaticType);

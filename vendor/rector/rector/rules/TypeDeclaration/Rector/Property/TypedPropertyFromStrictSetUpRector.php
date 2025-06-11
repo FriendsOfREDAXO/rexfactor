@@ -12,6 +12,7 @@ use PHPStan\Type\ObjectType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\ValueObject\Type\FullyQualifiedIdentifierTypeNode;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
+use Rector\Enum\ClassName;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
@@ -28,24 +29,20 @@ final class TypedPropertyFromStrictSetUpRector extends AbstractRector implements
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\TrustedClassMethodPropertyTypeInferer
      */
-    private $trustedClassMethodPropertyTypeInferer;
+    private TrustedClassMethodPropertyTypeInferer $trustedClassMethodPropertyTypeInferer;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     public function __construct(TrustedClassMethodPropertyTypeInferer $trustedClassMethodPropertyTypeInferer, StaticTypeMapper $staticTypeMapper, PhpDocInfoFactory $phpDocInfoFactory, DocBlockUpdater $docBlockUpdater)
     {
         $this->trustedClassMethodPropertyTypeInferer = $trustedClassMethodPropertyTypeInferer;
@@ -114,11 +111,11 @@ CODE_SAMPLE
             if (!$propertyTypeNode instanceof Node) {
                 continue;
             }
-            if ($propertyType instanceof ObjectType && $propertyType->getClassName() === 'PHPUnit\\Framework\\MockObject\\MockObject') {
+            if ($propertyType instanceof ObjectType && $propertyType->getClassName() === ClassName::MOCK_OBJECT) {
                 $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
                 $varTag = $phpDocInfo->getVarTagValueNode();
                 $varType = $phpDocInfo->getVarType();
-                if ($varTag instanceof VarTagValueNode && $varType instanceof ObjectType && $varType->getClassName() !== 'PHPUnit\\Framework\\MockObject\\MockObject') {
+                if ($varTag instanceof VarTagValueNode && $varType instanceof ObjectType && $varType->getClassName() !== ClassName::MOCK_OBJECT) {
                     $varTag->type = new IntersectionTypeNode([new FullyQualifiedIdentifierTypeNode($propertyType->getClassName()), new FullyQualifiedIdentifierTypeNode($varType->getClassName())]);
                     $this->docBlockUpdater->updateRefactoredNodeWithPhpDocInfo($property);
                 }

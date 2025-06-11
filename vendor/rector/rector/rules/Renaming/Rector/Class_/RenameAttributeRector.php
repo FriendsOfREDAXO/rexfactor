@@ -16,7 +16,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\Class_\RenameAttributeRector\RenameAttributeRectorTest
  */
@@ -25,7 +25,7 @@ final class RenameAttributeRector extends AbstractRector implements Configurable
     /**
      * @var RenameAttribute[]
      */
-    private $renameAttributes = [];
+    private array $renameAttributes = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Rename attribute class names', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Helper;
+namespace RectorPrefix202506\Symfony\Component\Console\Helper;
 
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatterInterface;
-use RectorPrefix202411\Symfony\Component\String\UnicodeString;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatterInterface;
+use RectorPrefix202506\Symfony\Component\String\UnicodeString;
 /**
  * Helper is the base class for all helper classes.
  *
@@ -40,7 +40,7 @@ abstract class Helper implements HelperInterface
      */
     public static function width(?string $string) : int
     {
-        $string = $string ?? '';
+        $string ??= '';
         return \mb_strlen($string);
         if (\preg_match('//u', $string)) {
             return (new UnicodeString($string))->width(\false);
@@ -56,7 +56,7 @@ abstract class Helper implements HelperInterface
      */
     public static function length(?string $string) : int
     {
-        $string = $string ?? '';
+        $string ??= '';
         return \mb_strlen($string);
         if (\preg_match('//u', $string)) {
             return (new UnicodeString($string))->length();
@@ -71,7 +71,7 @@ abstract class Helper implements HelperInterface
      */
     public static function substr(?string $string, int $from, ?int $length = null) : string
     {
-        $string = $string ?? '';
+        $string ??= '';
         if (\false === ($encoding = \mb_detect_encoding($string, null, \true))) {
             return \substr($string, $from, $length);
         }

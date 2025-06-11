@@ -21,7 +21,7 @@ use Rector\TypeDeclaration\ValueObject\AddParamTypeDeclaration;
 use Rector\ValueObject\PhpVersionFeature;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\AddParamTypeDeclarationRector\AddParamTypeDeclarationRectorTest
  */
@@ -29,27 +29,21 @@ final class AddParamTypeDeclarationRector extends AbstractRector implements Conf
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\TypeComparator\TypeComparator
      */
-    private $typeComparator;
+    private TypeComparator $typeComparator;
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @var AddParamTypeDeclaration[]
      */
-    private $addParamTypeDeclarations = [];
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private array $addParamTypeDeclarations = [];
+    private bool $hasChanged = \false;
     public function __construct(TypeComparator $typeComparator, PhpVersionProvider $phpVersionProvider, StaticTypeMapper $staticTypeMapper)
     {
         $this->typeComparator = $typeComparator;
@@ -143,7 +137,7 @@ CODE_SAMPLE
     private function refactorParameter(Param $param, AddParamTypeDeclaration $addParamTypeDeclaration) : void
     {
         // already set → no change
-        if ($param->type !== null) {
+        if ($param->type instanceof Node) {
             $currentParamType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($param->type);
             if ($this->typeComparator->areTypesEqual($currentParamType, $addParamTypeDeclaration->getParamType())) {
                 return;

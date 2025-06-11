@@ -6,14 +6,13 @@ namespace Rector\Reporting;
 use Rector\Configuration\Deprecation\Contract\DeprecatedInterface;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
-use RectorPrefix202411\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202506\Symfony\Component\Console\Style\SymfonyStyle;
 final class DeprecatedRulesReporter
 {
     /**
      * @readonly
-     * @var \Symfony\Component\Console\Style\SymfonyStyle
      */
-    private $symfonyStyle;
+    private SymfonyStyle $symfonyStyle;
     public function __construct(SymfonyStyle $symfonyStyle)
     {
         $this->symfonyStyle = $symfonyStyle;

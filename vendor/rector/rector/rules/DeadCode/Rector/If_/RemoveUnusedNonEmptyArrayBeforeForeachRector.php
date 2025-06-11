@@ -20,39 +20,35 @@ use Rector\NodeAnalyzer\PropertyFetchAnalyzer;
 use Rector\NodeManipulator\IfManipulator;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Php\ReservedKeywordAnalyzer;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\DeadCode\Rector\If_\RemoveUnusedNonEmptyArrayBeforeForeachRector\RemoveUnusedNonEmptyArrayBeforeForeachRectorTest
  */
-final class RemoveUnusedNonEmptyArrayBeforeForeachRector extends AbstractScopeAwareRector
+final class RemoveUnusedNonEmptyArrayBeforeForeachRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\DeadCode\NodeManipulator\CountManipulator
      */
-    private $countManipulator;
+    private CountManipulator $countManipulator;
     /**
      * @readonly
-     * @var \Rector\NodeManipulator\IfManipulator
      */
-    private $ifManipulator;
+    private IfManipulator $ifManipulator;
     /**
      * @readonly
-     * @var \Rector\DeadCode\UselessIfCondBeforeForeachDetector
      */
-    private $uselessIfCondBeforeForeachDetector;
+    private UselessIfCondBeforeForeachDetector $uselessIfCondBeforeForeachDetector;
     /**
      * @readonly
-     * @var \Rector\Php\ReservedKeywordAnalyzer
      */
-    private $reservedKeywordAnalyzer;
+    private ReservedKeywordAnalyzer $reservedKeywordAnalyzer;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\PropertyFetchAnalyzer
      */
-    private $propertyFetchAnalyzer;
+    private PropertyFetchAnalyzer $propertyFetchAnalyzer;
     public function __construct(CountManipulator $countManipulator, IfManipulator $ifManipulator, UselessIfCondBeforeForeachDetector $uselessIfCondBeforeForeachDetector, ReservedKeywordAnalyzer $reservedKeywordAnalyzer, PropertyFetchAnalyzer $propertyFetchAnalyzer)
     {
         $this->countManipulator = $countManipulator;
@@ -100,11 +96,12 @@ CODE_SAMPLE
     }
     /**
      * @param If_|StmtsAwareInterface $node
-     * @return Stmt[]|Foreach_|StmtsAwareInterface|null
+     * @return Foreach_|StmtsAwareInterface|null
      */
-    public function refactorWithScope(Node $node, Scope $scope)
+    public function refactor(Node $node)
     {
         if ($node instanceof If_) {
+            $scope = ScopeFetcher::fetch($node);
             return $this->refactorIf($node, $scope);
         }
         return $this->refactorStmtsAware($node);
@@ -198,7 +195,7 @@ CODE_SAMPLE
     }
     private function shouldSkipForeachExpr(Expr $foreachExpr, Scope $scope) : bool
     {
-        if ($foreachExpr instanceof ArrayDimFetch && $foreachExpr->dim !== null) {
+        if ($foreachExpr instanceof ArrayDimFetch && $foreachExpr->dim instanceof Expr) {
             $exprType = $this->nodeTypeResolver->getNativeType($foreachExpr->var);
             $dimType = $this->nodeTypeResolver->getNativeType($foreachExpr->dim);
             if (!$exprType->hasOffsetValueType($dimType)->yes()) {
@@ -206,7 +203,7 @@ CODE_SAMPLE
             }
         }
         if ($foreachExpr instanceof Variable) {
-            $variableName = $this->nodeNameResolver->getName($foreachExpr);
+            $variableName = $this->getName($foreachExpr);
             if (\is_string($variableName) && $this->reservedKeywordAnalyzer->isNativeVariable($variableName)) {
                 return \true;
             }

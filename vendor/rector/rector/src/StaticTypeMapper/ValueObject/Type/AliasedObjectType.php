@@ -5,10 +5,10 @@ namespace Rector\StaticTypeMapper\ValueObject\Type;
 
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\Node\Stmt\UseUse;
+use PhpParser\Node\UseItem;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
-use PHPStan\Type\TypeWithClassName;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 /**
  * @api
  */
@@ -16,9 +16,8 @@ final class AliasedObjectType extends ObjectType
 {
     /**
      * @readonly
-     * @var string
      */
-    private $fullyQualifiedClass;
+    private string $fullyQualifiedClass;
     public function __construct(string $alias, string $fullyQualifiedClass)
     {
         $this->fullyQualifiedClass = $fullyQualifiedClass;
@@ -34,8 +33,8 @@ final class AliasedObjectType extends ObjectType
     public function getUseNode(int $useType) : Use_
     {
         $name = new Name($this->fullyQualifiedClass);
-        $useUse = new UseUse($name, $this->getClassName());
-        $use = new Use_([$useUse]);
+        $useItem = new UseItem($name, $this->getClassName());
+        $use = new Use_([$useItem]);
         $use->type = $useType;
         return $use;
     }
@@ -52,12 +51,13 @@ final class AliasedObjectType extends ObjectType
     }
     public function equals(Type $type) : bool
     {
+        $className = ClassNameFromObjectTypeResolver::resolve($type);
         // compare with FQN classes
-        if ($type instanceof TypeWithClassName) {
+        if ($className !== null) {
             if ($type instanceof self && $this->fullyQualifiedClass === $type->getFullyQualifiedName()) {
                 return \true;
             }
-            if ($this->fullyQualifiedClass === $type->getClassName()) {
+            if ($this->fullyQualifiedClass === $className) {
                 return \true;
             }
         }

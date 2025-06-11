@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Helper;
+namespace RectorPrefix202506\Symfony\Component\Console\Helper;
 
-use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\InvalidArgumentException;
 /**
  * HelperSet represents a set of helpers to be used with a command.
  *
@@ -21,7 +21,7 @@ use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentExcept
 class HelperSet implements \IteratorAggregate
 {
     /** @var array<string, HelperInterface> */
-    private $helpers = [];
+    private array $helpers = [];
     /**
      * @param HelperInterface[] $helpers
      */

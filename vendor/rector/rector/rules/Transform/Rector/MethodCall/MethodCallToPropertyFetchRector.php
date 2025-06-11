@@ -10,7 +10,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\MethodCallToPropertyFetch;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\MethodCall\MethodCallToPropertyFetchRector\MethodCallToPropertyFetchRectorTest
  */
@@ -19,10 +19,10 @@ final class MethodCallToPropertyFetchRector extends AbstractRector implements Co
     /**
      * @var MethodCallToPropertyFetch[]
      */
-    private $methodCallsToPropertyFetches = [];
+    private array $methodCallsToPropertyFetches = [];
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Turns method call "$this->getFirstname()" to property fetch "$this->firstname"', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Turn method call `$this->getFirstname()` to property fetch `$this->firstname`', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()

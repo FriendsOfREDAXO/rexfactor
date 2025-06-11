@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Filesystem;
+namespace RectorPrefix202506\Symfony\Component\Filesystem;
 
-use RectorPrefix202411\Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use RectorPrefix202411\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
-use RectorPrefix202411\Symfony\Component\Filesystem\Exception\IOException;
+use RectorPrefix202506\Symfony\Component\Filesystem\Exception\FileNotFoundException;
+use RectorPrefix202506\Symfony\Component\Filesystem\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Filesystem\Exception\IOException;
 /**
  * Provides basic utility to manipulate the file system.
  *
@@ -20,10 +20,7 @@ use RectorPrefix202411\Symfony\Component\Filesystem\Exception\IOException;
  */
 class Filesystem
 {
-    /**
-     * @var string|null
-     */
-    private static $lastError;
+    private static ?string $lastError = null;
     /**
      * Copies a file.
      *
@@ -422,9 +419,7 @@ class Filesystem
             $endPath = \str_replace('\\', '/', $endPath);
             $startPath = \str_replace('\\', '/', $startPath);
         }
-        $splitDriveLetter = function ($path) {
-            return \strlen($path) > 2 && ':' === $path[1] && '/' === $path[2] && \ctype_alpha($path[0]) ? [\substr($path, 2), \strtoupper($path[0])] : [$path, null];
-        };
+        $splitDriveLetter = fn($path) => \strlen($path) > 2 && ':' === $path[1] && '/' === $path[2] && \ctype_alpha($path[0]) ? [\substr($path, 2), \strtoupper($path[0])] : [$path, null];
         $splitPath = function ($path) {
             $result = [];
             foreach (\explode('/', \trim($path, '/')) as $segment) {

@@ -11,13 +11,13 @@ use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\Encapsed;
+use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\FunctionReflection;
+use PHPStan\Reflection\Native\ExtendedNativeParameterReflection;
 use PHPStan\Reflection\Native\NativeFunctionReflection;
-use PHPStan\Reflection\Native\NativeParameterWithPhpDocsReflection;
 use PHPStan\Reflection\ParametersAcceptor;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\MixedType;
@@ -43,24 +43,20 @@ final class NullToStrictStringFuncCallArgRector extends AbstractRector implement
 {
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ArgsAnalyzer
      */
-    private $argsAnalyzer;
+    private ArgsAnalyzer $argsAnalyzer;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\PropertyFetchAnalyzer
      */
-    private $propertyFetchAnalyzer;
+    private PropertyFetchAnalyzer $propertyFetchAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(ReflectionResolver $reflectionResolver, ArgsAnalyzer $argsAnalyzer, PropertyFetchAnalyzer $propertyFetchAnalyzer, ValueResolver $valueResolver)
     {
         $this->reflectionResolver = $reflectionResolver;
@@ -144,14 +140,14 @@ CODE_SAMPLE
      */
     private function resolveNamedPositions(FuncCall $funcCall, array $args) : array
     {
-        $functionName = $this->nodeNameResolver->getName($funcCall);
+        $functionName = $this->getName($funcCall);
         $argNames = NameNullToStrictNullFunctionMap::FUNCTION_TO_PARAM_NAMES[$functionName];
         $positions = [];
         foreach ($args as $position => $arg) {
             if (!$arg->name instanceof Identifier) {
                 continue;
             }
-            if (!$this->nodeNameResolver->isNames($arg->name, $argNames)) {
+            if (!$this->isNames($arg->name, $argNames)) {
                 continue;
             }
             $positions[] = $position;
@@ -184,7 +180,7 @@ CODE_SAMPLE
         if ($this->shouldSkipType($type)) {
             return null;
         }
-        if ($argValue instanceof Encapsed) {
+        if ($argValue instanceof InterpolatedString) {
             return null;
         }
         if ($this->isAnErrorType($argValue, $nativeType, $scope)) {
@@ -194,7 +190,7 @@ CODE_SAMPLE
             return null;
         }
         $parameter = $parametersAcceptor->getParameters()[$position] ?? null;
-        if ($parameter instanceof NativeParameterWithPhpDocsReflection && $parameter->getType() instanceof UnionType) {
+        if ($parameter instanceof ExtendedNativeParameterReflection && $parameter->getType() instanceof UnionType) {
             $parameterType = $parameter->getType();
             if (!$this->isValidUnionType($parameterType)) {
                 return null;
@@ -222,7 +218,7 @@ CODE_SAMPLE
     }
     private function shouldSkipType(Type $type) : bool
     {
-        return !$type instanceof MixedType && !$type instanceof NullType && !$this->isValidUnionType($type);
+        return !$type instanceof MixedType && !$type->isNull()->yes() && !$this->isValidUnionType($type);
     }
     private function shouldSkipTrait(Expr $expr, Type $type, bool $isTrait) : bool
     {
@@ -249,7 +245,7 @@ CODE_SAMPLE
         if ($parentScope instanceof Scope) {
             return $parentScope->getType($expr) instanceof ErrorType;
         }
-        return \false;
+        return $type instanceof MixedType && !$type->isExplicitMixed() && $type->getSubtractedType() instanceof NullType;
     }
     /**
      * @return int[]|string[]
@@ -274,7 +270,7 @@ CODE_SAMPLE
     private function shouldSkip(FuncCall $funcCall) : bool
     {
         $functionNames = \array_keys(NameNullToStrictNullFunctionMap::FUNCTION_TO_PARAM_NAMES);
-        if (!$this->nodeNameResolver->isNames($funcCall, $functionNames)) {
+        if (!$this->isNames($funcCall, $functionNames)) {
             return \true;
         }
         return $funcCall->isFirstClassCallable();

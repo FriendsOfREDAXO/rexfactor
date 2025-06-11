@@ -13,7 +13,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\PropertyFetchToMethodCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\Assign\PropertyFetchToMethodCallRector\PropertyFetchToMethodCallRectorTest
  */
@@ -22,10 +22,10 @@ final class PropertyFetchToMethodCallRector extends AbstractRector implements Co
     /**
      * @var PropertyFetchToMethodCall[]
      */
-    private $propertiesToMethodCalls = [];
+    private array $propertiesToMethodCalls = [];
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Replaces properties assign calls be defined methods.', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Replace properties assign calls be defined methods', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 $result = $object->property;
 $object->property = $value;
 

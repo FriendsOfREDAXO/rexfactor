@@ -10,9 +10,8 @@ final class UseImportsRemover
 {
     /**
      * @readonly
-     * @var \Rector\Renaming\Collector\RenamedNameCollector
      */
-    private $renamedNameCollector;
+    private RenamedNameCollector $renamedNameCollector;
     public function __construct(RenamedNameCollector $renamedNameCollector)
     {
         $this->renamedNameCollector = $renamedNameCollector;
@@ -24,6 +23,7 @@ final class UseImportsRemover
      */
     public function removeImportsFromStmts(array $stmts, array $removedUses) : array
     {
+        $hasRemoved = \false;
         foreach ($stmts as $key => $stmt) {
             if (!$stmt instanceof Use_) {
                 continue;
@@ -32,9 +32,10 @@ final class UseImportsRemover
             // remove empty uses
             if ($stmt->uses === []) {
                 unset($stmts[$key]);
+                $hasRemoved = \true;
             }
         }
-        return $stmts;
+        return $hasRemoved ? \array_values($stmts) : $stmts;
     }
     /**
      * @param string[] $removedUses

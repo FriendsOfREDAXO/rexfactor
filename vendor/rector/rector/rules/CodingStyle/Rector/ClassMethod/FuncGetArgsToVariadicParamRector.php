@@ -26,16 +26,15 @@ final class FuncGetArgsToVariadicParamRector extends AbstractRector implements M
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     public function __construct(BetterNodeFinder $betterNodeFinder)
     {
         $this->betterNodeFinder = $betterNodeFinder;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Refactor func_get_args() in to a variadic param', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Refactor `func_get_args()` in to a variadic param', [new CodeSample(<<<'CODE_SAMPLE'
 function run()
 {
     $args = \func_get_args();

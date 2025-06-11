@@ -9,7 +9,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\GroupUse;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\Node\Stmt\UseUse;
+use PhpParser\Node\UseItem;
 use Rector\CodingStyle\Contract\ClassNameImport\ClassNameImportSkipVoterInterface;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
@@ -23,12 +23,11 @@ final class ClassNameImportSkipper
      * @var ClassNameImportSkipVoterInterface[]
      * @readonly
      */
-    private $classNameImportSkipVoters;
+    private iterable $classNameImportSkipVoters;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\UseImportsResolver
      */
-    private $useImportsResolver;
+    private UseImportsResolver $useImportsResolver;
     /**
      * @param ClassNameImportSkipVoterInterface[] $classNameImportSkipVoters
      */
@@ -82,13 +81,6 @@ final class ClassNameImportSkipper
     }
     private function shouldSkipShortName(FullyQualified $fullyQualified) : bool
     {
-        // is scalar name?
-        if (\in_array($fullyQualified->toLowerString(), ['true', 'false', 'bool'], \true)) {
-            return \true;
-        }
-        if ($fullyQualified->isSpecialClassName()) {
-            return \true;
-        }
         if ($this->isFunctionOrConstantImport($fullyQualified)) {
             return \true;
         }
@@ -102,11 +94,11 @@ final class ClassNameImportSkipper
         }
         return $fullyQualified->getAttribute(AttributeKey::IS_FUNCCALL_NAME) === \true;
     }
-    private function isConflictedShortNameInUse(UseUse $useUse, string $useName, string $lastUseName, string $stringName) : bool
+    private function isConflictedShortNameInUse(UseItem $useItem, string $useName, string $lastUseName, string $stringName) : bool
     {
-        if (!$useUse->alias instanceof Identifier && $useName !== $stringName && $lastUseName === $stringName) {
+        if (!$useItem->alias instanceof Identifier && $useName !== $stringName && $lastUseName === $stringName) {
             return \true;
         }
-        return $useUse->alias instanceof Identifier && $useUse->alias->toString() === $stringName;
+        return $useItem->alias instanceof Identifier && $useItem->alias->toString() === $stringName;
     }
 }

@@ -1,7 +1,12 @@
 <?php
 
-namespace RectorPrefix202411\Illuminate\Contracts\Pagination;
+namespace RectorPrefix202506\Illuminate\Contracts\Pagination;
 
+/**
+ * @template TKey of array-key
+ *
+ * @template-covariant TValue
+ */
 interface Paginator
 {
     /**
@@ -41,7 +46,7 @@ interface Paginator
     /**
      * Get all of the items being paginated.
      *
-     * @return array
+     * @return array<TKey, TValue>
      */
     public function items();
     /**

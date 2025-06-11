@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Contracts\Service;
+namespace RectorPrefix202506\Symfony\Contracts\Service;
 
-use RectorPrefix202411\Psr\Container\ContainerExceptionInterface;
-use RectorPrefix202411\Psr\Container\NotFoundExceptionInterface;
+use RectorPrefix202506\Psr\Container\ContainerExceptionInterface;
+use RectorPrefix202506\Psr\Container\NotFoundExceptionInterface;
 // Help opcache.preload discover always-needed symbols
 \class_exists(ContainerExceptionInterface::class);
 \class_exists(NotFoundExceptionInterface::class);
@@ -24,17 +24,11 @@ use RectorPrefix202411\Psr\Container\NotFoundExceptionInterface;
 trait ServiceLocatorTrait
 {
     /**
-     * @var mixed[]
+     * @var array<string, callable>
      */
-    private $factories;
-    /**
-     * @var mixed[]
-     */
-    private $loading = [];
-    /**
-     * @var mixed[]
-     */
-    private $providedTypes;
+    private array $factories;
+    private array $loading = [];
+    private array $providedTypes;
     /**
      * @param array<string, callable> $factories
      */

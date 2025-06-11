@@ -5,13 +5,14 @@ namespace Rector\Symfony\Symfony44\Rector\MethodCall;
 
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\BinaryOp\BooleanOr;
 use PhpParser\Node\Expr\MethodCall;
 use PHPStan\Type\ObjectType;
 use Rector\NodeAnalyzer\ArgsAnalyzer;
 use Rector\Rector\AbstractRector;
+use Rector\Symfony\Enum\SymfonyClass;
 use Rector\Symfony\TypeAnalyzer\ControllerAnalyzer;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -24,14 +25,12 @@ final class AuthorizationCheckerIsGrantedExtractorRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ArgsAnalyzer
      */
-    private $argsAnalyzer;
+    private ArgsAnalyzer $argsAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Symfony\TypeAnalyzer\ControllerAnalyzer
      */
-    private $controllerAnalyzer;
+    private ControllerAnalyzer $controllerAnalyzer;
     public function __construct(ArgsAnalyzer $argsAnalyzer, ControllerAnalyzer $controllerAnalyzer)
     {
         $this->argsAnalyzer = $argsAnalyzer;
@@ -40,11 +39,43 @@ final class AuthorizationCheckerIsGrantedExtractorRector extends AbstractRector
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Change `$this->authorizationChecker->isGranted([$a, $b])` to `$this->authorizationChecker->isGranted($a) || $this->authorizationChecker->isGranted($b)`, also updates AbstractController usages', [new CodeSample(<<<'CODE_SAMPLE'
-if ($this->authorizationChecker->isGranted(['ROLE_USER', 'ROLE_ADMIN'])) {
+use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
+
+final class SomeController
+{
+    public function __construct(
+        private AuthorizationCheckerInterface $authorizationChecker
+    ) {
+    }
+
+    public function hasAccess(): bool
+    {
+        if ($this->authorizationChecker->isGranted(['ROLE_USER', 'ROLE_ADMIN'])) {
+            return true;
+        }
+
+        return false;
+    }
 }
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
-if ($this->authorizationChecker->isGranted('ROLE_USER') || $this->authorizationChecker->isGranted('ROLE_ADMIN')) {
+use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
+
+final class SomeController
+{
+    public function __construct(
+        private AuthorizationCheckerInterface $authorizationChecker
+    ) {
+    }
+
+    public function hasAccess(): bool
+    {
+        if ($this->authorizationChecker->isGranted('ROLE_USER') || $this->authorizationChecker->isGranted('ROLE_ADMIN')) {
+            return true;
+        }
+
+        return false;
+    }
 }
 CODE_SAMPLE
 )]);
@@ -69,11 +100,11 @@ CODE_SAMPLE
         if (!$objectType instanceof ObjectType) {
             return null;
         }
-        $authorizationChecker = new ObjectType('Symfony\\Component\\Security\\Core\\Authorization\\AuthorizationCheckerInterface');
+        $authorizationChecker = new ObjectType(SymfonyClass::AUTHORIZATION_CHECKER);
         if (!$authorizationChecker->isSuperTypeOf($objectType)->yes()) {
             return null;
         }
-        if (!$this->nodeNameResolver->isName($node->name, 'isGranted')) {
+        if (!$this->isName($node->name, 'isGranted')) {
             return null;
         }
         return $this->handleIsGranted($node);
@@ -118,7 +149,7 @@ CODE_SAMPLE
      */
     private function processControllerMethods(MethodCall $methodCall)
     {
-        if ($this->nodeNameResolver->isName($methodCall->name, 'isGranted')) {
+        if ($this->isName($methodCall->name, 'isGranted')) {
             return $this->handleIsGranted($methodCall);
         }
         return null;

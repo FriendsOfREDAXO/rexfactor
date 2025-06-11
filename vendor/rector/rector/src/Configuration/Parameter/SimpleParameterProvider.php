@@ -5,7 +5,7 @@ namespace Rector\Configuration\Parameter;
 
 use Rector\Configuration\Option;
 use Rector\Exception\ShouldNotHappenException;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @api
  */
@@ -14,7 +14,7 @@ final class SimpleParameterProvider
     /**
      * @var array<string, mixed>
      */
-    private static $parameters = [];
+    private static array $parameters = [];
     /**
      * @param Option::* $name
      * @param mixed $value
@@ -62,7 +62,7 @@ final class SimpleParameterProvider
         };
         if ($arrayIsListFunction($parameter)) {
             // remove duplicates
-            $uniqueParameters = \array_unique($parameter);
+            $uniqueParameters = \array_unique($parameter, \SORT_REGULAR);
             return \array_values($uniqueParameters);
         }
         return $parameter;

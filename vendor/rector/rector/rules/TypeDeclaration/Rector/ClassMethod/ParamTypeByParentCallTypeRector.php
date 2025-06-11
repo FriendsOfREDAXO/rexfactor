@@ -7,12 +7,12 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
-use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use Rector\Enum\ObjectReference;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpParser\Node\BetterNodeFinder;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Rector\TypeDeclaration\NodeAnalyzer\CallerParamMatcher;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -20,23 +20,20 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ParamTypeByParentCallTypeRector\ParamTypeByParentCallTypeRectorTest
  */
-final class ParamTypeByParentCallTypeRector extends AbstractScopeAwareRector
+final class ParamTypeByParentCallTypeRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\CallerParamMatcher
      */
-    private $callerParamMatcher;
+    private CallerParamMatcher $callerParamMatcher;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     public function __construct(CallerParamMatcher $callerParamMatcher, ReflectionResolver $reflectionResolver, BetterNodeFinder $betterNodeFinder)
     {
         $this->callerParamMatcher = $callerParamMatcher;
@@ -89,8 +86,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         if ($this->shouldSkip($node)) {
             return null;
         }
@@ -108,7 +106,7 @@ CODE_SAMPLE
             if (!$parentParam instanceof Param) {
                 continue;
             }
-            if ($parentParam->type === null) {
+            if (!$parentParam->type instanceof Node) {
                 continue;
             }
             // mimic type

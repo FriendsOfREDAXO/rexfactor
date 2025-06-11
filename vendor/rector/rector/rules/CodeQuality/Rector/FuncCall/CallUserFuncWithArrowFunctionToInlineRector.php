@@ -19,16 +19,15 @@ final class CallUserFuncWithArrowFunctionToInlineRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Php74\NodeAnalyzer\ClosureArrowFunctionAnalyzer
      */
-    private $closureArrowFunctionAnalyzer;
+    private ClosureArrowFunctionAnalyzer $closureArrowFunctionAnalyzer;
     public function __construct(ClosureArrowFunctionAnalyzer $closureArrowFunctionAnalyzer)
     {
         $this->closureArrowFunctionAnalyzer = $closureArrowFunctionAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Refactor call_user_func() with arrow function to direct call', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Refactor `call_user_func()` with arrow function to direct call', [new CodeSample(<<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function run()

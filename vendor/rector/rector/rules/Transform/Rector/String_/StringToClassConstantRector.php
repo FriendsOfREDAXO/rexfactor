@@ -11,7 +11,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\StringToClassConstant;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\String_\StringToClassConstantRector\StringToClassConstantRectorTest
  */
@@ -19,20 +19,19 @@ final class StringToClassConstantRector extends AbstractRector implements Config
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @var StringToClassConstant[]
      */
-    private $stringsToClassConstants = [];
+    private array $stringsToClassConstants = [];
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Changes strings to specific constants', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Change strings to specific constants', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 final class SomeSubscriber
 {
     public static function getSubscribedEvents()
@@ -70,7 +69,7 @@ CODE_SAMPLE
             }
             return $this->nodeFactory->createClassConstFetch($stringToClassConstant->getClass(), $stringToClassConstant->getConstant());
         }
-        return $node;
+        return null;
     }
     /**
      * @param mixed[] $configuration

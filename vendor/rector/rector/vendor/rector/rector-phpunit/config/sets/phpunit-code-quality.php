@@ -1,21 +1,23 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202411;
+namespace RectorPrefix202506;
 
 use Rector\Config\RectorConfig;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\ConstructClassMethodToSetUpTestCaseRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\NarrowUnusedSetUpDefinedPropertyRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\PreferPHPUnitThisCallRector;
+use Rector\PHPUnit\CodeQuality\Rector\Class_\RemoveDataProviderParamKeysRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\SingleMockPropertyTypeRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\TestWithToDataProviderRector;
+use Rector\PHPUnit\CodeQuality\Rector\Class_\TypeWillReturnCallableArrowFunctionRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\YieldDataProviderRector;
+use Rector\PHPUnit\CodeQuality\Rector\ClassMethod\AddInstanceofAssertForNullableInstanceRector;
 use Rector\PHPUnit\CodeQuality\Rector\ClassMethod\DataProviderArrayItemsNewLinedRector;
 use Rector\PHPUnit\CodeQuality\Rector\ClassMethod\RemoveEmptyTestMethodRector;
 use Rector\PHPUnit\CodeQuality\Rector\ClassMethod\ReplaceTestAnnotationWithPrefixedFunctionRector;
 use Rector\PHPUnit\CodeQuality\Rector\Foreach_\SimplifyForeachInstanceOfRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertCompareOnCountableWithMethodToAssertCountRector;
-use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertCompareToSpecificMethodRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertComparisonToSpecificMethodRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertEmptyNullableObjectToAssertInstanceofRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertEqualsOrAssertSameFloatParameterToSpecificMethodsTypeRector;
@@ -48,15 +50,18 @@ return static function (RectorConfig $rectorConfig) : void {
         TestWithToDataProviderRector::class,
         AssertEqualsOrAssertSameFloatParameterToSpecificMethodsTypeRector::class,
         DataProviderArrayItemsNewLinedRector::class,
+        // PHPUnit 11 reports warnings on typos + keys are rather noise than useful, fake system-keys for values
+        RemoveDataProviderParamKeysRector::class,
         FlipAssertRector::class,
         // narrow with consecutive
         NarrowIdenticalWithConsecutiveRector::class,
         NarrowSingleWillReturnCallbackRector::class,
         SingleWithConsecutiveToWithRector::class,
+        // type declarations
+        TypeWillReturnCallableArrowFunctionRector::class,
         NarrowUnusedSetUpDefinedPropertyRector::class,
         // specific asserts
         AssertCompareOnCountableWithMethodToAssertCountRector::class,
-        AssertCompareToSpecificMethodRector::class,
         AssertComparisonToSpecificMethodRector::class,
         AssertNotOperatorRector::class,
         AssertTrueFalseToSpecificMethodRector::class,
@@ -70,6 +75,8 @@ return static function (RectorConfig $rectorConfig) : void {
         UseSpecificWillMethodRector::class,
         UseSpecificWithMethodRector::class,
         AssertEmptyNullableObjectToAssertInstanceofRector::class,
+        // avoid call on nullable object
+        AddInstanceofAssertForNullableInstanceRector::class,
         /**
          * Improve direct testing of your code, without mock creep. Make it simple, clear and easy to maintain:
          *

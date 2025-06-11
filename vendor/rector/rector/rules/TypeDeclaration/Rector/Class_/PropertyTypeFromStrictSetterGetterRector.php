@@ -31,29 +31,24 @@ final class PropertyTypeFromStrictSetterGetterRector extends AbstractRector impl
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\GetterTypeDeclarationPropertyTypeInferer
      */
-    private $getterTypeDeclarationPropertyTypeInferer;
+    private GetterTypeDeclarationPropertyTypeInferer $getterTypeDeclarationPropertyTypeInferer;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\SetterTypeDeclarationPropertyTypeInferer
      */
-    private $setterTypeDeclarationPropertyTypeInferer;
+    private SetterTypeDeclarationPropertyTypeInferer $setterTypeDeclarationPropertyTypeInferer;
     /**
      * @readonly
-     * @var \Rector\Php74\Guard\MakePropertyTypedGuard
      */
-    private $makePropertyTypedGuard;
+    private MakePropertyTypedGuard $makePropertyTypedGuard;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     public function __construct(GetterTypeDeclarationPropertyTypeInferer $getterTypeDeclarationPropertyTypeInferer, SetterTypeDeclarationPropertyTypeInferer $setterTypeDeclarationPropertyTypeInferer, MakePropertyTypedGuard $makePropertyTypedGuard, ReflectionResolver $reflectionResolver, StaticTypeMapper $staticTypeMapper)
     {
         $this->getterTypeDeclarationPropertyTypeInferer = $getterTypeDeclarationPropertyTypeInferer;
@@ -172,7 +167,12 @@ CODE_SAMPLE
         } else {
             $getterBasedStrictTypes = [$getterBasedStrictType];
         }
-        return new UnionType(\array_merge([$setterBasedStrictType], $getterBasedStrictTypes));
+        if ($setterBasedStrictType instanceof UnionType) {
+            $setterBasedStrictTypes = $setterBasedStrictType->getTypes();
+        } else {
+            $setterBasedStrictTypes = [$setterBasedStrictType];
+        }
+        return new UnionType(\array_merge($setterBasedStrictTypes, $getterBasedStrictTypes));
     }
     private function isDefaultExprTypeCompatible(Property $property, Type $getterSetterPropertyType) : bool
     {
@@ -189,7 +189,7 @@ CODE_SAMPLE
     {
         if (!TypeCombinator::containsNull($getterSetterPropertyType)) {
             if ($hasPropertyDefaultNull) {
-                // reset to nothign
+                // reset to nothing
                 $property->props[0]->default = null;
             }
             return;

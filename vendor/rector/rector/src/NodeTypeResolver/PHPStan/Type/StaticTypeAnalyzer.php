@@ -7,7 +7,6 @@ use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\ConstantScalarType;
 use PHPStan\Type\MixedType;
-use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use PHPStan\Type\UnionType;
@@ -16,9 +15,8 @@ final class StaticTypeAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\PHPStanStaticTypeMapper\TypeAnalyzer\UnionTypeAnalyzer
      */
-    private $unionTypeAnalyzer;
+    private UnionTypeAnalyzer $unionTypeAnalyzer;
     public function __construct(UnionTypeAnalyzer $unionTypeAnalyzer)
     {
         $this->unionTypeAnalyzer = $unionTypeAnalyzer;
@@ -41,7 +39,7 @@ final class StaticTypeAnalyzer
         if ($type instanceof ObjectType) {
             return \true;
         }
-        if ($type instanceof ConstantScalarType && !$type instanceof NullType) {
+        if ($type instanceof ConstantScalarType && !$type->isNull()->yes()) {
             return (bool) $type->getValue();
         }
         if ($type->isScalar()->yes()) {
@@ -63,7 +61,7 @@ final class StaticTypeAnalyzer
     }
     private function isAlwaysTruableArrayType(ArrayType $arrayType) : bool
     {
-        $itemType = $arrayType->getItemType();
+        $itemType = $arrayType->getIterableValueType();
         if (!$itemType instanceof ConstantScalarType) {
             return \false;
         }

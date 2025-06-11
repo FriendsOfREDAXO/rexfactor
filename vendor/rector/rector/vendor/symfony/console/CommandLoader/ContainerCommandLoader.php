@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\CommandLoader;
+namespace RectorPrefix202506\Symfony\Component\Console\CommandLoader;
 
-use RectorPrefix202411\Psr\Container\ContainerInterface;
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Exception\CommandNotFoundException;
+use RectorPrefix202506\Psr\Container\ContainerInterface;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Exception\CommandNotFoundException;
 /**
  * Loads commands from a PSR-11 container.
  *
@@ -20,14 +20,8 @@ use RectorPrefix202411\Symfony\Component\Console\Exception\CommandNotFoundExcept
  */
 class ContainerCommandLoader implements CommandLoaderInterface
 {
-    /**
-     * @var \Psr\Container\ContainerInterface
-     */
-    private $container;
-    /**
-     * @var mixed[]
-     */
-    private $commandMap;
+    private ContainerInterface $container;
+    private array $commandMap;
     /**
      * @param array $commandMap An array with command names as keys and service ids as values
      */

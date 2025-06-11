@@ -5,9 +5,9 @@ namespace Rector\Symfony\Symfony25\Rector\MethodCall;
 
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Type\ObjectType;
@@ -56,7 +56,7 @@ CODE_SAMPLE
         if (!$executionContext->isSuperTypeOf($objectType)->yes()) {
             return null;
         }
-        if (!$this->nodeNameResolver->isName($node->name, 'addViolationAt')) {
+        if (!$this->isName($node->name, 'addViolationAt')) {
             return null;
         }
         $args = $node->getArgs();

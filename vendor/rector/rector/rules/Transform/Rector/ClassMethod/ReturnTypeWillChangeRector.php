@@ -17,7 +17,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\ClassMethod\ReturnTypeWillChangeRector\ReturnTypeWillChangeRectorTest
  */
@@ -25,23 +25,20 @@ final class ReturnTypeWillChangeRector extends AbstractRector implements MinPhpV
 {
     /**
      * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer
      */
-    private $phpAttributeAnalyzer;
+    private PhpAttributeAnalyzer $phpAttributeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory
      */
-    private $phpAttributeGroupFactory;
+    private PhpAttributeGroupFactory $phpAttributeGroupFactory;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @var ClassMethodReference[]
      */
-    private $returnTypeChangedClassMethodReferences = [];
+    private array $returnTypeChangedClassMethodReferences = [];
     public function __construct(PhpAttributeAnalyzer $phpAttributeAnalyzer, PhpAttributeGroupFactory $phpAttributeGroupFactory, ReflectionResolver $reflectionResolver)
     {
         $this->phpAttributeAnalyzer = $phpAttributeAnalyzer;
@@ -93,7 +90,7 @@ CODE_SAMPLE
                 continue;
             }
             foreach ($this->returnTypeChangedClassMethodReferences as $returnTypeChangedClassMethodReference) {
-                if (!$classReflection->isSubclassOf($returnTypeChangedClassMethodReference->getClass())) {
+                if (!$classReflection->is($returnTypeChangedClassMethodReference->getClass())) {
                     continue;
                 }
                 if (!$this->isName($classMethod, $returnTypeChangedClassMethodReference->getMethod())) {

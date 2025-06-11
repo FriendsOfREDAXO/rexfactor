@@ -5,30 +5,18 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\Nette;
 /**
  * Represent RGB color (0..255) with opacity (0..1).
  */
 class ImageColor
 {
-    /**
-     * @var int
-     */
-    public $red;
-    /**
-     * @var int
-     */
-    public $green;
-    /**
-     * @var int
-     */
-    public $blue;
-    /**
-     * @var float
-     */
-    public $opacity = 1;
+    public int $red;
+    public int $green;
+    public int $blue;
+    public float $opacity = 1;
     public static function rgb(int $red, int $green, int $blue, float $opacity = 1) : self
     {
         return new self($red, $green, $blue, $opacity);

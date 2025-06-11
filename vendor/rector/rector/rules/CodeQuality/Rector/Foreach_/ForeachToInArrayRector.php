@@ -28,19 +28,16 @@ final class ForeachToInArrayRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\NodeManipulator\BinaryOpManipulator
      */
-    private $binaryOpManipulator;
+    private BinaryOpManipulator $binaryOpManipulator;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @readonly
-     * @var \PhpParser\NodeFinder
      */
-    private $nodeFinder;
+    private NodeFinder $nodeFinder;
     public function __construct(BinaryOpManipulator $binaryOpManipulator, ValueResolver $valueResolver, NodeFinder $nodeFinder)
     {
         $this->binaryOpManipulator = $binaryOpManipulator;
@@ -165,20 +162,18 @@ CODE_SAMPLE
      */
     private function matchNodes($binaryOp, Expr $expr) : ?TwoNodeMatch
     {
-        return $this->binaryOpManipulator->matchFirstAndSecondConditionNode($binaryOp, Variable::class, function (Node $node, Node $otherNode) use($expr) : bool {
-            return $this->nodeComparator->areNodesEqual($otherNode, $expr);
-        });
+        return $this->binaryOpManipulator->matchFirstAndSecondConditionNode($binaryOp, Variable::class, fn(Node $node, Node $otherNode): bool => $this->nodeComparator->areNodesEqual($otherNode, $expr));
     }
     private function isIfBodyABoolReturnNode(If_ $if) : bool
     {
-        $ifStatment = $if->stmts[0];
-        if (!$ifStatment instanceof Return_) {
+        $ifStatement = $if->stmts[0];
+        if (!$ifStatement instanceof Return_) {
             return \false;
         }
-        if (!$ifStatment->expr instanceof Expr) {
+        if (!$ifStatement->expr instanceof Expr) {
             return \false;
         }
-        return $this->valueResolver->isTrueOrFalse($ifStatment->expr);
+        return $this->valueResolver->isTrueOrFalse($ifStatement->expr);
     }
     /**
      * @param \PhpParser\Node\Expr\BinaryOp\Identical|\PhpParser\Node\Expr\BinaryOp\Equal $binaryOp

@@ -13,19 +13,16 @@ final class FileDiffFactory
 {
     /**
      * @readonly
-     * @var \Rector\Differ\DefaultDiffer
      */
-    private $defaultDiffer;
+    private DefaultDiffer $defaultDiffer;
     /**
      * @readonly
-     * @var \Rector\Console\Formatter\ConsoleDiffer
      */
-    private $consoleDiffer;
+    private ConsoleDiffer $consoleDiffer;
     /**
      * @readonly
-     * @var \Rector\FileSystem\FilePathHelper
      */
-    private $filePathHelper;
+    private FilePathHelper $filePathHelper;
     public function __construct(DefaultDiffer $defaultDiffer, ConsoleDiffer $consoleDiffer, FilePathHelper $filePathHelper)
     {
         $this->defaultDiffer = $defaultDiffer;
@@ -35,14 +32,10 @@ final class FileDiffFactory
     /**
      * @param RectorWithLineChange[] $rectorsWithLineChanges
      */
-    public function createFileDiffWithLineChanges(File $file, string $oldContent, string $newContent, array $rectorsWithLineChanges) : FileDiff
+    public function createFileDiffWithLineChanges(bool $shouldShowDiffs, File $file, string $oldContent, string $newContent, array $rectorsWithLineChanges) : FileDiff
     {
         $relativeFilePath = $this->filePathHelper->relativePath($file->getFilePath());
         // always keep the most recent diff
-        return new FileDiff($relativeFilePath, $this->defaultDiffer->diff($oldContent, $newContent), $this->consoleDiffer->diff($oldContent, $newContent), $rectorsWithLineChanges);
-    }
-    public function createTempFileDiff(File $file) : FileDiff
-    {
-        return $this->createFileDiffWithLineChanges($file, '', '', $file->getRectorWithLineChanges());
+        return new FileDiff($relativeFilePath, $shouldShowDiffs ? $this->defaultDiffer->diff($oldContent, $newContent) : '', $shouldShowDiffs ? $this->consoleDiffer->diff($oldContent, $newContent) : '', $rectorsWithLineChanges);
     }
 }

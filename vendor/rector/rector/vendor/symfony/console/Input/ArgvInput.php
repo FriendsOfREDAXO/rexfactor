@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Input;
+namespace RectorPrefix202506\Symfony\Component\Console\Input;
 
-use RectorPrefix202411\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\RuntimeException;
 /**
  * ArgvInput represents an input coming from the CLI arguments.
  *
@@ -38,17 +38,11 @@ use RectorPrefix202411\Symfony\Component\Console\Exception\RuntimeException;
  */
 class ArgvInput extends Input
 {
-    /**
-     * @var mixed[]
-     */
-    private $tokens;
-    /**
-     * @var mixed[]
-     */
-    private $parsed;
+    private array $tokens;
+    private array $parsed;
     public function __construct(?array $argv = null, ?InputDefinition $definition = null)
     {
-        $argv = $argv ?? $_SERVER['argv'] ?? [];
+        $argv ??= $_SERVER['argv'] ?? [];
         // strip the application name
         \array_shift($argv);
         $this->tokens = $argv;
@@ -161,8 +155,7 @@ class ArgvInput extends Input
         } else {
             $all = $this->definition->getArguments();
             $symfonyCommandName = null;
-            \reset($all);
-            if (($inputArgument = $all[$key = \key($all)] ?? null) && 'command' === $inputArgument->getName()) {
+            if (($inputArgument = $all[$key = \array_key_first($all)] ?? null) && 'command' === $inputArgument->getName()) {
                 $symfonyCommandName = $this->arguments['command'] ?? null;
                 unset($all[$key]);
             }

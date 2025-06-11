@@ -9,7 +9,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Global_;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitorAbstract;
 use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -19,9 +19,8 @@ final class GlobalVariableNodeVisitor extends NodeVisitorAbstract implements Sco
 {
     /**
      * @readonly
-     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
      */
-    private $simpleCallableNodeTraverser;
+    private SimpleCallableNodeTraverser $simpleCallableNodeTraverser;
     public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser)
     {
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
@@ -44,7 +43,9 @@ final class GlobalVariableNodeVisitor extends NodeVisitorAbstract implements Sco
             foreach ($stmt->vars as $variable) {
                 if ($variable instanceof Variable && !$variable->name instanceof Expr) {
                     $variable->setAttribute(AttributeKey::IS_GLOBAL_VAR, \true);
-                    $globalVariableNames[] = $variable->name;
+                    /** @var string $variableName */
+                    $variableName = $variable->name;
+                    $globalVariableNames[] = $variableName;
                 }
             }
         }
@@ -60,7 +61,7 @@ final class GlobalVariableNodeVisitor extends NodeVisitorAbstract implements Sco
         }
         $this->simpleCallableNodeTraverser->traverseNodesWithCallable($stmt, static function (Node $subNode) use($globalVariableNames) {
             if ($subNode instanceof Class_) {
-                return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+                return NodeVisitor::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
             if (!$subNode instanceof Variable) {
                 return null;

@@ -11,18 +11,22 @@ use PHPStan\Type\MixedType;
  */
 final class ArrayTypeComparator
 {
-    public function isSubtype(ArrayType $checkedType, ArrayType $mainType) : bool
+    /**
+     * @param \PHPStan\Type\ArrayType|\PHPStan\Type\Constant\ConstantArrayType $checkedType
+     * @param \PHPStan\Type\ArrayType|\PHPStan\Type\Constant\ConstantArrayType $mainType
+     */
+    public function isSubtype($checkedType, $mainType) : bool
     {
         if (!$checkedType instanceof ConstantArrayType && !$mainType instanceof ConstantArrayType) {
             return $mainType->isSuperTypeOf($checkedType)->yes();
         }
-        $checkedKeyType = $checkedType->getKeyType();
-        $mainKeyType = $mainType->getKeyType();
+        $checkedKeyType = $checkedType->getIterableKeyType();
+        $mainKeyType = $mainType->getIterableKeyType();
         if (!$mainKeyType instanceof MixedType && $mainKeyType->isSuperTypeOf($checkedKeyType)->yes()) {
             return \true;
         }
-        $checkedItemType = $checkedType->getItemType();
-        $mainItemType = $mainType->getItemType();
+        $checkedItemType = $checkedType->getIterableValueType();
+        $mainItemType = $mainType->getIterableValueType();
         return $checkedItemType->isSuperTypeOf($mainItemType)->yes();
     }
 }

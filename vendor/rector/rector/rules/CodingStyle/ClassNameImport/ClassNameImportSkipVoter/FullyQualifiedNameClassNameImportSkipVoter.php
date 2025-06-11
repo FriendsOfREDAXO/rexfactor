@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\ClassNameImport\ClassNameImportSkipVoter;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use Rector\CodingStyle\ClassNameImport\ShortNameResolver;
 use Rector\CodingStyle\Contract\ClassNameImport\ClassNameImportSkipVoterInterface;
@@ -22,9 +22,8 @@ final class FullyQualifiedNameClassNameImportSkipVoter implements ClassNameImpor
 {
     /**
      * @readonly
-     * @var \Rector\CodingStyle\ClassNameImport\ShortNameResolver
      */
-    private $shortNameResolver;
+    private ShortNameResolver $shortNameResolver;
     public function __construct(ShortNameResolver $shortNameResolver)
     {
         $this->shortNameResolver = $shortNameResolver;

@@ -33,7 +33,7 @@ final class ReplaceEachAssignmentWithKeyCurrentRector extends AbstractRector imp
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Replace each() assign outside loop', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Replace `each()` assign outside loop', [new CodeSample(<<<'CODE_SAMPLE'
 $array = ['b' => 1, 'a' => 2];
 
 $eachedArray = each($array);
@@ -87,7 +87,7 @@ CODE_SAMPLE
         if (!$assign->expr instanceof FuncCall) {
             return \true;
         }
-        if (!$this->nodeNameResolver->isName($assign->expr, 'each')) {
+        if (!$this->isName($assign->expr, 'each')) {
             return \true;
         }
         return $assign->var instanceof List_;
@@ -98,9 +98,7 @@ CODE_SAMPLE
     private function createNewStmts(Expr $assignVariable, Expr $eachedVariable) : array
     {
         $exprs = [$this->createDimFetchAssignWithFuncCall($assignVariable, $eachedVariable, 1, 'current'), $this->createDimFetchAssignWithFuncCall($assignVariable, $eachedVariable, 'value', 'current'), $this->createDimFetchAssignWithFuncCall($assignVariable, $eachedVariable, 0, self::KEY), $this->createDimFetchAssignWithFuncCall($assignVariable, $eachedVariable, self::KEY, self::KEY), $this->nodeFactory->createFuncCall('next', [new Arg($eachedVariable)])];
-        return \array_map(static function (Expr $expr) : Expression {
-            return new Expression($expr);
-        }, $exprs);
+        return \array_map(static fn(Expr $expr): Expression => new Expression($expr), $exprs);
     }
     /**
      * @param string|int $dimValue

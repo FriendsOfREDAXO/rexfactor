@@ -10,7 +10,7 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassConst;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PHPStan\Reflection\ReflectionProvider;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
@@ -18,7 +18,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Php55\Rector\String_\StringClassNameToClassConstantRector\StringClassNameToClassConstantRectorTest
  */
@@ -26,9 +26,8 @@ final class StringClassNameToClassConstantRector extends AbstractRector implemen
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @var string
      */
@@ -40,18 +39,15 @@ final class StringClassNameToClassConstantRector extends AbstractRector implemen
     /**
      * @var string[]
      */
-    private $classesToSkip = [];
-    /**
-     * @var bool
-     */
-    private $shouldKeepPreslash = \false;
+    private array $classesToSkip = [];
+    private bool $shouldKeepPreslash = \false;
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->reflectionProvider = $reflectionProvider;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Replace string class names by <class>::class constant', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Replace string class names by `<class>::class` constant', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 class AnotherClass
 {
 }
@@ -100,7 +96,7 @@ CODE_SAMPLE
         // keep allowed string as condition
         if ($node instanceof FuncCall) {
             if ($this->isName($node, 'is_a')) {
-                return NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return NodeVisitor::DONT_TRAVERSE_CHILDREN;
             }
             return null;
         }

@@ -4,11 +4,11 @@ declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\StmtsAwareInterface;
 
 use PhpParser\Node;
+use PhpParser\Node\DeclareItem;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Declare_;
-use PhpParser\Node\Stmt\DeclareDeclare;
 use PhpParser\Node\Stmt\Nop;
 use Rector\ChangesReporting\ValueObject\RectorWithLineChange;
 use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
@@ -18,7 +18,7 @@ use Rector\Rector\AbstractRector;
 use Rector\TypeDeclaration\NodeAnalyzer\DeclareStrictTypeFinder;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\StmtsAwareInterface\IncreaseDeclareStrictTypesRector\IncreaseDeclareStrictTypesRectorTest
  */
@@ -26,18 +26,11 @@ final class IncreaseDeclareStrictTypesRector extends AbstractRector implements C
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\DeclareStrictTypeFinder
      */
-    private $declareStrictTypeFinder;
+    private DeclareStrictTypeFinder $declareStrictTypeFinder;
     private const LIMIT = 'limit';
-    /**
-     * @var int
-     */
-    private $limit = 10;
-    /**
-     * @var int
-     */
-    private $changedItemCount = 0;
+    private int $limit = 10;
+    private int $changedItemCount = 0;
     public function __construct(DeclareStrictTypeFinder $declareStrictTypeFinder)
     {
         $this->declareStrictTypeFinder = $declareStrictTypeFinder;
@@ -77,13 +70,13 @@ CODE_SAMPLE
         if ($this->declareStrictTypeFinder->hasDeclareStrictTypes($stmt)) {
             return null;
         }
-        // keep change withing a limit
+        // keep change within a limit
         if ($this->changedItemCount >= $this->limit) {
             return null;
         }
         ++$this->changedItemCount;
         $strictTypesDeclare = $this->creteStrictTypesDeclare();
-        $rectorWithLineChange = new RectorWithLineChange(self::class, $stmt->getLine());
+        $rectorWithLineChange = new RectorWithLineChange(self::class, $stmt->getStartLine());
         $this->file->addRectorClassWithLine($rectorWithLineChange);
         return \array_merge([$strictTypesDeclare, new Nop()], $nodes);
     }
@@ -109,7 +102,7 @@ CODE_SAMPLE
     }
     private function creteStrictTypesDeclare() : Declare_
     {
-        $declareDeclare = new DeclareDeclare(new Identifier('strict_types'), new LNumber(1));
-        return new Declare_([$declareDeclare]);
+        $declareItem = new DeclareItem(new Identifier('strict_types'), new Int_(1));
+        return new Declare_([$declareItem]);
     }
 }

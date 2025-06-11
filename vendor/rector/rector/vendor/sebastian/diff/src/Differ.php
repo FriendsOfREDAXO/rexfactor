@@ -9,7 +9,7 @@ declare (strict_types=1);
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\SebastianBergmann\Diff;
+namespace RectorPrefix202506\SebastianBergmann\Diff;
 
 use const PHP_INT_SIZE;
 use const PREG_SPLIT_DELIM_CAPTURE;
@@ -28,7 +28,7 @@ use function prev;
 use function reset;
 use function str_ends_with;
 use function substr;
-use RectorPrefix202411\SebastianBergmann\Diff\Output\DiffOutputBuilderInterface;
+use RectorPrefix202506\SebastianBergmann\Diff\Output\DiffOutputBuilderInterface;
 final class Differ
 {
     public const OLD = 0;
@@ -36,17 +36,14 @@ final class Differ
     public const REMOVED = 2;
     public const DIFF_LINE_END_WARNING = 3;
     public const NO_LINE_END_EOF_WARNING = 4;
-    /**
-     * @var \SebastianBergmann\Diff\Output\DiffOutputBuilderInterface
-     */
-    private $outputBuilder;
+    private DiffOutputBuilderInterface $outputBuilder;
     public function __construct(DiffOutputBuilderInterface $outputBuilder)
     {
         $this->outputBuilder = $outputBuilder;
     }
     /**
-     * @param mixed[]|string $from
-     * @param mixed[]|string $to
+     * @param list<string>|string $from
+     * @param list<string>|string $to
      */
     public function diff($from, $to, ?LongestCommonSubsequenceCalculator $lcs = null) : string
     {
@@ -54,8 +51,8 @@ final class Differ
         return $this->outputBuilder->getDiff($diff);
     }
     /**
-     * @param mixed[]|string $from
-     * @param mixed[]|string $to
+     * @param list<string>|string $from
+     * @param list<string>|string $to
      */
     public function diffToArray($from, $to, ?LongestCommonSubsequenceCalculator $lcs = null) : array
     {

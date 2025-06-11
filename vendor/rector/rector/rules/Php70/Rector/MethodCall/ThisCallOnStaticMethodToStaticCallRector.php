@@ -8,15 +8,15 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\Encapsed;
+use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Stmt\Class_;
-use PhpParser\NodeTraverser;
-use PHPStan\Analyser\Scope;
+use PhpParser\NodeVisitor;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\Php\PhpMethodReflection;
 use Rector\Enum\ObjectReference;
 use Rector\NodeCollector\StaticAnalyzer;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
@@ -25,22 +25,17 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\Php70\Rector\MethodCall\ThisCallOnStaticMethodToStaticCallRector\ThisCallOnStaticMethodToStaticCallRectorTest
  */
-final class ThisCallOnStaticMethodToStaticCallRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ThisCallOnStaticMethodToStaticCallRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\NodeCollector\StaticAnalyzer
      */
-    private $staticAnalyzer;
+    private StaticAnalyzer $staticAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private ReflectionResolver $reflectionResolver;
+    private bool $hasChanged = \false;
     public function __construct(StaticAnalyzer $staticAnalyzer, ReflectionResolver $reflectionResolver)
     {
         $this->staticAnalyzer = $staticAnalyzer;
@@ -90,14 +85,15 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         if (!$scope->isInClass()) {
             return null;
         }
         $classReflection = $scope->getClassReflection();
         // skip PHPUnit calls, as they accept both self:: and $this-> formats
-        if ($classReflection->isSubclassOf('PHPUnit\\Framework\\TestCase')) {
+        if ($classReflection->is('PHPUnit\\Framework\\TestCase')) {
             return null;
         }
         $this->hasChanged = \false;
@@ -110,8 +106,8 @@ CODE_SAMPLE
     private function processThisToStatic(Class_ $class, ClassReflection $classReflection) : void
     {
         $this->traverseNodesWithCallable($class, function (Node $subNode) use($class, $classReflection) {
-            if ($subNode instanceof Encapsed) {
-                return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+            if ($subNode instanceof InterpolatedString) {
+                return NodeVisitor::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
             if (!$subNode instanceof MethodCall) {
                 return null;
@@ -119,7 +115,7 @@ CODE_SAMPLE
             if (!$subNode->var instanceof Variable) {
                 return null;
             }
-            if (!$this->nodeNameResolver->isName($subNode->var, 'this')) {
+            if (!$this->isName($subNode->var, 'this')) {
                 return null;
             }
             if (!$subNode->name instanceof Identifier) {

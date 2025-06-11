@@ -4,15 +4,16 @@ declare (strict_types=1);
 namespace Rector\DowngradePhp81\Rector\Array_;
 
 use PhpParser\Node;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PHPStan\Analyser\MutatingScope;
-use PHPStan\Analyser\Scope;
 use PHPStan\Type\ArrayType;
+use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\IntegerType;
 use Rector\DowngradePhp81\NodeAnalyzer\ArraySpreadAnalyzer;
 use Rector\DowngradePhp81\NodeFactory\ArrayMergeFromArraySpreadFactory;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -20,18 +21,16 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
  *
  * @see \Rector\Tests\DowngradePhp81\Rector\Array_\DowngradeArraySpreadStringKeyRector\DowngradeArraySpreadStringKeyRectorTest
  */
-final class DowngradeArraySpreadStringKeyRector extends AbstractScopeAwareRector
+final class DowngradeArraySpreadStringKeyRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\DowngradePhp81\NodeFactory\ArrayMergeFromArraySpreadFactory
      */
-    private $arrayMergeFromArraySpreadFactory;
+    private ArrayMergeFromArraySpreadFactory $arrayMergeFromArraySpreadFactory;
     /**
      * @readonly
-     * @var \Rector\DowngradePhp81\NodeAnalyzer\ArraySpreadAnalyzer
      */
-    private $arraySpreadAnalyzer;
+    private ArraySpreadAnalyzer $arraySpreadAnalyzer;
     public function __construct(ArrayMergeFromArraySpreadFactory $arrayMergeFromArraySpreadFactory, ArraySpreadAnalyzer $arraySpreadAnalyzer)
     {
         $this->arrayMergeFromArraySpreadFactory = $arrayMergeFromArraySpreadFactory;
@@ -63,7 +62,7 @@ CODE_SAMPLE
     /**
      * @param Array_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
         if (!$this->arraySpreadAnalyzer->isArrayWithUnpack($node)) {
             return null;
@@ -72,6 +71,7 @@ CODE_SAMPLE
             return null;
         }
         /** @var MutatingScope $scope */
+        $scope = ScopeFetcher::fetch($node);
         return $this->arrayMergeFromArraySpreadFactory->createFromArray($node, $scope);
     }
     private function shouldSkipArray(Array_ $array) : bool
@@ -81,7 +81,7 @@ CODE_SAMPLE
                 continue;
             }
             $type = $this->nodeTypeResolver->getType($item->value);
-            if (!$type instanceof ArrayType) {
+            if (!$type instanceof ArrayType && !$type instanceof ConstantArrayType) {
                 continue;
             }
             $keyType = $type->getKeyType();

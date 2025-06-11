@@ -5,6 +5,7 @@ namespace Rector\Renaming\NodeManipulator;
 
 use PhpParser\Node;
 use PhpParser\Node\AttributeGroup;
+use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
@@ -27,43 +28,36 @@ final class ClassRenamer
 {
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocClassRenamer
      */
-    private $phpDocClassRenamer;
+    private PhpDocClassRenamer $phpDocClassRenamer;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockClassRenamer
      */
-    private $docBlockClassRenamer;
+    private DocBlockClassRenamer $docBlockClassRenamer;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Util\FileHasher
      */
-    private $fileHasher;
+    private FileHasher $fileHasher;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\Renaming\Collector\RenamedNameCollector
      */
-    private $renamedNameCollector;
+    private RenamedNameCollector $renamedNameCollector;
     /**
      * @var array<string, OldToNewType[]>
      */
-    private $oldToNewTypesByCacheKey = [];
+    private array $oldToNewTypesByCacheKey = [];
     public function __construct(PhpDocClassRenamer $phpDocClassRenamer, PhpDocInfoFactory $phpDocInfoFactory, DocBlockClassRenamer $docBlockClassRenamer, ReflectionProvider $reflectionProvider, FileHasher $fileHasher, DocBlockUpdater $docBlockUpdater, RenamedNameCollector $renamedNameCollector)
     {
         $this->phpDocClassRenamer = $phpDocClassRenamer;
@@ -81,8 +75,17 @@ final class ClassRenamer
     public function renameNode(Node $node, array $oldToNewClasses, ?Scope $scope) : ?Node
     {
         $oldToNewTypes = $this->createOldToNewTypes($oldToNewClasses);
+        // execute FullyQualified before Name on purpose so next Name check is pure Name node
         if ($node instanceof FullyQualified) {
             return $this->refactorName($node, $oldToNewClasses);
+        }
+        // Name as parent of FullyQualified executed for fallback annotation to attribute rename to Name
+        if ($node instanceof Name) {
+            $phpAttributeName = $node->getAttribute(AttributeKey::PHP_ATTRIBUTE_NAME);
+            if (\is_string($phpAttributeName)) {
+                return $this->refactorName(new FullyQualified($phpAttributeName), $oldToNewClasses);
+            }
+            return null;
         }
         $phpDocInfo = $this->phpDocInfoFactory->createFromNode($node);
         if ($phpDocInfo instanceof PhpDocInfo) {

@@ -15,45 +15,39 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Function_;
-use PHPStan\Analyser\Scope;
 use Rector\DeadCode\SideEffect\SideEffectNodeDetector;
 use Rector\NodeAnalyzer\VariableAnalyzer;
 use Rector\NodeManipulator\StmtsManipulator;
 use Rector\Php\ReservedKeywordAnalyzer;
 use Rector\PhpParser\Node\BetterNodeFinder;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\DeadCode\Rector\Assign\RemoveUnusedVariableAssignRector\RemoveUnusedVariableAssignRectorTest
  */
-final class RemoveUnusedVariableAssignRector extends AbstractScopeAwareRector
+final class RemoveUnusedVariableAssignRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Php\ReservedKeywordAnalyzer
      */
-    private $reservedKeywordAnalyzer;
+    private ReservedKeywordAnalyzer $reservedKeywordAnalyzer;
     /**
      * @readonly
-     * @var \Rector\DeadCode\SideEffect\SideEffectNodeDetector
      */
-    private $sideEffectNodeDetector;
+    private SideEffectNodeDetector $sideEffectNodeDetector;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\VariableAnalyzer
      */
-    private $variableAnalyzer;
+    private VariableAnalyzer $variableAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\NodeManipulator\StmtsManipulator
      */
-    private $stmtsManipulator;
+    private StmtsManipulator $stmtsManipulator;
     public function __construct(ReservedKeywordAnalyzer $reservedKeywordAnalyzer, SideEffectNodeDetector $sideEffectNodeDetector, VariableAnalyzer $variableAnalyzer, BetterNodeFinder $betterNodeFinder, StmtsManipulator $stmtsManipulator)
     {
         $this->reservedKeywordAnalyzer = $reservedKeywordAnalyzer;
@@ -94,7 +88,7 @@ CODE_SAMPLE
      * @param ClassMethod|Function_ $node
      * @return null|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_
      */
-    public function refactorWithScope(Node $node, Scope $scope)
+    public function refactor(Node $node)
     {
         $stmts = $node->stmts;
         if ($stmts === null || $stmts === []) {
@@ -107,14 +101,14 @@ CODE_SAMPLE
         $assignedVariableNamesByStmtPosition = $this->resolvedAssignedVariablesByStmtPosition($stmts);
         $hasChanged = \false;
         foreach ($assignedVariableNamesByStmtPosition as $stmtPosition => $variableName) {
-            if ($this->stmtsManipulator->isVariableUsedInNextStmt($stmts, $stmtPosition + 1, $variableName)) {
+            if ($this->stmtsManipulator->isVariableUsedInNextStmt($node, $stmtPosition + 1, $variableName)) {
                 continue;
             }
             /** @var Expression<Assign> $currentStmt */
             $currentStmt = $stmts[$stmtPosition];
             /** @var Assign $assign */
             $assign = $currentStmt->expr;
-            if ($this->hasCallLikeInAssignExpr($assign, $scope)) {
+            if ($this->hasCallLikeInAssignExpr($assign)) {
                 // clean safely
                 $cleanAssignedExpr = $this->cleanCastedExpr($assign->expr);
                 $newExpression = new Expression($cleanAssignedExpr);
@@ -137,11 +131,9 @@ CODE_SAMPLE
         }
         return $this->cleanCastedExpr($expr->expr);
     }
-    private function hasCallLikeInAssignExpr(Expr $expr, Scope $scope) : bool
+    private function hasCallLikeInAssignExpr(Expr $expr) : bool
     {
-        return (bool) $this->betterNodeFinder->findFirst($expr, function (Node $subNode) use($scope) : bool {
-            return $this->sideEffectNodeDetector->detectCallExpr($subNode, $scope);
-        });
+        return (bool) $this->betterNodeFinder->findFirst($expr, fn(Node $subNode): bool => $this->sideEffectNodeDetector->detectCallExpr($subNode));
     }
     /**
      * @param Stmt[] $stmts

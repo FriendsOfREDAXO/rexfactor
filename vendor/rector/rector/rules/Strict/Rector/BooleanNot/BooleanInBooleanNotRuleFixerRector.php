@@ -6,7 +6,7 @@ namespace Rector\Strict\Rector\BooleanNot;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BooleanNot;
-use PHPStan\Analyser\Scope;
+use Rector\PHPStan\ScopeFetcher;
 use Rector\Strict\NodeFactory\ExactCompareFactory;
 use Rector\Strict\Rector\AbstractFalsyScalarRuleFixerRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
@@ -21,9 +21,8 @@ final class BooleanInBooleanNotRuleFixerRector extends AbstractFalsyScalarRuleFi
 {
     /**
      * @readonly
-     * @var \Rector\Strict\NodeFactory\ExactCompareFactory
      */
-    private $exactCompareFactory;
+    private ExactCompareFactory $exactCompareFactory;
     public function __construct(ExactCompareFactory $exactCompareFactory)
     {
         $this->exactCompareFactory = $exactCompareFactory;
@@ -69,8 +68,9 @@ CODE_SAMPLE
     /**
      * @param BooleanNot $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Expr
+    public function refactor(Node $node) : ?Expr
     {
+        $scope = ScopeFetcher::fetch($node);
         $exprType = $scope->getNativeType($node->expr);
         if ($exprType->isBoolean()->yes()) {
             return null;

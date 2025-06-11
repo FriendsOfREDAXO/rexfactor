@@ -4,25 +4,24 @@ declare (strict_types=1);
 namespace Rector\PhpAttribute\NodeFactory;
 
 use PhpParser\Node\Arg;
-use PhpParser\Node\Expr\ArrayItem;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\ArrayItem;
+use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ParameterReflection;
 use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\Type;
 use PHPStan\Type\UnionType;
 use Rector\Php80\ValueObject\AnnotationToAttribute;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class AnnotationToAttributeIntegerValueCaster
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->reflectionProvider = $reflectionProvider;
@@ -43,10 +42,13 @@ final class AnnotationToAttributeIntegerValueCaster
         $parameterReflections = $this->resolveConstructorParameterReflections($attributeClassReflection);
         foreach ($parameterReflections as $parameterReflection) {
             foreach ($args as $arg) {
-                if (!$arg->value instanceof ArrayItem) {
+                if (!$arg->value instanceof Array_) {
                     continue;
                 }
-                $arrayItem = $arg->value;
+                $arrayItem = \current($arg->value->items) ?: null;
+                if (!$arrayItem instanceof ArrayItem) {
+                    continue;
+                }
                 if (!$arrayItem->key instanceof String_) {
                     continue;
                 }
@@ -65,20 +67,20 @@ final class AnnotationToAttributeIntegerValueCaster
                 if (!\is_numeric($valueString->value)) {
                     continue;
                 }
-                $arrayItem->value = new LNumber((int) $valueString->value);
+                $arrayItem->value = new Int_((int) $valueString->value);
             }
         }
     }
     private function containsInteger(Type $type) : bool
     {
-        if ($type instanceof IntegerType) {
+        if ($type->isInteger()->yes()) {
             return \true;
         }
         if (!$type instanceof UnionType) {
             return \false;
         }
         foreach ($type->getTypes() as $unionedType) {
-            if ($unionedType instanceof IntegerType) {
+            if ($unionedType->isInteger()->yes()) {
                 return \true;
             }
         }
@@ -90,7 +92,7 @@ final class AnnotationToAttributeIntegerValueCaster
     private function resolveConstructorParameterReflections(ClassReflection $classReflection) : array
     {
         $extendedMethodReflection = $classReflection->getConstructor();
-        $parametersAcceptorWithPhpDocs = ParametersAcceptorSelector::combineAcceptors($extendedMethodReflection->getVariants());
-        return $parametersAcceptorWithPhpDocs->getParameters();
+        $extendedParametersAcceptor = ParametersAcceptorSelector::combineAcceptors($extendedMethodReflection->getVariants());
+        return $extendedParametersAcceptor->getParameters();
     }
 }

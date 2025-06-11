@@ -3,9 +3,9 @@
 declare (strict_types=1);
 namespace Rector\PhpAttribute\AnnotationToAttributeMapper;
 
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\String_;
@@ -13,7 +13,7 @@ use Rector\PhpAttribute\AnnotationToAttributeMapper;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
 use Rector\PhpAttribute\Enum\DocTagNodeState;
 use Rector\PhpParser\Node\Value\ValueResolver;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @implements AnnotationToAttributeMapperInterface<mixed[]>
  */
@@ -21,13 +21,9 @@ final class ArrayAnnotationToAttributeMapper implements AnnotationToAttributeMap
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
-    /**
-     * @var \Rector\PhpAttribute\AnnotationToAttributeMapper
-     */
-    private $annotationToAttributeMapper;
+    private ValueResolver $valueResolver;
+    private AnnotationToAttributeMapper $annotationToAttributeMapper;
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;

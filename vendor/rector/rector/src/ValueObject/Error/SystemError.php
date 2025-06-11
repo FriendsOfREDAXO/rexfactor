@@ -3,15 +3,15 @@
 declare (strict_types=1);
 namespace Rector\ValueObject\Error;
 
+use RectorPrefix202506\Nette\Utils\Strings;
 use Rector\Parallel\ValueObject\BridgeItem;
-use RectorPrefix202411\Symplify\EasyParallel\Contract\SerializableInterface;
+use RectorPrefix202506\Symplify\EasyParallel\Contract\SerializableInterface;
 final class SystemError implements SerializableInterface
 {
     /**
      * @readonly
-     * @var string
      */
-    private $message;
+    private string $message;
     /**
      * @readonly
      * @var string|null
@@ -37,10 +37,6 @@ final class SystemError implements SerializableInterface
     public function getMessage() : string
     {
         return $this->message;
-    }
-    public function getFile() : ?string
-    {
-        return $this->relativeFilePath;
     }
     public function getLine() : ?int
     {
@@ -72,14 +68,21 @@ final class SystemError implements SerializableInterface
     }
     /**
      * @param mixed[] $json
-     * @return $this
      */
-    public static function decode(array $json) : \RectorPrefix202411\Symplify\EasyParallel\Contract\SerializableInterface
+    public static function decode(array $json) : self
     {
         return new self($json[BridgeItem::MESSAGE], $json[BridgeItem::RELATIVE_FILE_PATH], $json[BridgeItem::LINE], $json[BridgeItem::RECTOR_CLASS]);
     }
     public function getRectorClass() : ?string
     {
         return $this->rectorClass;
+    }
+    public function getRectorShortClass() : ?string
+    {
+        $rectorClass = $this->rectorClass;
+        if ($rectorClass !== null && $rectorClass !== '' && $rectorClass !== '0') {
+            return (string) Strings::after($rectorClass, '\\', -1);
+        }
+        return null;
     }
 }

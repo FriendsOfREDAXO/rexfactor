@@ -6,6 +6,7 @@ namespace Rector\PHPUnit\CodeQuality\Rector\MethodCall;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Scalar;
@@ -20,9 +21,12 @@ final class FlipAssertRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
+    /**
+     * @var string[]
+     */
+    private const METHOD_NAMES = ['assertSame', 'assertNotSame', 'assertNotEquals', 'assertEquals', 'assertStringContainsString'];
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;
@@ -32,7 +36,7 @@ final class FlipAssertRector extends AbstractRector
         return new RuleDefinition('Turns accidentally flipped assert order to right one, with expected expr to left', [new CodeSample(<<<'CODE_SAMPLE'
 <?php
 
-namespace RectorPrefix202411;
+namespace RectorPrefix202506;
 
 use PHPUnit\Framework\TestCase;
 class SomeTest extends TestCase
@@ -48,7 +52,7 @@ CODE_SAMPLE
 , <<<'CODE_SAMPLE'
 <?php
 
-namespace RectorPrefix202411;
+namespace RectorPrefix202506;
 
 use PHPUnit\Framework\TestCase;
 class SomeTest extends TestCase
@@ -75,7 +79,7 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
-        if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, ['assertSame', 'assertEquals'])) {
+        if (!$this->testsNodeAnalyzer->isPHPUnitMethodCallNames($node, self::METHOD_NAMES)) {
             return null;
         }
         if ($node->isFirstClassCallable()) {
@@ -99,6 +103,9 @@ CODE_SAMPLE
     private function isScalarValue(Expr $expr) : bool
     {
         if ($expr instanceof Scalar) {
+            return \true;
+        }
+        if ($expr instanceof ConstFetch) {
             return \true;
         }
         return $expr instanceof ClassConstFetch;

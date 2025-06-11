@@ -5,9 +5,9 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Iterators;
+namespace RectorPrefix202506\Nette\Iterators;
 
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\Nette;
 /**
  * Smarter caching iterator.
  *
@@ -23,10 +23,7 @@ use RectorPrefix202411\Nette;
 class CachingIterator extends \CachingIterator implements \Countable
 {
     use Nette\SmartObject;
-    /**
-     * @var int
-     */
-    private $counter = 0;
+    private int $counter = 0;
     /**
      * @param iterable|\stdClass $iterable
      */

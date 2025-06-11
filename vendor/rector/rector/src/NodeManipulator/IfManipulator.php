@@ -21,24 +21,20 @@ final class IfManipulator
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\NodeManipulator\StmtsManipulator
      */
-    private $stmtsManipulator;
+    private \Rector\NodeManipulator\StmtsManipulator $stmtsManipulator;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Comparing\NodeComparator
      */
-    private $nodeComparator;
+    private NodeComparator $nodeComparator;
     public function __construct(BetterNodeFinder $betterNodeFinder, \Rector\NodeManipulator\StmtsManipulator $stmtsManipulator, ValueResolver $valueResolver, NodeComparator $nodeComparator)
     {
         $this->betterNodeFinder = $betterNodeFinder;
@@ -139,12 +135,7 @@ final class IfManipulator
         if (!$this->isIfWithoutElseAndElseIfs($currentIf)) {
             return [];
         }
-        $return = $this->betterNodeFinder->findFirstInstanceOf($currentIf->stmts, Return_::class);
-        if ($return instanceof Return_) {
-            return [];
-        }
-        $exit = $this->betterNodeFinder->findFirstInstanceOf($currentIf->stmts, Exit_::class);
-        if ($exit instanceof Exit_) {
+        if ($this->betterNodeFinder->hasInstancesOf($currentIf->stmts, [Return_::class, Exit_::class])) {
             return [];
         }
         // last if is with the expression

@@ -10,7 +10,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\ReplaceParentCallByPropertyCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\MethodCall\ReplaceParentCallByPropertyCallRector\ReplaceParentCallByPropertyCallRectorTest
  */
@@ -19,7 +19,7 @@ final class ReplaceParentCallByPropertyCallRector extends AbstractRector impleme
     /**
      * @var ReplaceParentCallByPropertyCall[]
      */
-    private $parentCallToProperties = [];
+    private array $parentCallToProperties = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Changes method calls in child of specific types to defined property method call', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

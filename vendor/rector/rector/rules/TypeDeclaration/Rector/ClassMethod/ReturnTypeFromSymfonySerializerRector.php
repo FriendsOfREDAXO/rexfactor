@@ -8,11 +8,11 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Return_;
-use PHPStan\Analyser\Scope;
 use PHPStan\Type\ObjectType;
 use Rector\NodeAnalyzer\ArgsAnalyzer;
 use Rector\PhpParser\Node\Value\ValueResolver;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
@@ -21,23 +21,20 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromSymfonySerializerRector\ReturnTypeFromSymfonySerializerRectorTest
  */
-final class ReturnTypeFromSymfonySerializerRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ReturnTypeFromSymfonySerializerRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ArgsAnalyzer
      */
-    private $argsAnalyzer;
+    private ArgsAnalyzer $argsAnalyzer;
     public function __construct(ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ValueResolver $valueResolver, ArgsAnalyzer $argsAnalyzer)
     {
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
@@ -84,8 +81,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         if ($node->stmts === null) {
             return null;
         }
@@ -103,7 +101,7 @@ CODE_SAMPLE
         }
         /** @var MethodCall $returnExpr */
         $returnExpr = $node->stmts[0]->expr;
-        if (!$this->nodeNameResolver->isName($returnExpr->name, 'deserialize')) {
+        if (!$this->isName($returnExpr->name, 'deserialize')) {
             return null;
         }
         if ($returnExpr->isFirstClassCallable()) {

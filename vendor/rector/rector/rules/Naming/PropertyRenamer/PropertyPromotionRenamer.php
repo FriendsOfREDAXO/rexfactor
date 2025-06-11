@@ -9,8 +9,8 @@ use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Interface_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
+use PHPStan\Reflection\ClassReflection;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
@@ -19,58 +19,59 @@ use Rector\Naming\ParamRenamer\ParamRenamer;
 use Rector\Naming\ValueObject\ParamRename;
 use Rector\Naming\ValueObjectFactory\ParamRenameFactory;
 use Rector\Naming\VariableRenamer;
+use Rector\NodeManipulator\PropertyManipulator;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\Php\PhpVersionProvider;
+use Rector\Reflection\ReflectionResolver;
 use Rector\ValueObject\MethodName;
 use Rector\ValueObject\PhpVersionFeature;
 final class PropertyPromotionRenamer
 {
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     /**
      * @readonly
-     * @var \Rector\Naming\ExpectedNameResolver\MatchParamTypeExpectedNameResolver
      */
-    private $matchParamTypeExpectedNameResolver;
+    private MatchParamTypeExpectedNameResolver $matchParamTypeExpectedNameResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\ValueObjectFactory\ParamRenameFactory
      */
-    private $paramRenameFactory;
+    private ParamRenameFactory $paramRenameFactory;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\Naming\ParamRenamer\ParamRenamer
      */
-    private $paramRenamer;
+    private ParamRenamer $paramRenamer;
     /**
      * @readonly
-     * @var \Rector\Naming\PropertyRenamer\PropertyFetchRenamer
      */
-    private $propertyFetchRenamer;
+    private \Rector\Naming\PropertyRenamer\PropertyFetchRenamer $propertyFetchRenamer;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\VariableRenamer
      */
-    private $variableRenamer;
+    private VariableRenamer $variableRenamer;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
-    public function __construct(PhpVersionProvider $phpVersionProvider, MatchParamTypeExpectedNameResolver $matchParamTypeExpectedNameResolver, ParamRenameFactory $paramRenameFactory, PhpDocInfoFactory $phpDocInfoFactory, ParamRenamer $paramRenamer, \Rector\Naming\PropertyRenamer\PropertyFetchRenamer $propertyFetchRenamer, NodeNameResolver $nodeNameResolver, VariableRenamer $variableRenamer, DocBlockUpdater $docBlockUpdater)
+    private DocBlockUpdater $docBlockUpdater;
+    /**
+     * @readonly
+     */
+    private ReflectionResolver $reflectionResolver;
+    /**
+     * @readonly
+     */
+    private PropertyManipulator $propertyManipulator;
+    public function __construct(PhpVersionProvider $phpVersionProvider, MatchParamTypeExpectedNameResolver $matchParamTypeExpectedNameResolver, ParamRenameFactory $paramRenameFactory, PhpDocInfoFactory $phpDocInfoFactory, ParamRenamer $paramRenamer, \Rector\Naming\PropertyRenamer\PropertyFetchRenamer $propertyFetchRenamer, NodeNameResolver $nodeNameResolver, VariableRenamer $variableRenamer, DocBlockUpdater $docBlockUpdater, ReflectionResolver $reflectionResolver, PropertyManipulator $propertyManipulator)
     {
         $this->phpVersionProvider = $phpVersionProvider;
         $this->matchParamTypeExpectedNameResolver = $matchParamTypeExpectedNameResolver;
@@ -81,24 +82,34 @@ final class PropertyPromotionRenamer
         $this->nodeNameResolver = $nodeNameResolver;
         $this->variableRenamer = $variableRenamer;
         $this->docBlockUpdater = $docBlockUpdater;
+        $this->reflectionResolver = $reflectionResolver;
+        $this->propertyManipulator = $propertyManipulator;
     }
-    /**
-     * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Interface_ $classLike
-     */
-    public function renamePropertyPromotion($classLike) : bool
+    public function renamePropertyPromotion(Class_ $class) : bool
     {
         $hasChanged = \false;
         if (!$this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::PROPERTY_PROMOTION)) {
             return \false;
         }
-        $constructClassMethod = $classLike->getMethod(MethodName::CONSTRUCT);
+        $constructClassMethod = $class->getMethod(MethodName::CONSTRUCT);
         if (!$constructClassMethod instanceof ClassMethod) {
+            return \false;
+        }
+        $classReflection = $this->reflectionResolver->resolveClassReflection($class);
+        if (!$classReflection instanceof ClassReflection) {
             return \false;
         }
         // resolve possible and existing param names
         $blockingParamNames = $this->resolveBlockingParamNames($constructClassMethod);
         foreach ($constructClassMethod->params as $param) {
-            if ($param->flags === 0) {
+            if (!$param->isPromoted()) {
+                continue;
+            }
+            // skip public properties, as they can be used in external code
+            if ($param->isPublic()) {
+                continue;
+            }
+            if (!$class->isFinal() && $param->isProtected()) {
                 continue;
             }
             // promoted property
@@ -113,7 +124,10 @@ final class PropertyPromotionRenamer
             if ($this->isNameSuffixed($currentParamName, $desiredPropertyName)) {
                 continue;
             }
-            $this->renameParamVarNameAndVariableUsage($classLike, $constructClassMethod, $desiredPropertyName, $param);
+            if ($this->propertyManipulator->isUsedByTrait($classReflection, $currentParamName)) {
+                continue;
+            }
+            $this->renameParamVarNameAndVariableUsage($class, $constructClassMethod, $desiredPropertyName, $param);
             $hasChanged = \true;
         }
         return $hasChanged;

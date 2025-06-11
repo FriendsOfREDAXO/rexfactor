@@ -17,7 +17,7 @@ use Rector\ValueObject\PhpVersion;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Doctrine\Tests\CodeQuality\Rector\Class_\YamlToAttributeDoctrineMappingRector\YamlToAttributeDoctrineMappingRectorTest
  */
@@ -25,18 +25,16 @@ final class YamlToAttributeDoctrineMappingRector extends AbstractRector implemen
 {
     /**
      * @readonly
-     * @var \Rector\Doctrine\CodeQuality\EntityMappingResolver
      */
-    private $entityMappingResolver;
+    private EntityMappingResolver $entityMappingResolver;
     /**
      * @readonly
-     * @var \Rector\Doctrine\CodeQuality\AttributeTransformer\YamlToAttributeTransformer
      */
-    private $yamlToAttributeTransformer;
+    private YamlToAttributeTransformer $yamlToAttributeTransformer;
     /**
      * @var string[]
      */
-    private $yamlMappingDirectories = [];
+    private array $yamlMappingDirectories = [];
     public function __construct(EntityMappingResolver $entityMappingResolver, YamlToAttributeTransformer $yamlToAttributeTransformer)
     {
         $this->entityMappingResolver = $entityMappingResolver;
@@ -86,7 +84,10 @@ CODE_SAMPLE
         if (!$entityMapping instanceof EntityMapping) {
             return null;
         }
-        $this->yamlToAttributeTransformer->transform($node, $entityMapping);
+        $hasChanged = $this->yamlToAttributeTransformer->transform($node, $entityMapping);
+        if (!$hasChanged) {
+            return null;
+        }
         return $node;
     }
     /**

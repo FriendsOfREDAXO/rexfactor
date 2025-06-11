@@ -9,10 +9,10 @@
  * the LICENSE file that was distributed with this source code.
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Composer\XdebugHandler;
+namespace RectorPrefix202506\Composer\XdebugHandler;
 
-use RectorPrefix202411\Composer\Pcre\Preg;
-use RectorPrefix202411\Psr\Log\LoggerInterface;
+use RectorPrefix202506\Composer\Pcre\Preg;
+use RectorPrefix202506\Psr\Log\LoggerInterface;
 /**
  * @author John Stevenson <john-stevenson@blueyonder.co.uk>
  *
@@ -239,7 +239,7 @@ class XdebugHandler
         }
         $this->tryEnableSignals();
         $this->notify(Status::RESTARTING, $displayCmd);
-        $process = \proc_open(\is_array($cmd) ? \implode(' ', \array_map('escapeshellarg', $cmd)) : $cmd, [], $pipes);
+        $process = \proc_open($cmd, [], $pipes);
         if (\is_resource($process)) {
             $exitCode = \proc_close($process);
         }

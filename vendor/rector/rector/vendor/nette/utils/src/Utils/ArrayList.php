@@ -5,9 +5,9 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\Nette;
 /**
  * Provides the base class for a generic list (items can be accessed by index).
  * @template T
@@ -17,10 +17,7 @@ use RectorPrefix202411\Nette;
 class ArrayList implements \ArrayAccess, \Countable, \IteratorAggregate
 {
     use Nette\SmartObject;
-    /**
-     * @var mixed[]
-     */
-    private $list = [];
+    private array $list = [];
     /**
      * Transforms array to ArrayList.
      * @param  list<T>  $array

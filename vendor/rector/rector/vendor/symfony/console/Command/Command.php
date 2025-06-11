@@ -8,23 +8,23 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Command;
+namespace RectorPrefix202506\Symfony\Component\Console\Command;
 
-use RectorPrefix202411\Symfony\Component\Console\Application;
-use RectorPrefix202411\Symfony\Component\Console\Attribute\AsCommand;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202411\Symfony\Component\Console\Completion\Suggestion;
-use RectorPrefix202411\Symfony\Component\Console\Exception\ExceptionInterface;
-use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202411\Symfony\Component\Console\Exception\LogicException;
-use RectorPrefix202411\Symfony\Component\Console\Helper\HelperInterface;
-use RectorPrefix202411\Symfony\Component\Console\Helper\HelperSet;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputDefinition;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Application;
+use RectorPrefix202506\Symfony\Component\Console\Attribute\AsCommand;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202506\Symfony\Component\Console\Completion\Suggestion;
+use RectorPrefix202506\Symfony\Component\Console\Exception\ExceptionInterface;
+use RectorPrefix202506\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202506\Symfony\Component\Console\Helper\HelperInterface;
+use RectorPrefix202506\Symfony\Component\Console\Helper\HelperSet;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputDefinition;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
 /**
  * Base class for all commands.
  *
@@ -48,62 +48,20 @@ class Command
      * @deprecated since Symfony 6.1, use the AsCommand attribute instead
      */
     protected static $defaultDescription;
-    /**
-     * @var \Symfony\Component\Console\Application|null
-     */
-    private $application;
-    /**
-     * @var string|null
-     */
-    private $name;
-    /**
-     * @var string|null
-     */
-    private $processTitle;
-    /**
-     * @var mixed[]
-     */
-    private $aliases = [];
-    /**
-     * @var \Symfony\Component\Console\Input\InputDefinition
-     */
-    private $definition;
-    /**
-     * @var bool
-     */
-    private $hidden = \false;
-    /**
-     * @var string
-     */
-    private $help = '';
-    /**
-     * @var string
-     */
-    private $description = '';
-    /**
-     * @var \Symfony\Component\Console\Input\InputDefinition|null
-     */
-    private $fullDefinition;
-    /**
-     * @var bool
-     */
-    private $ignoreValidationErrors = \false;
-    /**
-     * @var \Closure|null
-     */
-    private $code;
-    /**
-     * @var mixed[]
-     */
-    private $synopsis = [];
-    /**
-     * @var mixed[]
-     */
-    private $usages = [];
-    /**
-     * @var \Symfony\Component\Console\Helper\HelperSet|null
-     */
-    private $helperSet;
+    private ?Application $application = null;
+    private ?string $name = null;
+    private ?string $processTitle = null;
+    private array $aliases = [];
+    private InputDefinition $definition;
+    private bool $hidden = \false;
+    private string $help = '';
+    private string $description = '';
+    private ?InputDefinition $fullDefinition = null;
+    private bool $ignoreValidationErrors = \false;
+    private ?\Closure $code = null;
+    private array $synopsis = [];
+    private array $usages = [];
+    private ?HelperSet $helperSet = null;
     public static function getDefaultName() : ?string
     {
         $class = static::class;

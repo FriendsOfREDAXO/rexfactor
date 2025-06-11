@@ -5,10 +5,10 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
-use RectorPrefix202411\JetBrains\PhpStorm\Language;
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\JetBrains\PhpStorm\Language;
+use RectorPrefix202506\Nette;
 use function is_array, is_int, is_object, count;
 /**
  * Array tools library.
@@ -138,8 +138,7 @@ class Arrays
     public static function firstKey(array $array, ?callable $predicate = null)
     {
         if (!$predicate) {
-            \reset($array);
-            return \key($array);
+            return \array_key_first($array);
         }
         foreach ($array as $k => $v) {
             if ($predicate($v, $k, $array)) {
@@ -158,8 +157,7 @@ class Arrays
      */
     public static function lastKey(array $array, ?callable $predicate = null)
     {
-        \end($array);
-        return $predicate ? self::firstKey(\array_reverse($array, \true), $predicate) : \key($array);
+        return $predicate ? self::firstKey(\array_reverse($array, \true), $predicate) : \array_key_last($array);
     }
     /**
      * Inserts the contents of the $inserted array into the $array immediately after the $key.

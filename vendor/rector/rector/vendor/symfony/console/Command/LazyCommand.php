@@ -8,17 +8,17 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Command;
+namespace RectorPrefix202506\Symfony\Component\Console\Command;
 
-use RectorPrefix202411\Symfony\Component\Console\Application;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202411\Symfony\Component\Console\Completion\Suggestion;
-use RectorPrefix202411\Symfony\Component\Console\Helper\HelperInterface;
-use RectorPrefix202411\Symfony\Component\Console\Helper\HelperSet;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputDefinition;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Application;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202506\Symfony\Component\Console\Completion\Suggestion;
+use RectorPrefix202506\Symfony\Component\Console\Helper\HelperInterface;
+use RectorPrefix202506\Symfony\Component\Console\Helper\HelperSet;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputDefinition;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
@@ -28,10 +28,7 @@ final class LazyCommand extends Command
      * @var \Closure|\Symfony\Component\Console\Command\Command
      */
     private $command;
-    /**
-     * @var bool|null
-     */
-    private $isEnabled;
+    private ?bool $isEnabled;
     public function __construct(string $name, array $aliases, string $description, bool $isHidden, \Closure $commandFactory, ?bool $isEnabled = \true)
     {
         $this->setName($name)->setAliases($aliases)->setHidden($isHidden)->setDescription($description);

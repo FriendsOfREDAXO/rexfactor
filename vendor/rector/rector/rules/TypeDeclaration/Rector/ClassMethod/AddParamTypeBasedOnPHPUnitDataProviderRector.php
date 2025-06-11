@@ -3,12 +3,12 @@
 declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Attribute;
 use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\Yield_;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
@@ -22,7 +22,6 @@ use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
-use Rector\Exception\ShouldNotHappenException;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
@@ -39,29 +38,24 @@ final class AddParamTypeBasedOnPHPUnitDataProviderRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
-    private $typeFactory;
+    private TypeFactory $typeFactory;
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @var string
      */
@@ -144,7 +138,7 @@ CODE_SAMPLE
             }
             $dataProviderNodes = $this->resolveDataProviderNodes($classMethod);
             if ($dataProviderNodes->isEmpty()) {
-                return null;
+                continue;
             }
             $hasClassMethodChanged = $this->refactorClassMethod($classMethod, $node, $dataProviderNodes->nodes);
             if ($hasClassMethodChanged) {
@@ -257,7 +251,7 @@ CODE_SAMPLE
         $paramOnPositionTypes = [];
         foreach ($array->items as $singleDataProvidedSet) {
             if (!$singleDataProvidedSet instanceof ArrayItem || !$singleDataProvidedSet->value instanceof Array_) {
-                throw new ShouldNotHappenException();
+                return [];
             }
             foreach ($singleDataProvidedSet->value->items as $position => $singleDataProvidedSetItem) {
                 if ($position !== $parameterPosition) {
@@ -289,7 +283,7 @@ CODE_SAMPLE
         $dataProviders = [];
         foreach ($attrGroups as $attrGroup) {
             foreach ($attrGroup->attrs as $attribute) {
-                if (!$this->nodeNameResolver->isName($attribute->name, $attributeName)) {
+                if (!$this->isName($attribute->name, $attributeName)) {
                     continue;
                 }
                 $dataProviders[] = $attribute;
@@ -318,8 +312,11 @@ CODE_SAMPLE
             if ($paramTypeDeclaration instanceof MixedType) {
                 continue;
             }
-            $param->type = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($paramTypeDeclaration, TypeKind::PARAM);
-            $hasChanged = \true;
+            $type = $this->staticTypeMapper->mapPHPStanTypeToPhpParserNode($paramTypeDeclaration, TypeKind::PARAM);
+            if ($type instanceof Node) {
+                $param->type = $type;
+                $hasChanged = \true;
+            }
         }
         return $hasChanged;
     }

@@ -3,8 +3,8 @@
 declare (strict_types=1);
 namespace Rector\PhpAttribute\AnnotationToAttributeMapper;
 
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use Rector\BetterPhpDocParser\PhpDoc\ArrayItemNode;
@@ -14,16 +14,13 @@ use Rector\PhpAttribute\AnnotationToAttributeMapper;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
 use Rector\PhpAttribute\Enum\DocTagNodeState;
 use Rector\Validation\RectorAssert;
-use RectorPrefix202411\Webmozart\Assert\InvalidArgumentException;
+use RectorPrefix202506\Webmozart\Assert\InvalidArgumentException;
 /**
  * @implements AnnotationToAttributeMapperInterface<ArrayItemNode>
  */
 final class ArrayItemNodeAnnotationToAttributeMapper implements AnnotationToAttributeMapperInterface
 {
-    /**
-     * @var \Rector\PhpAttribute\AnnotationToAttributeMapper
-     */
-    private $annotationToAttributeMapper;
+    private AnnotationToAttributeMapper $annotationToAttributeMapper;
     /**
      * Avoid circular reference
      */
@@ -41,7 +38,7 @@ final class ArrayItemNodeAnnotationToAttributeMapper implements AnnotationToAttr
     /**
      * @param ArrayItemNode $arrayItemNode
      */
-    public function map($arrayItemNode) : Expr
+    public function map($arrayItemNode) : ArrayItem
     {
         $valueExpr = $this->annotationToAttributeMapper->map($arrayItemNode->value);
         if ($valueExpr === DocTagNodeState::REMOVE_ARRAY) {

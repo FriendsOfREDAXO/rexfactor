@@ -7,40 +7,36 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
-use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\PHPStan\ScopeFetcher;
 use Rector\Privatization\Guard\OverrideByParentClassGuard;
 use Rector\Privatization\NodeManipulator\VisibilityManipulator;
 use Rector\Privatization\VisibilityGuard\ClassMethodVisibilityGuard;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\Privatization\Rector\ClassMethod\PrivatizeFinalClassMethodRector\PrivatizeFinalClassMethodRectorTest
  */
-final class PrivatizeFinalClassMethodRector extends AbstractScopeAwareRector
+final class PrivatizeFinalClassMethodRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Privatization\VisibilityGuard\ClassMethodVisibilityGuard
      */
-    private $classMethodVisibilityGuard;
+    private ClassMethodVisibilityGuard $classMethodVisibilityGuard;
     /**
      * @readonly
-     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
-    private $visibilityManipulator;
+    private VisibilityManipulator $visibilityManipulator;
     /**
      * @readonly
-     * @var \Rector\Privatization\Guard\OverrideByParentClassGuard
      */
-    private $overrideByParentClassGuard;
+    private OverrideByParentClassGuard $overrideByParentClassGuard;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     public function __construct(ClassMethodVisibilityGuard $classMethodVisibilityGuard, VisibilityManipulator $visibilityManipulator, OverrideByParentClassGuard $overrideByParentClassGuard, BetterNodeFinder $betterNodeFinder)
     {
         $this->classMethodVisibilityGuard = $classMethodVisibilityGuard;
@@ -78,8 +74,9 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         if (!$node->isFinal()) {
             return null;
         }
@@ -118,6 +115,9 @@ CODE_SAMPLE
             return \true;
         }
         if (!$classMethod->isProtected()) {
+            return \true;
+        }
+        if ($classMethod->isMagic()) {
             return \true;
         }
         // if has parent call, its probably overriding parent one → skip it

@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Command;
+namespace RectorPrefix202506\Symfony\Component\Console\Command;
 
-use RectorPrefix202411\Symfony\Component\Console\Descriptor\ApplicationDescription;
-use RectorPrefix202411\Symfony\Component\Console\Helper\DescriptorHelper;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Descriptor\ApplicationDescription;
+use RectorPrefix202506\Symfony\Component\Console\Helper\DescriptorHelper;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
 /**
  * ListCommand displays the list of all available commands for the application.
  *
@@ -28,11 +28,7 @@ class ListCommand extends Command
      */
     protected function configure()
     {
-        $this->setName('list')->setDefinition([new InputArgument('namespace', InputArgument::OPTIONAL, 'The namespace name', null, function () {
-            return \array_keys((new ApplicationDescription($this->getApplication()))->getNamespaces());
-        }), new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command list'), new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, xml, json, or md)', 'txt', function () {
-            return (new DescriptorHelper())->getFormats();
-        }), new InputOption('short', null, InputOption::VALUE_NONE, 'To skip describing commands\' arguments')])->setDescription('List commands')->setHelp(<<<'EOF'
+        $this->setName('list')->setDefinition([new InputArgument('namespace', InputArgument::OPTIONAL, 'The namespace name', null, fn() => \array_keys((new ApplicationDescription($this->getApplication()))->getNamespaces())), new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command list'), new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (txt, xml, json, or md)', 'txt', fn() => (new DescriptorHelper())->getFormats()), new InputOption('short', null, InputOption::VALUE_NONE, 'To skip describing commands\' arguments')])->setDescription('List commands')->setHelp(<<<'EOF'
 The <info>%command.name%</info> command lists all commands:
 
   <info>%command.full_name%</info>

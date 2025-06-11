@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Formatter;
+namespace RectorPrefix202506\Symfony\Component\Console\Formatter;
 
-use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202411\Symfony\Contracts\Service\ResetInterface;
+use RectorPrefix202506\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Contracts\Service\ResetInterface;
 /**
  * @author Jean-François Simon <contact@jfsimon.fr>
  */
@@ -20,11 +20,8 @@ class OutputFormatterStyleStack implements ResetInterface
     /**
      * @var OutputFormatterStyleInterface[]
      */
-    private $styles = [];
-    /**
-     * @var \Symfony\Component\Console\Formatter\OutputFormatterStyleInterface
-     */
-    private $emptyStyle;
+    private array $styles = [];
+    private OutputFormatterStyleInterface $emptyStyle;
     public function __construct(?OutputFormatterStyleInterface $emptyStyle = null)
     {
         $this->emptyStyle = $emptyStyle ?? new OutputFormatterStyle();

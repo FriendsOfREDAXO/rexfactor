@@ -10,7 +10,7 @@ use Rector\PhpParser\Node\Value\ValueResolver;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\String_\RenameStringRector\RenameStringRectorTest
  */
@@ -18,13 +18,12 @@ final class RenameStringRector extends AbstractRector implements ConfigurableRec
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @var array<string, string>
      */
-    private $stringChanges = [];
+    private array $stringChanges = [];
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;

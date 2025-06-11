@@ -12,7 +12,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\StaticCallToNew;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\StaticCall\StaticCallToNewRector\StaticCallToNewRectorTest
  */
@@ -21,7 +21,7 @@ final class StaticCallToNewRector extends AbstractRector implements Configurable
     /**
      * @var StaticCallToNew[]
      */
-    private $staticCallsToNews = [];
+    private array $staticCallsToNews = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Change static call to new instance', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

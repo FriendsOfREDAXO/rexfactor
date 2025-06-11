@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Process\Pipes;
+namespace RectorPrefix202506\Symfony\Component\Process\Pipes;
 
-use RectorPrefix202411\Symfony\Component\Process\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Process\Exception\InvalidArgumentException;
 /**
  * @author Romain Neutron <imprec@gmail.com>
  *
@@ -18,24 +18,12 @@ use RectorPrefix202411\Symfony\Component\Process\Exception\InvalidArgumentExcept
  */
 abstract class AbstractPipes implements PipesInterface
 {
-    /**
-     * @var mixed[]
-     */
-    public $pipes = [];
-    /**
-     * @var string
-     */
-    private $inputBuffer = '';
+    public array $pipes = [];
+    private string $inputBuffer = '';
     /** @var resource|string|\Iterator */
     private $input;
-    /**
-     * @var bool
-     */
-    private $blocked = \true;
-    /**
-     * @var string|null
-     */
-    private $lastError;
+    private bool $blocked = \true;
+    private ?string $lastError = null;
     /**
      * @param resource|string|\Iterator $input
      */

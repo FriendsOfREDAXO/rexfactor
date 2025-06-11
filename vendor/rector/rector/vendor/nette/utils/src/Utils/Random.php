@@ -5,9 +5,9 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\Nette;
 use Random\Randomizer;
 /**
  * Secure random string generator.
@@ -21,9 +21,7 @@ final class Random
      */
     public static function generate(int $length = 10, string $charlist = '0-9a-z') : string
     {
-        $charlist = \preg_replace_callback('#.-.#', function (array $m) : string {
-            return \implode('', \range($m[0][0], $m[0][2]));
-        }, $charlist);
+        $charlist = \preg_replace_callback('#.-.#', fn(array $m): string => \implode('', \range($m[0][0], $m[0][2])), $charlist);
         $charlist = \count_chars($charlist, 3);
         $chLen = \strlen($charlist);
         if ($length < 1) {

@@ -3,12 +3,20 @@
 declare (strict_types=1);
 namespace Rector\Set\ValueObject;
 
-use Rector\Set\Contract\SetListInterface;
 /**
  * @api
+ * @deprecated use ->withDowngradeSets() in rector.php instead
  */
-final class DowngradeLevelSetList implements SetListInterface
+final class DowngradeLevelSetList
 {
+    /**
+     * @var string
+     */
+    public const DOWN_TO_PHP_84 = __DIR__ . '/../../../config/set/level/down-to-php84.php';
+    /**
+     * @var string
+     */
+    public const DOWN_TO_PHP_83 = __DIR__ . '/../../../config/set/level/down-to-php83.php';
     /**
      * @var string
      */

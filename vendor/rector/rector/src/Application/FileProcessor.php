@@ -3,8 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Application;
 
-use RectorPrefix202411\Nette\Utils\FileSystem;
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\FileSystem;
 use PHPStan\AnalysedCodeException;
 use PHPStan\Parser\ParserErrorsException;
 use Rector\Caching\Detector\ChangedFilesDetector;
@@ -23,66 +22,50 @@ use Rector\ValueObject\Application\File;
 use Rector\ValueObject\Configuration;
 use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\FileProcessResult;
-use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202411\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202506\Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
 final class FileProcessor
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Printer\BetterStandardPrinter
      */
-    private $betterStandardPrinter;
+    private BetterStandardPrinter $betterStandardPrinter;
     /**
      * @readonly
-     * @var \Rector\PhpParser\NodeTraverser\RectorNodeTraverser
      */
-    private $rectorNodeTraverser;
+    private RectorNodeTraverser $rectorNodeTraverser;
     /**
      * @readonly
-     * @var \Symfony\Component\Console\Style\SymfonyStyle
      */
-    private $symfonyStyle;
+    private SymfonyStyle $symfonyStyle;
     /**
      * @readonly
-     * @var \Rector\ChangesReporting\ValueObjectFactory\FileDiffFactory
      */
-    private $fileDiffFactory;
+    private FileDiffFactory $fileDiffFactory;
     /**
      * @readonly
-     * @var \Rector\Caching\Detector\ChangedFilesDetector
      */
-    private $changedFilesDetector;
+    private ChangedFilesDetector $changedFilesDetector;
     /**
      * @readonly
-     * @var \Rector\ChangesReporting\ValueObjectFactory\ErrorFactory
      */
-    private $errorFactory;
+    private ErrorFactory $errorFactory;
     /**
      * @readonly
-     * @var \Rector\FileSystem\FilePathHelper
      */
-    private $filePathHelper;
+    private FilePathHelper $filePathHelper;
     /**
      * @readonly
-     * @var \Rector\PostRector\Application\PostFileProcessor
      */
-    private $postFileProcessor;
+    private PostFileProcessor $postFileProcessor;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Parser\RectorParser
      */
-    private $rectorParser;
+    private RectorParser $rectorParser;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeScopeAndMetadataDecorator
      */
-    private $nodeScopeAndMetadataDecorator;
-    /**
-     * @var string
-     * @see https://regex101.com/r/llm7XZ/1
-     */
-    private const OPEN_TAG_SPACED_REGEX = '#^[ \\t]+<\\?php#m';
+    private NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator;
     public function __construct(BetterStandardPrinter $betterStandardPrinter, RectorNodeTraverser $rectorNodeTraverser, SymfonyStyle $symfonyStyle, FileDiffFactory $fileDiffFactory, ChangedFilesDetector $changedFilesDetector, ErrorFactory $errorFactory, FilePathHelper $filePathHelper, PostFileProcessor $postFileProcessor, RectorParser $rectorParser, NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator)
     {
         $this->betterStandardPrinter = $betterStandardPrinter;
@@ -106,31 +89,34 @@ final class FileProcessor
         }
         $fileHasChanged = \false;
         $filePath = $file->getFilePath();
-        // 2. change nodes with Rectors
-        $rectorWithLineChanges = null;
         do {
             $file->changeHasChanged(\false);
+            // 1. change nodes with Rector Rules
             $newStmts = $this->rectorNodeTraverser->traverse($file->getNewStmts());
-            // apply post rectors
+            // 2. apply post rectors
             $postNewStmts = $this->postFileProcessor->traverse($newStmts, $file);
-            // this is needed for new tokens added in "afterTraverse()"
+            // 3. this is needed for new tokens added in "afterTraverse()"
             $file->changeNewStmts($postNewStmts);
-            // 3. print to file or string
+            // 4. print to file or string
             // important to detect if file has changed
             $this->printFile($file, $configuration, $filePath);
-            $fileHasChangedInCurrentPass = $file->hasChanged();
-            if ($fileHasChangedInCurrentPass) {
-                $file->setFileDiff($this->fileDiffFactory->createTempFileDiff($file));
-                $rectorWithLineChanges = $file->getRectorWithLineChanges();
-                $fileHasChanged = \true;
+            // no change in current iteration, stop
+            if (!$file->hasChanged()) {
+                break;
             }
-        } while ($fileHasChangedInCurrentPass);
+            $fileHasChanged = \true;
+        } while (\true);
         // 5. add as cacheable if not changed at all
         if (!$fileHasChanged) {
-            $this->changedFilesDetector->addCachableFile($filePath);
+            $this->changedFilesDetector->addCacheableFile($filePath);
+        } else {
+            // when changed, set final status changed to true
+            // to ensure it make sense to verify in next process when needed
+            $file->changeHasChanged(\true);
         }
-        if ($configuration->shouldShowDiffs() && $rectorWithLineChanges !== null) {
-            $currentFileDiff = $this->fileDiffFactory->createFileDiffWithLineChanges($file, $file->getOriginalFileContent(), $file->getFileContent(), $rectorWithLineChanges);
+        $rectorWithLineChanges = $file->getRectorWithLineChanges();
+        if ($file->hasChanged() || $rectorWithLineChanges !== []) {
+            $currentFileDiff = $this->fileDiffFactory->createFileDiffWithLineChanges($configuration->shouldShowDiffs(), $file, $file->getOriginalFileContent(), $file->getFileContent(), $file->getRectorWithLineChanges());
             $file->setFileDiff($currentFileDiff);
         }
         return new FileProcessResult([], $file->getFileDiff());
@@ -138,7 +124,11 @@ final class FileProcessor
     private function parseFileAndDecorateNodes(File $file) : ?SystemError
     {
         try {
-            $this->parseFileNodes($file);
+            try {
+                $this->parseFileNodes($file);
+            } catch (ParserErrorsException $exception) {
+                $this->parseFileNodes($file, \false);
+            }
         } catch (ShouldNotHappenException $shouldNotHappenException) {
             throw $shouldNotHappenException;
         } catch (AnalysedCodeException $analysedCodeException) {
@@ -163,27 +153,6 @@ final class FileProcessor
     {
         // only save to string first, no need to print to file when not needed
         $newContent = $this->betterStandardPrinter->printFormatPreserving($file->getNewStmts(), $file->getOldStmts(), $file->getOldTokens());
-        /**
-         * When no diff applied, the PostRector may still change the content, that's why printing still needed
-         * On printing, the space may be wiped, these below check compare with original file content used to verify
-         * that no change actually needed
-         */
-        if (!$file->getFileDiff() instanceof FileDiff) {
-            /**
-             * Handle new line or space before <?php or InlineHTML node wiped on print format preserving
-             * On very first content level
-             */
-            $ltrimOriginalFileContent = \ltrim($file->getOriginalFileContent());
-            if ($ltrimOriginalFileContent === $newContent) {
-                return;
-            }
-            // handle space before <?php
-            $ltrimNewContent = Strings::replace($newContent, self::OPEN_TAG_SPACED_REGEX, '<?php');
-            $ltrimOriginalFileContent = Strings::replace($ltrimOriginalFileContent, self::OPEN_TAG_SPACED_REGEX, '<?php');
-            if ($ltrimOriginalFileContent === $ltrimNewContent) {
-                return;
-            }
-        }
         // change file content early to make $file->hasChanged() based on new content
         $file->changeFileContent($newContent);
         if ($configuration->isDryRun()) {
@@ -194,10 +163,10 @@ final class FileProcessor
         }
         FileSystem::write($filePath, $newContent, null);
     }
-    private function parseFileNodes(File $file) : void
+    private function parseFileNodes(File $file, bool $forNewestSupportedVersion = \true) : void
     {
         // store tokens by original file content, so we don't have to print them right now
-        $stmtsAndTokens = $this->rectorParser->parseFileContentToStmtsAndTokens($file->getOriginalFileContent());
+        $stmtsAndTokens = $this->rectorParser->parseFileContentToStmtsAndTokens($file->getOriginalFileContent(), $forNewestSupportedVersion);
         $oldStmts = $stmtsAndTokens->getStmts();
         $oldTokens = $stmtsAndTokens->getTokens();
         $newStmts = $this->nodeScopeAndMetadataDecorator->decorateNodesFromFile($file->getFilePath(), $oldStmts);

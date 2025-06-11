@@ -18,16 +18,15 @@ final class CallUserFuncToMethodCallRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\CodingStyle\NodeFactory\ArrayCallableToMethodCallFactory
      */
-    private $arrayCallableToMethodCallFactory;
+    private ArrayCallableToMethodCallFactory $arrayCallableToMethodCallFactory;
     public function __construct(ArrayCallableToMethodCallFactory $arrayCallableToMethodCallFactory)
     {
         $this->arrayCallableToMethodCallFactory = $arrayCallableToMethodCallFactory;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Refactor call_user_func() on known class method to a method call', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Refactor `call_user_func()` on known class method to a method call', [new CodeSample(<<<'CODE_SAMPLE'
 final class SomeClass
 {
     public function run()

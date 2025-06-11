@@ -10,7 +10,6 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Return_;
-use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
@@ -23,8 +22,9 @@ use Rector\NodeAnalyzer\ClassAnalyzer;
 use Rector\NodeTypeResolver\NodeTypeResolver\NewTypeResolver;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
 use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\PHPStan\ScopeFetcher;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\StaticTypeMapper\ValueObject\Type\SelfStaticType;
@@ -40,63 +40,52 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromReturnNewRector\ReturnTypeFromReturnNewRectorTest
  */
-final class ReturnTypeFromReturnNewRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ReturnTypeFromReturnNewRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
-    private $typeFactory;
+    private TypeFactory $typeFactory;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnTypeAnalyzer\StrictReturnNewAnalyzer
      */
-    private $strictReturnNewAnalyzer;
+    private StrictReturnNewAnalyzer $strictReturnNewAnalyzer;
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ClassAnalyzer
      */
-    private $classAnalyzer;
+    private ClassAnalyzer $classAnalyzer;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver\NewTypeResolver
      */
-    private $newTypeResolver;
+    private NewTypeResolver $newTypeResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
      */
-    private $returnAnalyzer;
+    private ReturnAnalyzer $returnAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Symfony\TypeAnalyzer\ControllerAnalyzer
      */
-    private $controllerAnalyzer;
+    private ControllerAnalyzer $controllerAnalyzer;
     public function __construct(TypeFactory $typeFactory, ReflectionProvider $reflectionProvider, ReflectionResolver $reflectionResolver, StrictReturnNewAnalyzer $strictReturnNewAnalyzer, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ClassAnalyzer $classAnalyzer, NewTypeResolver $newTypeResolver, BetterNodeFinder $betterNodeFinder, StaticTypeMapper $staticTypeMapper, ReturnAnalyzer $returnAnalyzer, ControllerAnalyzer $controllerAnalyzer)
     {
         $this->typeFactory = $typeFactory;
@@ -143,8 +132,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod|Function_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         // already filled
         if ($node->returnType instanceof Node) {
             return null;

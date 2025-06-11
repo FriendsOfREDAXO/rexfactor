@@ -3,9 +3,9 @@
 declare (strict_types=1);
 namespace Rector\Symfony\ValueObjectFactory;
 
-use RectorPrefix202411\Nette\Utils\FileSystem;
-use RectorPrefix202411\Nette\Utils\Json;
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\FileSystem;
+use RectorPrefix202506\Nette\Utils\Json;
+use RectorPrefix202506\Nette\Utils\Strings;
 use Rector\Symfony\Exception\XmlContainerNotExistsException;
 use Rector\Symfony\ValueObject\ServiceDefinition;
 use Rector\Symfony\ValueObject\ServiceMap\ServiceMap;
@@ -38,6 +38,9 @@ final class ServiceMapFactory
             }
             $def = $this->convertXmlToArray($def);
             $tags = $this->createTagFromXmlElement($def);
+            if (\in_array('container.excluded', \array_column($tags, 'name'), \true)) {
+                continue;
+            }
             $service = $this->createServiceFromXmlAndTagsData($attrs, $tags);
             if ($service->getAlias() !== null) {
                 $aliases[] = $service;

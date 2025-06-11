@@ -28,14 +28,12 @@ final class ArrayKeyFirstLastRector extends AbstractRector implements MinPhpVers
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @var string
      */
@@ -83,7 +81,7 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?StmtsAwareInterface
     {
-        return $this->processArrayKeyFirstLast($node, \false);
+        return $this->processArrayKeyFirstLast($node);
     }
     public function provideMinPhpVersion() : int
     {
@@ -93,16 +91,13 @@ CODE_SAMPLE
     {
         return PolyfillPackage::PHP_73;
     }
-    private function processArrayKeyFirstLast(StmtsAwareInterface $stmtsAware, bool $hasChanged, int $jumpToKey = 0) : ?StmtsAwareInterface
+    private function processArrayKeyFirstLast(StmtsAwareInterface $stmtsAware, int $jumpToKey = 0) : ?StmtsAwareInterface
     {
         if ($stmtsAware->stmts === null) {
             return null;
         }
         /** @var int $totalKeys */
-        \end($stmtsAware->stmts);
-        /** @var int $totalKeys */
-        $totalKeys = \key($stmtsAware->stmts);
-        \reset($stmtsAware->stmts);
+        $totalKeys = \array_key_last($stmtsAware->stmts);
         for ($key = $jumpToKey; $key < $totalKeys; ++$key) {
             if (!isset($stmtsAware->stmts[$key], $stmtsAware->stmts[$key + 1])) {
                 break;
@@ -127,14 +122,29 @@ CODE_SAMPLE
             }
             $newName = self::PREVIOUS_TO_NEW_FUNCTIONS[$this->getName($stmt->expr)];
             $keyFuncCall->name = new Name($newName);
+            $this->changeNextKeyCall($stmtsAware, $key + 2, $resetOrEndFuncCall, $keyFuncCall->name);
             unset($stmtsAware->stmts[$key]);
-            $hasChanged = \true;
-            return $this->processArrayKeyFirstLast($stmtsAware, $hasChanged, $key + 2);
-        }
-        if ($hasChanged) {
             return $stmtsAware;
         }
         return null;
+    }
+    private function changeNextKeyCall(StmtsAwareInterface $stmtsAware, int $key, FuncCall $resetOrEndFuncCall, Name $newName) : void
+    {
+        $counter = \count($stmtsAware->stmts);
+        for ($nextKey = $key; $nextKey < $counter; ++$nextKey) {
+            if (!isset($stmtsAware->stmts[$nextKey])) {
+                break;
+            }
+            if ($stmtsAware->stmts[$nextKey] instanceof Expression && !$this->shouldSkip($stmtsAware->stmts[$nextKey])) {
+                $this->processArrayKeyFirstLast($stmtsAware, $nextKey);
+                break;
+            }
+            $keyFuncCall = $this->resolveKeyFuncCall($stmtsAware->stmts[$nextKey], $resetOrEndFuncCall);
+            if (!$keyFuncCall instanceof FuncCall) {
+                continue;
+            }
+            $keyFuncCall->name = $newName;
+        }
     }
     private function resolveKeyFuncCall(Stmt $nextStmt, FuncCall $resetOrEndFuncCall) : ?FuncCall
     {

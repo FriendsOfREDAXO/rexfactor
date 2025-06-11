@@ -193,7 +193,7 @@ if (!function_exists('mb_chr')) {
     function mb_chr(?int $codepoint, ?string $encoding = null) { return p\Mbstring::mb_chr((int) $codepoint, $encoding); }
 }
 if (!function_exists('mb_scrub')) {
-    function mb_scrub(?string $string, ?string $encoding = null): string { $encoding = $encoding ?? mb_internal_encoding(); return mb_convert_encoding((string) $string, $encoding, $encoding); }
+    function mb_scrub(?string $string, ?string $encoding = null): string { $encoding ??= mb_internal_encoding(); return mb_convert_encoding((string) $string, $encoding, $encoding); }
 }
 if (!function_exists('mb_str_split')) {
     function mb_str_split(?string $string, ?int $length = 1, ?string $encoding = null): array { return p\Mbstring::mb_str_split((string) $string, (int) $length, $encoding); }
@@ -204,11 +204,11 @@ if (!function_exists('mb_str_pad')) {
 }
 
 if (!function_exists('mb_ucfirst')) {
-    function mb_ucfirst($string, ?string $encoding = null): string { return p\Mbstring::mb_ucfirst($string, $encoding); }
+    function mb_ucfirst(string $string, ?string $encoding = null): string { return p\Mbstring::mb_ucfirst($string, $encoding); }
 }
 
 if (!function_exists('mb_lcfirst')) {
-    function mb_lcfirst($string, ?string $encoding = null): string { return p\Mbstring::mb_lcfirst($string, $encoding); }
+    function mb_lcfirst(string $string, ?string $encoding = null): string { return p\Mbstring::mb_lcfirst($string, $encoding); }
 }
 
 if (!function_exists('mb_trim')) {

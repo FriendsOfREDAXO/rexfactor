@@ -22,6 +22,7 @@ use PHPStan\Type\ObjectType;
 use PHPStan\Type\ThisType;
 use Rector\Enum\ObjectReference;
 use Rector\NodeNameResolver\NodeNameResolver;
+use Rector\NodeNestingScope\ContextAnalyzer;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\PhpParser\AstResolver;
 use Rector\PhpParser\Node\BetterNodeFinder;
@@ -31,40 +32,40 @@ final class PropertyFetchAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\PhpParser\AstResolver
      */
-    private $astResolver;
+    private AstResolver $astResolver;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
+    /**
+     * @readonly
+     */
+    private ContextAnalyzer $contextAnalyzer;
     /**
      * @var string
      */
     private const THIS = 'this';
-    public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, AstResolver $astResolver, NodeTypeResolver $nodeTypeResolver, ReflectionResolver $reflectionResolver)
+    public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, AstResolver $astResolver, NodeTypeResolver $nodeTypeResolver, ReflectionResolver $reflectionResolver, ContextAnalyzer $contextAnalyzer)
     {
         $this->nodeNameResolver = $nodeNameResolver;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->astResolver = $astResolver;
         $this->nodeTypeResolver = $nodeTypeResolver;
         $this->reflectionResolver = $reflectionResolver;
+        $this->contextAnalyzer = $contextAnalyzer;
     }
     public function isLocalPropertyFetch(Node $node) : bool
     {
@@ -99,8 +100,24 @@ final class PropertyFetchAnalyzer
         if ($trait->getProperty($propertyName) instanceof Property) {
             return \true;
         }
+        return (bool) $this->betterNodeFinder->findFirst($trait, fn(Node $node): bool => $this->isLocalPropertyFetchName($node, $propertyName));
+    }
+    public function containsWrittenPropertyFetchName(Trait_ $trait, string $propertyName) : bool
+    {
+        if ($trait->getProperty($propertyName) instanceof Property) {
+            return \true;
+        }
         return (bool) $this->betterNodeFinder->findFirst($trait, function (Node $node) use($propertyName) : bool {
-            return $this->isLocalPropertyFetchName($node, $propertyName);
+            if (!$this->isLocalPropertyFetchName($node, $propertyName)) {
+                return \false;
+            }
+            /**
+             * @var PropertyFetch|StaticPropertyFetch|NullsafePropertyFetch $node
+             */
+            if ($this->contextAnalyzer->isChangeableContext($node)) {
+                return \true;
+            }
+            return $this->contextAnalyzer->isLeftPartOfAssign($node);
         });
     }
     /**

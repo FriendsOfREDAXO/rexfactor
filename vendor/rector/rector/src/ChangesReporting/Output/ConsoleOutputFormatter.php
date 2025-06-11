@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\ChangesReporting\Output;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use Rector\ChangesReporting\Contract\Output\OutputFormatterInterface;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
@@ -11,15 +11,14 @@ use Rector\ValueObject\Configuration;
 use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\ProcessResult;
 use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatter;
-use RectorPrefix202411\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202506\Symfony\Component\Console\Style\SymfonyStyle;
 final class ConsoleOutputFormatter implements OutputFormatterInterface
 {
     /**
      * @readonly
-     * @var \Symfony\Component\Console\Style\SymfonyStyle
      */
-    private $symfonyStyle;
+    private SymfonyStyle $symfonyStyle;
     /**
      * @var string
      */
@@ -119,7 +118,7 @@ final class ConsoleOutputFormatter implements OutputFormatterInterface
     {
         $editorUrl = SimpleParameterProvider::provideStringParameter(Option::EDITOR_URL, '');
         if ($editorUrl !== '') {
-            $editorUrl = \str_replace(['%file%', '%relFile%', '%line%'], [$absoluteFilePath, $relativeFilePath, $lineNumber], $editorUrl);
+            $editorUrl = \str_replace(['%file%', '%relFile%', '%line%'], [(string) $absoluteFilePath, (string) $relativeFilePath, (string) $lineNumber], $editorUrl);
             $filePath = '<href=' . OutputFormatter::escape($editorUrl) . '>' . $filePath . '</>';
         }
         return $filePath;

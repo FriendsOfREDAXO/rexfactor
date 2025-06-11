@@ -5,12 +5,12 @@ namespace Rector\Php80\NodeResolver;
 
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\Throw_;
 use PhpParser\Node\Stmt\Break_;
 use PhpParser\Node\Stmt\Case_;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\Stmt\Switch_;
-use PhpParser\Node\Stmt\Throw_;
 use Rector\Php80\Enum\MatchKind;
 use Rector\Php80\ValueObject\CondAndExpr;
 final class SwitchExprsResolver
@@ -32,7 +32,7 @@ final class SwitchExprsResolver
                 continue;
             }
             if (!$case->cond instanceof Expr) {
-                continue;
+                return [];
             }
             $collectionEmptyCasesCond[$key] = $case->cond;
         }
@@ -41,6 +41,7 @@ final class SwitchExprsResolver
                 continue;
             }
             $expr = $case->stmts[0];
+            $comments = $expr->getComments();
             if ($expr instanceof Expression) {
                 $expr = $expr->expr;
             }
@@ -57,19 +58,18 @@ final class SwitchExprsResolver
                 $condExprs = $emptyCasesCond;
                 $condExprs[] = $case->cond;
             }
-            if ($expr instanceof Return_) {
+            if ($expr instanceof Throw_) {
+                $condAndExpr[] = new CondAndExpr($condExprs, $expr, MatchKind::THROW, $comments);
+            } elseif ($expr instanceof Return_) {
                 $returnedExpr = $expr->expr;
                 if (!$returnedExpr instanceof Expr) {
                     return [];
                 }
-                $condAndExpr[] = new CondAndExpr($condExprs, $returnedExpr, MatchKind::RETURN);
+                $condAndExpr[] = new CondAndExpr($condExprs, $returnedExpr, MatchKind::RETURN, $comments);
             } elseif ($expr instanceof Assign) {
-                $condAndExpr[] = new CondAndExpr($condExprs, $expr, MatchKind::ASSIGN);
+                $condAndExpr[] = new CondAndExpr($condExprs, $expr, MatchKind::ASSIGN, $comments);
             } elseif ($expr instanceof Expr) {
-                $condAndExpr[] = new CondAndExpr($condExprs, $expr, MatchKind::NORMAL);
-            } elseif ($expr instanceof Throw_) {
-                $throwExpr = new Expr\Throw_($expr->expr);
-                $condAndExpr[] = new CondAndExpr($condExprs, $throwExpr, MatchKind::THROW);
+                $condAndExpr[] = new CondAndExpr($condExprs, $expr, MatchKind::NORMAL, $comments);
             } else {
                 return [];
             }

@@ -4,13 +4,13 @@ declare (strict_types=1);
 namespace Rector\DowngradePhp80\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\ClosureUse;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\Expr\ClosureUse;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Rector\DowngradePhp73\Tokenizer\FollowedByCommaAnalyzer;
-use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\DowngradePhp73\Tokenizer\TrailingCommaRemover;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -21,12 +21,16 @@ final class DowngradeTrailingCommasInParamUseRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\DowngradePhp73\Tokenizer\FollowedByCommaAnalyzer
      */
-    private $followedByCommaAnalyzer;
-    public function __construct(FollowedByCommaAnalyzer $followedByCommaAnalyzer)
+    private FollowedByCommaAnalyzer $followedByCommaAnalyzer;
+    /**
+     * @readonly
+     */
+    private TrailingCommaRemover $trailingCommaRemover;
+    public function __construct(FollowedByCommaAnalyzer $followedByCommaAnalyzer, TrailingCommaRemover $trailingCommaRemover)
     {
         $this->followedByCommaAnalyzer = $followedByCommaAnalyzer;
+        $this->trailingCommaRemover = $trailingCommaRemover;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -106,15 +110,12 @@ CODE_SAMPLE
      */
     private function cleanTrailingComma($node, array $array) : ?Node
     {
-        \end($array);
-        $lastPosition = \key($array);
-        \reset($array);
+        $lastPosition = \array_key_last($array);
         $last = $array[$lastPosition];
         if (!$this->followedByCommaAnalyzer->isFollowed($this->file, $last)) {
             return null;
         }
-        $node->setAttribute(AttributeKey::ORIGINAL_NODE, null);
-        $last->setAttribute(AttributeKey::FUNC_ARGS_TRAILING_COMMA, \false);
+        $this->trailingCommaRemover->remove($this->file, $last);
         return $node;
     }
 }

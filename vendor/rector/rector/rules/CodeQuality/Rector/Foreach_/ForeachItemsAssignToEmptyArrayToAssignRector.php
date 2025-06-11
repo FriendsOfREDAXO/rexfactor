@@ -5,15 +5,17 @@ namespace Rector\CodeQuality\Rector\Foreach_;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Foreach_;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use Rector\CodeQuality\NodeAnalyzer\ForeachAnalyzer;
 use Rector\Contract\PhpParser\Node\StmtsAwareInterface;
+use Rector\NodeAnalyzer\ExprAnalyzer;
 use Rector\PhpParser\Node\Value\ValueResolver;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -25,18 +27,21 @@ final class ForeachItemsAssignToEmptyArrayToAssignRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\CodeQuality\NodeAnalyzer\ForeachAnalyzer
      */
-    private $foreachAnalyzer;
+    private ForeachAnalyzer $foreachAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
-    public function __construct(ForeachAnalyzer $foreachAnalyzer, ValueResolver $valueResolver)
+    private ValueResolver $valueResolver;
+    /**
+     * @readonly
+     */
+    private ExprAnalyzer $exprAnalyzer;
+    public function __construct(ForeachAnalyzer $foreachAnalyzer, ValueResolver $valueResolver, ExprAnalyzer $exprAnalyzer)
     {
         $this->foreachAnalyzer = $foreachAnalyzer;
         $this->valueResolver = $valueResolver;
+        $this->exprAnalyzer = $exprAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -116,12 +121,12 @@ CODE_SAMPLE
             if ($subNode instanceof Assign && $subNode->var instanceof ArrayDimFetch) {
                 $isAppend = $this->isNames($subNode->var->var, $emptyArrayVariables);
                 if ($isAppend) {
-                    return NodeTraverser::STOP_TRAVERSAL;
+                    return NodeVisitor::STOP_TRAVERSAL;
                 }
             }
             if ($subNode instanceof Assign && $subNode->var instanceof Variable && $this->isNames($subNode->var, $emptyArrayVariables) && !$this->valueResolver->isValue($subNode->expr, [])) {
                 $isAppend = \true;
-                return NodeTraverser::STOP_TRAVERSAL;
+                return NodeVisitor::STOP_TRAVERSAL;
             }
             return null;
         });
@@ -155,8 +160,14 @@ CODE_SAMPLE
         if (!$assign->var instanceof Variable) {
             return null;
         }
+        if (!$assign->expr instanceof Array_) {
+            return null;
+        }
         // must be assign of empty array
         if (!$this->valueResolver->isValue($assign->expr, [])) {
+            return null;
+        }
+        if ($this->exprAnalyzer->isDynamicArray($assign->expr)) {
             return null;
         }
         return $this->getName($assign->var);

@@ -8,7 +8,7 @@ use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PHPStan\Type\Type;
 use Rector\NodeAnalyzer\PropertyFetchAnalyzer;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
@@ -29,38 +29,32 @@ final class AddParamTypeFromPropertyTypeRector extends AbstractRector implements
 {
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\PropertyFetchAnalyzer
      */
-    private $propertyFetchAnalyzer;
+    private PropertyFetchAnalyzer $propertyFetchAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
      */
-    private $simpleCallableNodeTraverser;
+    private SimpleCallableNodeTraverser $simpleCallableNodeTraverser;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
-    private $typeFactory;
+    private TypeFactory $typeFactory;
     /**
      * @readonly
-     * @var \Rector\VendorLocker\ParentClassMethodTypeOverrideGuard
      */
-    private $parentClassMethodTypeOverrideGuard;
+    private ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\Guard\ParamTypeAddGuard
      */
-    private $paramTypeAddGuard;
+    private ParamTypeAddGuard $paramTypeAddGuard;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @var string
      */
-    private const ERROR_MESSAGE = 'Adds param type declaration based on property type the value is assigned to PHPUnit provider return type declaration';
+    private const ERROR_MESSAGE = 'Add param type declaration based on property type';
     public function __construct(PropertyFetchAnalyzer $propertyFetchAnalyzer, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, TypeFactory $typeFactory, ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard, ParamTypeAddGuard $paramTypeAddGuard, StaticTypeMapper $staticTypeMapper)
     {
         $this->propertyFetchAnalyzer = $propertyFetchAnalyzer;
@@ -151,7 +145,7 @@ CODE_SAMPLE
         $this->simpleCallableNodeTraverser->traverseNodesWithCallable($classMethod, function (Node $node) use($paramName, &$propertyStaticTypes) : ?int {
             if ($node instanceof Class_ || $node instanceof Function_) {
                 // skip anonymous classes and inner function
-                return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+                return NodeVisitor::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
             if (!$node instanceof Assign) {
                 return null;

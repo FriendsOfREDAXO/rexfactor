@@ -3,9 +3,9 @@
 declare (strict_types=1);
 namespace Rector\Console\Formatter;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use Rector\Util\NewLineSplitter;
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatter;
 /**
  * Inspired by @see https://github.com/FriendsOfPHP/PHP-CS-Fixer/blob/master/src/Differ/DiffConsoleFormatter.php to be
  * used as standalone class, without need to require whole package by Dariusz Rumiński <dariusz.ruminski@gmail.com>
@@ -23,7 +23,7 @@ final class ColorConsoleDiffFormatter
      * @var string
      * @see https://regex101.com/r/xwywpa/1
      */
-    private const MINUT_START_REGEX = '#^(\\-.*)#';
+    private const MINUS_START_REGEX = '#^(\\-.*)#';
     /**
      * @var string
      * @see https://regex101.com/r/CMlwa8/1
@@ -31,9 +31,8 @@ final class ColorConsoleDiffFormatter
     private const AT_START_REGEX = '#^(@.*)#';
     /**
      * @readonly
-     * @var string
      */
-    private $template;
+    private string $template;
     public function __construct()
     {
         $this->template = \sprintf('<comment>    ---------- begin diff ----------</comment>%s%%s%s<comment>    ----------- end diff -----------</comment>' . \PHP_EOL, \PHP_EOL, \PHP_EOL);
@@ -72,7 +71,7 @@ final class ColorConsoleDiffFormatter
     }
     private function makeMinusLinesRed(string $string) : string
     {
-        return Strings::replace($string, self::MINUT_START_REGEX, '<fg=red>$1</fg=red>');
+        return Strings::replace($string, self::MINUS_START_REGEX, '<fg=red>$1</fg=red>');
     }
     private function makeAtNoteCyan(string $string) : string
     {

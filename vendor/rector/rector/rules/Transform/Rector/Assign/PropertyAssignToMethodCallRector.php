@@ -12,7 +12,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\PropertyAssignToMethodCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\Assign\PropertyAssignToMethodCallRector\PropertyAssignToMethodCallRectorTest
  */
@@ -21,10 +21,10 @@ final class PropertyAssignToMethodCallRector extends AbstractRector implements C
     /**
      * @var PropertyAssignToMethodCall[]
      */
-    private $propertyAssignsToMethodCalls = [];
+    private array $propertyAssignsToMethodCalls = [];
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Turns property assign of specific type and property name to method call', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Turn property assign of specific type and property name to method call', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 $someObject = new SomeClass;
 $someObject->oldProperty = false;
 CODE_SAMPLE

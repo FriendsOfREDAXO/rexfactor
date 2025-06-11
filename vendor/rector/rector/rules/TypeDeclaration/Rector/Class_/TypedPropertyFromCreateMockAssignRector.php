@@ -4,8 +4,10 @@ declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\Class_;
 
 use PhpParser\Node;
+use PhpParser\Node\IntersectionType;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\Property;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use Rector\Enum\ClassName;
@@ -25,23 +27,16 @@ final class TypedPropertyFromCreateMockAssignRector extends AbstractRector imple
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\AssignToPropertyTypeInferer
      */
-    private $assignToPropertyTypeInferer;
+    private AssignToPropertyTypeInferer $assignToPropertyTypeInferer;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector
      */
-    private $constructorAssignDetector;
-    /**
-     * @var string
-     */
-    private const MOCK_OBJECT_CLASS = 'PHPUnit\\Framework\\MockObject\\MockObject';
+    private ConstructorAssignDetector $constructorAssignDetector;
     public function __construct(AssignToPropertyTypeInferer $assignToPropertyTypeInferer, StaticTypeMapper $staticTypeMapper, ConstructorAssignDetector $constructorAssignDetector)
     {
         $this->assignToPropertyTypeInferer = $assignToPropertyTypeInferer;
@@ -50,7 +45,7 @@ final class TypedPropertyFromCreateMockAssignRector extends AbstractRector imple
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Add typed property from assigned mock', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Add "PHPUnit\\Framework\\MockObject\\MockObject" typed property from assigned mock to clearly separate from real objects', [new CodeSample(<<<'CODE_SAMPLE'
 use PHPUnit\Framework\TestCase;
 
 final class SomeTest extends TestCase
@@ -65,10 +60,11 @@ final class SomeTest extends TestCase
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 
 final class SomeTest extends TestCase
 {
-    private \PHPUnit\Framework\MockObject\MockObject $someProperty;
+    private MockObject $someProperty;
 
     protected function setUp(): void
     {
@@ -91,12 +87,13 @@ CODE_SAMPLE
             return null;
         }
         $hasChanged = \false;
+        $mockObjectType = new ObjectType(ClassName::MOCK_OBJECT);
         foreach ($node->getProperties() as $property) {
-            // already typed
-            if ($property->type instanceof Node) {
+            if (\count($property->props) !== 1) {
                 continue;
             }
-            if (\count($property->props) !== 1) {
+            // already use PHPUnit\Framework\MockObject\MockObject type
+            if ($this->isAlreadyTypedWithMockObject($property, $mockObjectType)) {
                 continue;
             }
             $propertyName = (string) $this->getName($property);
@@ -108,7 +105,7 @@ CODE_SAMPLE
             if (!$propertyType instanceof Node) {
                 continue;
             }
-            if (!$this->isObjectType($propertyType, new ObjectType(self::MOCK_OBJECT_CLASS))) {
+            if (!$this->isObjectType($propertyType, $mockObjectType)) {
                 continue;
             }
             if (!$this->constructorAssignDetector->isPropertyAssigned($node, $propertyName)) {
@@ -128,5 +125,16 @@ CODE_SAMPLE
     public function provideMinPhpVersion() : int
     {
         return PhpVersionFeature::TYPED_PROPERTIES;
+    }
+    private function isAlreadyTypedWithMockObject(Property $property, ObjectType $mockObjectType) : bool
+    {
+        if (!$property->type instanceof Node) {
+            return \false;
+        }
+        // complex type, used on purpose
+        if ($property->type instanceof IntersectionType) {
+            return \true;
+        }
+        return $this->isObjectType($property->type, $mockObjectType);
     }
 }

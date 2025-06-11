@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\BetterPhpDocParser\PhpDocManipulator;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use Rector\BetterPhpDocParser\PhpDoc\ArrayItemNode;
 use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
@@ -17,14 +17,12 @@ final class PhpDocClassRenamer
 {
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocParser\ClassAnnotationMatcher
      */
-    private $classAnnotationMatcher;
+    private ClassAnnotationMatcher $classAnnotationMatcher;
     /**
      * @readonly
-     * @var \Rector\Renaming\Collector\RenamedNameCollector
      */
-    private $renamedNameCollector;
+    private RenamedNameCollector $renamedNameCollector;
     public function __construct(ClassAnnotationMatcher $classAnnotationMatcher, RenamedNameCollector $renamedNameCollector)
     {
         $this->classAnnotationMatcher = $classAnnotationMatcher;

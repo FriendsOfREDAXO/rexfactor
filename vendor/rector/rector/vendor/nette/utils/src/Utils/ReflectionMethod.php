@@ -5,7 +5,7 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
 /**
  * ReflectionMethod preserving the original class name.
@@ -13,10 +13,7 @@ namespace RectorPrefix202411\Nette\Utils;
  */
 final class ReflectionMethod extends \ReflectionMethod
 {
-    /**
-     * @var \ReflectionClass
-     */
-    private $originalClass;
+    private \ReflectionClass $originalClass;
     /**
      * @param object|string $objectOrMethod
      */

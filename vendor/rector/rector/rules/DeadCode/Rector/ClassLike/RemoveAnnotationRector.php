@@ -17,7 +17,7 @@ use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\DeadCode\Rector\ClassLike\RemoveAnnotationRector\RemoveAnnotationRectorTest
  */
@@ -25,23 +25,20 @@ final class RemoveAnnotationRector extends AbstractRector implements Configurabl
 {
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover
      */
-    private $phpDocTagRemover;
+    private PhpDocTagRemover $phpDocTagRemover;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @var string[]
      */
-    private $annotationsToRemove = [];
+    private array $annotationsToRemove = [];
     public function __construct(PhpDocTagRemover $phpDocTagRemover, DocBlockUpdater $docBlockUpdater, PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->phpDocTagRemover = $phpDocTagRemover;

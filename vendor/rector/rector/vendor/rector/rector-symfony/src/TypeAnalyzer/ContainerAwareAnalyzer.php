@@ -6,21 +6,21 @@ namespace Rector\Symfony\TypeAnalyzer;
 use PhpParser\Node\Expr;
 use PHPStan\Type\ObjectType;
 use Rector\NodeTypeResolver\NodeTypeResolver;
+use Rector\Symfony\Enum\SymfonyClass;
 final class ContainerAwareAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @var ObjectType[]
      */
-    private $getMethodAwareObjectTypes = [];
+    private array $getMethodAwareObjectTypes = [];
     public function __construct(NodeTypeResolver $nodeTypeResolver)
     {
         $this->nodeTypeResolver = $nodeTypeResolver;
-        $this->getMethodAwareObjectTypes = [new ObjectType('Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController'), new ObjectType('Symfony\\Bundle\\FrameworkBundle\\Controller\\Controller'), new ObjectType('Symfony\\Bundle\\FrameworkBundle\\Controller\\ControllerTrait')];
+        $this->getMethodAwareObjectTypes = [new ObjectType(SymfonyClass::ABSTRACT_CONTROLLER), new ObjectType(SymfonyClass::CONTROLLER), new ObjectType(SymfonyClass::CONTROLLER_TRAIT)];
     }
     public function isGetMethodAwareType(Expr $expr) : bool
     {

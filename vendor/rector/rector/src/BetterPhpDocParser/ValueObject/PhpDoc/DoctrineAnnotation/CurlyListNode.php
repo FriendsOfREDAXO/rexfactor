@@ -5,14 +5,14 @@ namespace Rector\BetterPhpDocParser\ValueObject\PhpDoc\DoctrineAnnotation;
 
 use Rector\BetterPhpDocParser\PhpDoc\ArrayItemNode;
 use Stringable;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class CurlyListNode extends \Rector\BetterPhpDocParser\ValueObject\PhpDoc\DoctrineAnnotation\AbstractValuesAwareNode
 {
     /**
      * @var ArrayItemNode[]
      * @readonly
      */
-    private $arrayItemNodes = [];
+    private array $arrayItemNodes = [];
     /**
      * @param ArrayItemNode[] $arrayItemNodes
      */
@@ -33,9 +33,7 @@ final class CurlyListNode extends \Rector\BetterPhpDocParser\ValueObject\PhpDoc\
     private function implode(array $array) : string
     {
         $itemContents = '';
-        \end($array);
-        $lastItemKey = \key($array);
-        \reset($array);
+        $lastItemKey = \array_key_last($array);
         foreach ($array as $key => $value) {
             if (\is_int($key)) {
                 $itemContents .= (string) $value;

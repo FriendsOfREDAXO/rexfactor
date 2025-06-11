@@ -3,7 +3,6 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Application;
 
-use RectorPrefix202411\Nette\Utils\Strings;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Declare_;
@@ -11,7 +10,6 @@ use PhpParser\Node\Stmt\GroupUse;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Nop;
 use PhpParser\Node\Stmt\Use_;
-use PHPStan\Type\ObjectType;
 use Rector\CodingStyle\ClassNameImport\UsedImportsResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\PHPStan\Type\TypeFactory;
@@ -22,14 +20,12 @@ final class UseImportsAdder
 {
     /**
      * @readonly
-     * @var \Rector\CodingStyle\ClassNameImport\UsedImportsResolver
      */
-    private $usedImportsResolver;
+    private UsedImportsResolver $usedImportsResolver;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PHPStan\Type\TypeFactory
      */
-    private $typeFactory;
+    private TypeFactory $typeFactory;
     public function __construct(UsedImportsResolver $usedImportsResolver, TypeFactory $typeFactory)
     {
         $this->usedImportsResolver = $usedImportsResolver;
@@ -55,6 +51,12 @@ final class UseImportsAdder
         if ($newUses === []) {
             return [$fileWithoutNamespace];
         }
+        $stmts = \array_values(\array_filter($stmts, static function (Stmt $stmt) : bool {
+            if (!$stmt instanceof Use_) {
+                return \true;
+            }
+            return $stmt->uses !== [];
+        }));
         // place after declare strict_types
         foreach ($stmts as $key => $stmt) {
             // maybe just added a space
@@ -181,12 +183,15 @@ final class UseImportsAdder
         }
         return $namespace->name->toString();
     }
-    private function isCurrentNamespace(string $namespaceName, ObjectType $objectType) : bool
+    /**
+     * @param \Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType|\Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType $objectType
+     */
+    private function isCurrentNamespace(string $namespaceName, $objectType) : bool
     {
-        $afterCurrentNamespace = Strings::after($objectType->getClassName(), $namespaceName . '\\');
-        if ($afterCurrentNamespace === null) {
+        $className = $objectType->getClassName();
+        if (\strncmp($className, $namespaceName . '\\', \strlen($namespaceName . '\\')) !== 0) {
             return \false;
         }
-        return \strpos($afterCurrentNamespace, '\\') === \false;
+        return $namespaceName . '\\' . $objectType->getShortName() === $className;
     }
 }

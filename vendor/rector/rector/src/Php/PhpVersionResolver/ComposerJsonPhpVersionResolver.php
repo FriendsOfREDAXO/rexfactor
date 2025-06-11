@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Php\PhpVersionResolver;
 
-use RectorPrefix202411\Composer\Semver\VersionParser;
+use RectorPrefix202506\Composer\Semver\VersionParser;
 use Rector\Exception\Configuration\InvalidConfigurationException;
 use Rector\FileSystem\JsonFileSystem;
 use Rector\Util\PhpVersionFactory;
@@ -16,7 +16,7 @@ final class ComposerJsonPhpVersionResolver
     /**
      * @var array<string, PhpVersion::*|null>
      */
-    private static $cachedPhpVersions = [];
+    private static array $cachedPhpVersions = [];
     /**
      * @return PhpVersion::*
      */
@@ -41,8 +41,8 @@ final class ComposerJsonPhpVersionResolver
             return self::$cachedPhpVersions[$composerJson];
         }
         $projectComposerJson = JsonFileSystem::readFilePath($composerJson);
-        // give this one a priority, as more generic one
-        $requirePhpVersion = $projectComposerJson['require']['php'] ?? null;
+        // give this one a priority, as more generic one. see https://github.com/composer/composer/issues/7914
+        $requirePhpVersion = $projectComposerJson['require']['php'] ?? $projectComposerJson['require']['php-64bit'] ?? null;
         if ($requirePhpVersion !== null) {
             self::$cachedPhpVersions[$composerJson] = self::createIntVersionFromComposerVersion($requirePhpVersion);
             return self::$cachedPhpVersions[$composerJson];

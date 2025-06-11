@@ -18,9 +18,8 @@ final class RemoveFinalFromConstRector extends AbstractRector implements MinPhpV
 {
     /**
      * @readonly
-     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
-    private $visibilityManipulator;
+    private VisibilityManipulator $visibilityManipulator;
     public function __construct(VisibilityManipulator $visibilityManipulator)
     {
         $this->visibilityManipulator = $visibilityManipulator;
@@ -57,11 +56,11 @@ CODE_SAMPLE
             return null;
         }
         $hasChanged = \false;
-        foreach ($node->getConstants() as $classConst) {
-            if (!$classConst->isFinal()) {
+        foreach ($node->getConstants() as $constant) {
+            if (!$constant->isFinal()) {
                 continue;
             }
-            $this->visibilityManipulator->removeFinal($classConst);
+            $this->visibilityManipulator->removeFinal($constant);
             $hasChanged = \true;
         }
         if ($hasChanged) {

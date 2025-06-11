@@ -9,7 +9,7 @@ use PHPStan\PhpDoc\TypeNodeResolver;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Type\Type;
 use Rector\StaticTypeMapper\Contract\PhpDocParser\PhpDocTypeMapperInterface;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\StaticTypeMapper\PhpDoc\PhpDocTypeMapperTest
  */
@@ -19,12 +19,11 @@ final class PhpDocTypeMapper
      * @var PhpDocTypeMapperInterface[]
      * @readonly
      */
-    private $phpDocTypeMappers;
+    private array $phpDocTypeMappers;
     /**
      * @readonly
-     * @var \PHPStan\PhpDoc\TypeNodeResolver
      */
-    private $typeNodeResolver;
+    private TypeNodeResolver $typeNodeResolver;
     /**
      * @param PhpDocTypeMapperInterface[] $phpDocTypeMappers
      */

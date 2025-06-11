@@ -7,7 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Else_;
 use PhpParser\Node\Stmt\If_;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use Rector\DeadCode\ConditionEvaluator;
 use Rector\DeadCode\ConditionResolver;
 use Rector\DeadCode\Contract\ConditionInterface;
@@ -21,14 +21,12 @@ final class UnwrapFutureCompatibleIfPhpVersionRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\DeadCode\ConditionEvaluator
      */
-    private $conditionEvaluator;
+    private ConditionEvaluator $conditionEvaluator;
     /**
      * @readonly
-     * @var \Rector\DeadCode\ConditionResolver
      */
-    private $conditionResolver;
+    private ConditionResolver $conditionResolver;
     public function __construct(ConditionEvaluator $conditionEvaluator, ConditionResolver $conditionResolver)
     {
         $this->conditionEvaluator = $conditionEvaluator;
@@ -100,7 +98,7 @@ CODE_SAMPLE
     {
         // no else → just remove the node
         if (!$if->else instanceof Else_) {
-            return NodeTraverser::REMOVE_NODE;
+            return NodeVisitor::REMOVE_NODE;
         }
         // else is always used
         return $if->else->stmts;

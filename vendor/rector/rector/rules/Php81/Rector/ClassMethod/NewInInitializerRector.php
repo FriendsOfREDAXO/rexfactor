@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace Rector\Php81\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
@@ -13,7 +14,7 @@ use PhpParser\Node\Stmt\Property;
 use PHPStan\Reflection\ClassReflection;
 use Rector\FamilyTree\NodeAnalyzer\ClassChildAnalyzer;
 use Rector\NodeManipulator\StmtsManipulator;
-use Rector\Php81\NodeAnalyzer\CoalesePropertyAssignMatcher;
+use Rector\Php81\NodeAnalyzer\CoalescePropertyAssignMatcher;
 use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Rector\ValueObject\MethodName;
@@ -28,29 +29,25 @@ final class NewInInitializerRector extends AbstractRector implements MinPhpVersi
 {
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\FamilyTree\NodeAnalyzer\ClassChildAnalyzer
      */
-    private $classChildAnalyzer;
+    private ClassChildAnalyzer $classChildAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Php81\NodeAnalyzer\CoalesePropertyAssignMatcher
      */
-    private $coalesePropertyAssignMatcher;
+    private CoalescePropertyAssignMatcher $coalescePropertyAssignMatcher;
     /**
      * @readonly
-     * @var \Rector\NodeManipulator\StmtsManipulator
      */
-    private $stmtsManipulator;
-    public function __construct(ReflectionResolver $reflectionResolver, ClassChildAnalyzer $classChildAnalyzer, CoalesePropertyAssignMatcher $coalesePropertyAssignMatcher, StmtsManipulator $stmtsManipulator)
+    private StmtsManipulator $stmtsManipulator;
+    public function __construct(ReflectionResolver $reflectionResolver, ClassChildAnalyzer $classChildAnalyzer, CoalescePropertyAssignMatcher $coalescePropertyAssignMatcher, StmtsManipulator $stmtsManipulator)
     {
         $this->reflectionResolver = $reflectionResolver;
         $this->classChildAnalyzer = $classChildAnalyzer;
-        $this->coalesePropertyAssignMatcher = $coalesePropertyAssignMatcher;
+        $this->coalescePropertyAssignMatcher = $coalescePropertyAssignMatcher;
         $this->stmtsManipulator = $stmtsManipulator;
     }
     public function getRuleDefinition() : RuleDefinition
@@ -105,19 +102,14 @@ CODE_SAMPLE
             return null;
         }
         $hasChanged = \false;
-        // stmts variable defined to avoid unset overlap when used via array_slice() on
-        // StmtsManipulator::isVariableUsedInNextStmt()
-        // @see https://github.com/rectorphp/rector-src/pull/5968
-        // @see https://3v4l.org/eojhk
-        $stmts = (array) $constructClassMethod->stmts;
         foreach ((array) $constructClassMethod->stmts as $key => $stmt) {
             foreach ($params as $param) {
                 $paramName = $this->getName($param);
-                $coalesce = $this->coalesePropertyAssignMatcher->matchCoalesceAssignsToLocalPropertyNamed($stmt, $paramName);
+                $coalesce = $this->coalescePropertyAssignMatcher->matchCoalesceAssignsToLocalPropertyNamed($stmt, $paramName);
                 if (!$coalesce instanceof Coalesce) {
                     continue;
                 }
-                if ($this->stmtsManipulator->isVariableUsedInNextStmt($stmts, $key + 1, $paramName)) {
+                if ($this->stmtsManipulator->isVariableUsedInNextStmt($constructClassMethod, $key + 1, $paramName)) {
                     continue;
                 }
                 /** @var NullableType $currentParamType */
@@ -155,7 +147,7 @@ CODE_SAMPLE
     private function isOverrideAbstractMethod(ClassMethod $classMethod) : bool
     {
         $classReflection = $this->reflectionResolver->resolveClassReflection($classMethod);
-        $methodName = $this->nodeNameResolver->getName($classMethod);
+        $methodName = $this->getName($classMethod);
         return $classReflection instanceof ClassReflection && $this->classChildAnalyzer->hasAbstractParentClassMethod($classReflection, $methodName);
     }
     private function processPropertyPromotion(Class_ $class, Param $param, string $paramName) : void
@@ -182,8 +174,18 @@ CODE_SAMPLE
         if ($classMethod->stmts === null || $classMethod->stmts === []) {
             return [];
         }
-        return \array_filter($classMethod->params, static function (Param $param) : bool {
-            return $param->type instanceof NullableType;
-        });
+        $params = \array_filter($classMethod->params, static fn(Param $param): bool => $param->type instanceof NullableType);
+        if ($params === []) {
+            return $params;
+        }
+        $totalParams = \count($classMethod->params);
+        foreach (\array_keys($params) as $key) {
+            for ($iteration = $key + 1; $iteration < $totalParams; ++$iteration) {
+                if (isset($classMethod->params[$iteration]) && !$classMethod->params[$iteration]->default instanceof Expr) {
+                    return [];
+                }
+            }
+        }
+        return $params;
     }
 }

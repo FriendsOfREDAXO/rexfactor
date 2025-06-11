@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Input;
+namespace RectorPrefix202506\Symfony\Component\Console\Input;
 
-use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202411\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\LogicException;
 /**
  * A InputDefinition represents a set of valid command line arguments and options.
  *
@@ -26,34 +26,13 @@ use RectorPrefix202411\Symfony\Component\Console\Exception\LogicException;
  */
 class InputDefinition
 {
-    /**
-     * @var mixed[]
-     */
-    private $arguments = [];
-    /**
-     * @var int
-     */
-    private $requiredCount = 0;
-    /**
-     * @var \Symfony\Component\Console\Input\InputArgument|null
-     */
-    private $lastArrayArgument;
-    /**
-     * @var \Symfony\Component\Console\Input\InputArgument|null
-     */
-    private $lastOptionalArgument;
-    /**
-     * @var mixed[]
-     */
-    private $options = [];
-    /**
-     * @var mixed[]
-     */
-    private $negations = [];
-    /**
-     * @var mixed[]
-     */
-    private $shortcuts = [];
+    private array $arguments = [];
+    private int $requiredCount = 0;
+    private ?InputArgument $lastArrayArgument = null;
+    private ?InputArgument $lastOptionalArgument = null;
+    private array $options = [];
+    private array $negations = [];
+    private array $shortcuts = [];
     /**
      * @param array $definition An array of InputArgument and InputOption instance
      */

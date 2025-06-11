@@ -21,14 +21,12 @@ final class RestoreDefaultNullToNullableTypePropertyRector extends AbstractRecto
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector
      */
-    private $constructorAssignDetector;
+    private ConstructorAssignDetector $constructorAssignDetector;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     public function __construct(ConstructorAssignDetector $constructorAssignDetector, PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->constructorAssignDetector = $constructorAssignDetector;
@@ -67,7 +65,7 @@ CODE_SAMPLE
         }
         $hasChanged = \false;
         foreach ($node->getProperties() as $property) {
-            if ($this->shouldSkip($property, $node)) {
+            if ($this->shouldSkipProperty($property, $node)) {
                 continue;
             }
             $onlyProperty = $property->props[0];
@@ -83,16 +81,15 @@ CODE_SAMPLE
     {
         return PhpVersionFeature::TYPED_PROPERTIES;
     }
-    private function shouldSkip(Property $property, Class_ $class) : bool
+    private function shouldSkipProperty(Property $property, Class_ $class) : bool
     {
-        if ($property->type === null) {
+        if (!$property->type instanceof Node) {
             return \true;
         }
         if (\count($property->props) > 1) {
             return \true;
         }
-        $onlyProperty = $property->props[0];
-        if ($onlyProperty->default instanceof Expr) {
+        if ($property->props[0]->default instanceof Expr) {
             return \true;
         }
         if ($this->isReadonlyProperty($property)) {
@@ -101,9 +98,12 @@ CODE_SAMPLE
         if (!$this->nodeTypeResolver->isNullableType($property)) {
             return \true;
         }
+        if ($property->hooks !== []) {
+            return \true;
+        }
         // is variable assigned in constructor
         $propertyName = $this->getName($property);
-        return $this->constructorAssignDetector->isPropertyAssigned($class, $propertyName);
+        return $this->constructorAssignDetector->isPropertyAssignedConditionally($class, $propertyName);
     }
     private function isReadonlyProperty(Property $property) : bool
     {

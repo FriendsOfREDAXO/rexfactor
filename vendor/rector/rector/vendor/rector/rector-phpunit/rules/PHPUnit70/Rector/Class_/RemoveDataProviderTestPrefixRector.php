@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PHPUnit\PHPUnit70\Rector\Class_;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
@@ -22,19 +22,16 @@ final class RemoveDataProviderTestPrefixRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeFinder\DataProviderClassMethodFinder
      */
-    private $dataProviderClassMethodFinder;
+    private DataProviderClassMethodFinder $dataProviderClassMethodFinder;
     /**
      * @readonly
-     * @var \Rector\PHPUnit\PhpDoc\DataProviderMethodRenamer
      */
-    private $dataProviderMethodRenamer;
+    private DataProviderMethodRenamer $dataProviderMethodRenamer;
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer, DataProviderClassMethodFinder $dataProviderClassMethodFinder, DataProviderMethodRenamer $dataProviderMethodRenamer)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;

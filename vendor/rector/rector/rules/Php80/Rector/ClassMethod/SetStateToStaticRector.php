@@ -19,9 +19,8 @@ final class SetStateToStaticRector extends AbstractRector implements MinPhpVersi
 {
     /**
      * @readonly
-     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
-    private $visibilityManipulator;
+    private VisibilityManipulator $visibilityManipulator;
     public function __construct(VisibilityManipulator $visibilityManipulator)
     {
         $this->visibilityManipulator = $visibilityManipulator;
@@ -32,7 +31,7 @@ final class SetStateToStaticRector extends AbstractRector implements MinPhpVersi
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Adds static visibility to __set_state() methods', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Add `static` visibility to `__set_state()` methods', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function __set_state($properties) {

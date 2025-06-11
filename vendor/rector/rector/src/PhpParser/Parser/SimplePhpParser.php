@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PhpParser\Parser;
 
-use RectorPrefix202411\Nette\Utils\FileSystem;
+use RectorPrefix202506\Nette\Utils\FileSystem;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\NodeTraverser;
@@ -15,20 +15,17 @@ final class SimplePhpParser
 {
     /**
      * @readonly
-     * @var \PhpParser\Parser
      */
-    private $phpParser;
+    private Parser $phpParser;
     /**
      * @readonly
-     * @var \PhpParser\NodeTraverser
      */
-    private $nodeTraverser;
+    private NodeTraverser $nodeTraverser;
     public function __construct()
     {
         $parserFactory = new ParserFactory();
-        $this->phpParser = $parserFactory->create(ParserFactory::ONLY_PHP7);
-        $this->nodeTraverser = new NodeTraverser();
-        $this->nodeTraverser->addVisitor(new AssignedToNodeVisitor());
+        $this->phpParser = $parserFactory->createForNewestSupportedVersion();
+        $this->nodeTraverser = new NodeTraverser(new AssignedToNodeVisitor());
     }
     /**
      * @api tests

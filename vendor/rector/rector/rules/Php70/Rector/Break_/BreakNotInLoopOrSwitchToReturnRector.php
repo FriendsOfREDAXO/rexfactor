@@ -10,7 +10,7 @@ use PhpParser\Node\Stmt\Break_;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\Stmt\Switch_;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use Rector\NodeNestingScope\ContextAnalyzer;
 use Rector\Rector\AbstractRector;
 use Rector\ValueObject\PhpVersionFeature;
@@ -24,9 +24,8 @@ final class BreakNotInLoopOrSwitchToReturnRector extends AbstractRector implemen
 {
     /**
      * @readonly
-     * @var \Rector\NodeNestingScope\ContextAnalyzer
      */
-    private $contextAnalyzer;
+    private ContextAnalyzer $contextAnalyzer;
     /**
      * @var string
      */
@@ -85,7 +84,7 @@ CODE_SAMPLE
         if ($node instanceof Switch_) {
             $this->traverseNodesWithCallable($node->cases, static function (Node $subNode) : ?int {
                 if ($subNode instanceof Class_ || $subNode instanceof FunctionLike && !$subNode instanceof ArrowFunction) {
-                    return NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+                    return NodeVisitor::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
                 }
                 if (!$subNode instanceof Break_) {
                     return null;
@@ -104,6 +103,6 @@ CODE_SAMPLE
         if ($this->contextAnalyzer->isInIf($node)) {
             return new Return_();
         }
-        return NodeTraverser::REMOVE_NODE;
+        return NodeVisitor::REMOVE_NODE;
     }
 }

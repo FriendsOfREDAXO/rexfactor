@@ -3,11 +3,10 @@
 declare (strict_types=1);
 namespace Rector\Set\ValueObject;
 
-use Rector\Set\Contract\SetListInterface;
 /**
  * @api
  */
-final class SetList implements SetListInterface
+final class SetList
 {
     /**
      * @internal
@@ -107,6 +106,10 @@ final class SetList implements SetListInterface
     /**
      * @var string
      */
+    public const PHP_85 = __DIR__ . '/../../../config/set/php85.php';
+    /**
+     * @var string
+     */
     public const PRIVATIZATION = __DIR__ . '/../../../config/set/privatization.php';
     /**
      * @var string
@@ -124,4 +127,8 @@ final class SetList implements SetListInterface
      * @var string
      */
     public const CARBON = __DIR__ . '/../../../config/set/datetime-to-carbon.php';
+    /**
+     * @var string
+     */
+    public const BEHAT_ANNOTATIONS_TO_ATTRIBUTES = __DIR__ . '/../../../config/set/behat-annotations-to-attributes.php';
 }

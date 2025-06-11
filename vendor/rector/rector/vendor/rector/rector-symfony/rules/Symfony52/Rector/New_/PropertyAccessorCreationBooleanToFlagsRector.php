@@ -21,9 +21,8 @@ final class PropertyAccessorCreationBooleanToFlagsRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;
@@ -31,6 +30,8 @@ final class PropertyAccessorCreationBooleanToFlagsRector extends AbstractRector
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Changes first argument of PropertyAccessor::__construct() to flags from boolean', [new CodeSample(<<<'CODE_SAMPLE'
+use Symfony\Component\PropertyAccess\PropertyAccessor;
+
 class SomeClass
 {
     public function run()
@@ -40,6 +41,8 @@ class SomeClass
 }
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
+use Symfony\Component\PropertyAccess\PropertyAccessor;
+
 class SomeClass
 {
     public function run()

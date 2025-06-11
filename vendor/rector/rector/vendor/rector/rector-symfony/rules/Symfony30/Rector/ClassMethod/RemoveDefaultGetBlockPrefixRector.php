@@ -3,13 +3,14 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Symfony30\Rector\ClassMethod;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Return_;
+use Rector\CodingStyle\Naming\ClassNaming;
 use Rector\PhpParser\Node\Value\ValueResolver;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -23,12 +24,16 @@ final class RemoveDefaultGetBlockPrefixRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
-    public function __construct(ValueResolver $valueResolver)
+    private ValueResolver $valueResolver;
+    /**
+     * @readonly
+     */
+    private ClassNaming $classNaming;
+    public function __construct(ValueResolver $valueResolver, ClassNaming $classNaming)
     {
         $this->valueResolver = $valueResolver;
+        $this->classNaming = $classNaming;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -62,7 +67,7 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactor(Node $node)
+    public function refactor(Node $node) : ?Class_
     {
         if (!$node->extends instanceof Name) {
             return null;
@@ -83,11 +88,11 @@ CODE_SAMPLE
                 return null;
             }
             $returnedValue = $this->valueResolver->getValue($returnedExpr);
-            $className = $this->nodeNameResolver->getName($node);
+            $className = $this->getName($node);
             if (!\is_string($className)) {
                 continue;
             }
-            $shortClassName = $this->nodeNameResolver->getShortName($className);
+            $shortClassName = $this->classNaming->getShortName($className);
             if (\substr_compare($shortClassName, 'Type', -\strlen('Type')) === 0) {
                 $shortClassName = (string) Strings::before($shortClassName, 'Type');
             }

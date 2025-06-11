@@ -22,14 +22,12 @@ final class ReturnBinaryOrToEarlyReturnRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\AssignAndBinaryMap
      */
-    private $assignAndBinaryMap;
+    private AssignAndBinaryMap $assignAndBinaryMap;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\CallAnalyzer
      */
-    private $callAnalyzer;
+    private CallAnalyzer $callAnalyzer;
     public function __construct(AssignAndBinaryMap $assignAndBinaryMap, CallAnalyzer $callAnalyzer)
     {
         $this->assignAndBinaryMap = $assignAndBinaryMap;
@@ -37,7 +35,7 @@ final class ReturnBinaryOrToEarlyReturnRector extends AbstractRector
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Changes Single return of || to early returns', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Change single return of `||` to early returns', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function accept()

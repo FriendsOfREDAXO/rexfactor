@@ -8,7 +8,6 @@ use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Expression;
 use Rector\Exception\NotImplementedYetException;
 use Rector\Naming\Naming\PropertyNaming;
@@ -25,7 +24,7 @@ use Rector\Symfony\Utils\StringUtils;
 use Rector\Symfony\ValueObject\ExtensionKeyAndConfiguration;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @changelog https://symfony.com/blog/new-in-symfony-5-3-config-builder-classes
  *
@@ -35,43 +34,51 @@ final class StringExtensionToConfigBuilderRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\NodeAnalyzer\SymfonyPhpClosureDetector
      */
-    private $symfonyPhpClosureDetector;
+    private SymfonyPhpClosureDetector $symfonyPhpClosureDetector;
     /**
      * @readonly
-     * @var \Rector\Symfony\NodeAnalyzer\SymfonyClosureExtensionMatcher
      */
-    private $symfonyClosureExtensionMatcher;
+    private SymfonyClosureExtensionMatcher $symfonyClosureExtensionMatcher;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\PropertyNaming
      */
-    private $propertyNaming;
+    private PropertyNaming $propertyNaming;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @readonly
-     * @var \Rector\Symfony\Configs\ConfigArrayHandler\NestedConfigCallsFactory
      */
-    private $nestedConfigCallsFactory;
+    private NestedConfigCallsFactory $nestedConfigCallsFactory;
     /**
      * @readonly
-     * @var \Rector\Symfony\Configs\ConfigArrayHandler\SecurityAccessDecisionManagerConfigArrayHandler
      */
-    private $securityAccessDecisionManagerConfigArrayHandler;
+    private SecurityAccessDecisionManagerConfigArrayHandler $securityAccessDecisionManagerConfigArrayHandler;
     /**
      * @readonly
-     * @var \Rector\Symfony\CodeQuality\NodeFactory\SymfonyClosureFactory
      */
-    private $symfonyClosureFactory;
+    private SymfonyClosureFactory $symfonyClosureFactory;
     /**
      * @var array<string, string>
      */
-    private const EXTENSION_KEY_TO_CLASS_MAP = ['security' => 'Symfony\\Config\\SecurityConfig', 'framework' => 'Symfony\\Config\\FrameworkConfig', 'monolog' => 'Symfony\\Config\\MonologConfig', 'twig' => 'Symfony\\Config\\TwigConfig', 'doctrine' => 'Symfony\\Config\\DoctrineConfig', 'doctrine_migrations' => 'Symfony\\Config\\DoctrineMigrationsConfig', 'sentry' => 'Symfony\\Config\\SentryConfig', 'web_profiler' => 'Symfony\\Config\\WebProfilerConfig', 'debug' => 'Symfony\\Config\\DebugConfig', 'maker' => 'Symfony\\Config\\MakerConfig', 'nelmio_cors' => 'Symfony\\Config\\NelmioCorsConfig', 'api_platform' => 'Symfony\\Config\\ApiPlatformConfig'];
+    private const EXTENSION_KEY_TO_CLASS_MAP = [
+        'security' => 'Symfony\\Config\\SecurityConfig',
+        'framework' => 'Symfony\\Config\\FrameworkConfig',
+        'monolog' => 'Symfony\\Config\\MonologConfig',
+        'twig' => 'Symfony\\Config\\TwigConfig',
+        'doctrine' => 'Symfony\\Config\\DoctrineConfig',
+        'doctrine_migrations' => 'Symfony\\Config\\DoctrineMigrationsConfig',
+        'sentry' => 'Symfony\\Config\\SentryConfig',
+        'web_profiler' => 'Symfony\\Config\\WebProfilerConfig',
+        'debug' => 'Symfony\\Config\\DebugConfig',
+        'maker' => 'Symfony\\Config\\MakerConfig',
+        'nelmio_cors' => 'Symfony\\Config\\NelmioCorsConfig',
+        'api_platform' => 'Symfony\\Config\\ApiPlatformConfig',
+        // @see https://github.com/thephpleague/flysystem-bundle/blob/3.x/src/DependencyInjection/Configuration.php
+        'flysystem' => 'Symfony\\Config\\FlysystemConfig',
+    ];
     public function __construct(SymfonyPhpClosureDetector $symfonyPhpClosureDetector, SymfonyClosureExtensionMatcher $symfonyClosureExtensionMatcher, PropertyNaming $propertyNaming, ValueResolver $valueResolver, NestedConfigCallsFactory $nestedConfigCallsFactory, SecurityAccessDecisionManagerConfigArrayHandler $securityAccessDecisionManagerConfigArrayHandler, SymfonyClosureFactory $symfonyClosureFactory)
     {
         $this->symfonyPhpClosureDetector = $symfonyPhpClosureDetector;

@@ -9,6 +9,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Param;
+use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
@@ -21,9 +22,8 @@ final class AttributeFinder
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     public function __construct(NodeNameResolver $nodeNameResolver)
     {
         $this->nodeNameResolver = $nodeNameResolver;
@@ -86,6 +86,26 @@ final class AttributeFinder
         return null;
     }
     /**
+     * @return Attribute[]
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\ClassLike|\PhpParser\Node\Param $node
+     */
+    public function findManyByClass($node, string $attributeClass) : array
+    {
+        $attributes = [];
+        /** @var AttributeGroup $attrGroup */
+        foreach ($node->attrGroups as $attrGroup) {
+            foreach ($attrGroup->attrs as $attribute) {
+                if (!$attribute->name instanceof FullyQualified) {
+                    continue;
+                }
+                if ($this->nodeNameResolver->isName($attribute->name, $attributeClass)) {
+                    $attributes[] = $attribute;
+                }
+            }
+        }
+        return $attributes;
+    }
+    /**
      * @param string[] $attributeClasses
      * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\ClassLike|\PhpParser\Node\Param $node
      */
@@ -105,7 +125,21 @@ final class AttributeFinder
      */
     public function hasAttributeByClasses($node, array $attributeClasses) : bool
     {
-        return $this->findAttributeByClasses($node, $attributeClasses) !== [];
+        return $this->findAttributeByClasses($node, $attributeClasses) instanceof Attribute;
+    }
+    /**
+     * @param string[] $names
+     * @return Attribute[]
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\Class_|\PhpParser\Node\Param $node
+     */
+    public function findManyByClasses($node, array $names) : array
+    {
+        $attributes = [];
+        foreach ($names as $name) {
+            $justFoundAttributes = $this->findManyByClass($node, $name);
+            $attributes = \array_merge($attributes, $justFoundAttributes);
+        }
+        return $attributes;
     }
     private function findArgByName(Attribute $attribute, string $argName) : ?\PhpParser\Node\Expr
     {

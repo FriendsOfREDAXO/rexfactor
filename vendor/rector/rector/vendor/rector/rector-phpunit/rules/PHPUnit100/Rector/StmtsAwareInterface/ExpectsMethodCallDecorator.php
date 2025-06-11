@@ -10,7 +10,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Expression;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\PHPUnit\Enum\ConsecutiveVariable;
@@ -18,14 +18,12 @@ final class ExpectsMethodCallDecorator
 {
     /**
      * @readonly
-     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
      */
-    private $simpleCallableNodeTraverser;
+    private SimpleCallableNodeTraverser $simpleCallableNodeTraverser;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     public function __construct(SimpleCallableNodeTraverser $simpleCallableNodeTraverser, NodeNameResolver $nodeNameResolver)
     {
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
@@ -71,7 +69,7 @@ final class ExpectsMethodCallDecorator
                     return null;
                 }
                 $node->var = new MethodCall($node->var, 'expects', [new Arg(new Variable(ConsecutiveVariable::MATCHER))]);
-                return NodeTraverser::STOP_TRAVERSAL;
+                return NodeVisitor::STOP_TRAVERSAL;
             });
         }
         return $expectsExactlyCall;

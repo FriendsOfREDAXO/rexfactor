@@ -29,7 +29,7 @@ use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Arguments\Rector\ClassMethod\ArgumentAdderRector\ArgumentAdderRectorTest
  */
@@ -37,32 +37,25 @@ final class ArgumentAdderRector extends AbstractRector implements ConfigurableRe
 {
     /**
      * @readonly
-     * @var \Rector\Arguments\NodeAnalyzer\ArgumentAddingScope
      */
-    private $argumentAddingScope;
+    private ArgumentAddingScope $argumentAddingScope;
     /**
      * @readonly
-     * @var \Rector\Arguments\NodeAnalyzer\ChangedArgumentsDetector
      */
-    private $changedArgumentsDetector;
+    private ChangedArgumentsDetector $changedArgumentsDetector;
     /**
      * @readonly
-     * @var \Rector\PhpParser\AstResolver
      */
-    private $astResolver;
+    private AstResolver $astResolver;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @var ArgumentAdder[]|ArgumentAdderWithoutDefaultValue[]
      */
-    private $addedArguments = [];
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private array $addedArguments = [];
+    private bool $hasChanged = \false;
     public function __construct(ArgumentAddingScope $argumentAddingScope, ChangedArgumentsDetector $changedArgumentsDetector, AstResolver $astResolver, StaticTypeMapper $staticTypeMapper)
     {
         $this->argumentAddingScope = $argumentAddingScope;
@@ -303,6 +296,9 @@ CODE_SAMPLE
      */
     private function refactorCall($call) : void
     {
+        if ($call->isFirstClassCallable()) {
+            return;
+        }
         $callName = $this->getName($call->name);
         if ($callName === null) {
             return;

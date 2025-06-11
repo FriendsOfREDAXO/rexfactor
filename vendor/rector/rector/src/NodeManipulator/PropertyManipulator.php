@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\NodeManipulator;
 
-use RectorPrefix202411\Doctrine\ORM\Mapping\Table;
+use RectorPrefix202506\Doctrine\ORM\Mapping\Table;
 use PhpParser\Node;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
@@ -19,6 +19,7 @@ use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\NodeAnalyzer\PropertyFetchAnalyzer;
 use Rector\NodeNameResolver\NodeNameResolver;
+use Rector\NodeNestingScope\ContextAnalyzer;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer;
@@ -36,66 +37,54 @@ final class PropertyManipulator
 {
     /**
      * @readonly
-     * @var \Rector\NodeManipulator\AssignManipulator
      */
-    private $assignManipulator;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PropertyFetchFinder $propertyFetchFinder;
     /**
      * @readonly
-     * @var \Rector\PhpParser\NodeFinder\PropertyFetchFinder
      */
-    private $propertyFetchFinder;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private PhpAttributeAnalyzer $phpAttributeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer
      */
-    private $phpAttributeAnalyzer;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private PromotedPropertyResolver $promotedPropertyResolver;
     /**
      * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PromotedPropertyResolver
      */
-    private $promotedPropertyResolver;
+    private ConstructorAssignDetector $constructorAssignDetector;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector
      */
-    private $constructorAssignDetector;
+    private AstResolver $astResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\AstResolver
      */
-    private $astResolver;
+    private PropertyFetchAnalyzer $propertyFetchAnalyzer;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\PropertyFetchAnalyzer
      */
-    private $propertyFetchAnalyzer;
+    private ContextAnalyzer $contextAnalyzer;
     /**
      * @var string[]|class-string<Table>[]
      */
-    private const DOCTRINE_PROPERTY_ANNOTATIONS = ['Doctrine\\ORM\\Mapping\\Entity', 'Doctrine\\ORM\\Mapping\\Table', 'Doctrine\\ORM\\Mapping\\MappedSuperclass', 'Doctrine\\ORM\\Mapping\\Embeddable'];
-    public function __construct(\Rector\NodeManipulator\AssignManipulator $assignManipulator, BetterNodeFinder $betterNodeFinder, PhpDocInfoFactory $phpDocInfoFactory, PropertyFetchFinder $propertyFetchFinder, NodeNameResolver $nodeNameResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, NodeTypeResolver $nodeTypeResolver, PromotedPropertyResolver $promotedPropertyResolver, ConstructorAssignDetector $constructorAssignDetector, AstResolver $astResolver, PropertyFetchAnalyzer $propertyFetchAnalyzer)
+    private const ALLOWED_NOT_READONLY_CLASS_ANNOTATIONS = ['ApiPlatform\\Core\\Annotation\\ApiResource', 'ApiPlatform\\Metadata\\ApiResource', 'Doctrine\\ORM\\Mapping\\Entity', 'Doctrine\\ORM\\Mapping\\Table', 'Doctrine\\ORM\\Mapping\\MappedSuperclass', 'Doctrine\\ORM\\Mapping\\Embeddable', 'Doctrine\\ODM\\MongoDB\\Mapping\\Annotations\\Document', 'Doctrine\\ODM\\MongoDB\\Mapping\\Annotations\\EmbeddedDocument'];
+    public function __construct(BetterNodeFinder $betterNodeFinder, PhpDocInfoFactory $phpDocInfoFactory, PropertyFetchFinder $propertyFetchFinder, NodeNameResolver $nodeNameResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, NodeTypeResolver $nodeTypeResolver, PromotedPropertyResolver $promotedPropertyResolver, ConstructorAssignDetector $constructorAssignDetector, AstResolver $astResolver, PropertyFetchAnalyzer $propertyFetchAnalyzer, ContextAnalyzer $contextAnalyzer)
     {
-        $this->assignManipulator = $assignManipulator;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->phpDocInfoFactory = $phpDocInfoFactory;
         $this->propertyFetchFinder = $propertyFetchFinder;
@@ -106,6 +95,7 @@ final class PropertyManipulator
         $this->constructorAssignDetector = $constructorAssignDetector;
         $this->astResolver = $astResolver;
         $this->propertyFetchAnalyzer = $propertyFetchAnalyzer;
+        $this->contextAnalyzer = $contextAnalyzer;
     }
     /**
      * @param \PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $propertyOrParam
@@ -119,7 +109,7 @@ final class PropertyManipulator
         $propertyFetches = $this->propertyFetchFinder->findPrivatePropertyFetches($class, $propertyOrParam, $scope);
         $classMethod = $class->getMethod(MethodName::CONSTRUCT);
         foreach ($propertyFetches as $propertyFetch) {
-            if ($this->isChangeableContext($propertyFetch)) {
+            if ($this->contextAnalyzer->isChangeableContext($propertyFetch)) {
                 return \true;
             }
             // skip for constructor? it is allowed to set value in constructor method
@@ -127,7 +117,7 @@ final class PropertyManipulator
             if ($this->isPropertyAssignedOnlyInConstructor($class, $propertyName, $propertyFetch, $classMethod)) {
                 continue;
             }
-            if ($this->assignManipulator->isLeftPartOfAssign($propertyFetch)) {
+            if ($this->contextAnalyzer->isLeftPartOfAssign($propertyFetch)) {
                 return \true;
             }
             if ($propertyFetch->getAttribute(AttributeKey::IS_UNSET_VAR) === \true) {
@@ -171,6 +161,23 @@ final class PropertyManipulator
         }
         return \false;
     }
+    public function hasTraitWithSamePropertyOrWritten(ClassReflection $classReflection, string $propertyName) : bool
+    {
+        foreach ($classReflection->getTraits() as $traitUse) {
+            if ($traitUse->hasProperty($propertyName)) {
+                return \true;
+            }
+            $trait = $this->astResolver->resolveClassFromClassReflection($traitUse);
+            if (!$trait instanceof Trait_) {
+                continue;
+            }
+            // is property written to
+            if ($this->propertyFetchAnalyzer->containsWrittenPropertyFetchName($trait, $propertyName)) {
+                return \true;
+            }
+        }
+        return \false;
+    }
     /**
      * @param \PhpParser\Node\Expr\StaticPropertyFetch|\PhpParser\Node\Expr\PropertyFetch $propertyFetch
      */
@@ -179,36 +186,18 @@ final class PropertyManipulator
         if (!$classMethod instanceof ClassMethod) {
             return \false;
         }
-        $node = $this->betterNodeFinder->findFirst((array) $classMethod->stmts, static function (Node $subNode) use($propertyFetch) : bool {
-            return ($subNode instanceof PropertyFetch || $subNode instanceof StaticPropertyFetch) && $subNode === $propertyFetch;
-        });
+        $node = $this->betterNodeFinder->findFirst((array) $classMethod->stmts, static fn(Node $subNode): bool => ($subNode instanceof PropertyFetch || $subNode instanceof StaticPropertyFetch) && $subNode === $propertyFetch);
         // there is property unset in Test class, so only check on __construct
         if (!$node instanceof Node) {
             return \false;
         }
         return $this->constructorAssignDetector->isPropertyAssigned($class, $propertyName);
     }
-    /**
-     * @param \PhpParser\Node\Expr\PropertyFetch|\PhpParser\Node\Expr\StaticPropertyFetch $propertyFetch
-     */
-    private function isChangeableContext($propertyFetch) : bool
-    {
-        if ($propertyFetch->getAttribute(AttributeKey::IS_UNSET_VAR, \false)) {
-            return \true;
-        }
-        if ($propertyFetch->getAttribute(AttributeKey::INSIDE_ARRAY_DIM_FETCH, \false)) {
-            return \true;
-        }
-        if ($propertyFetch->getAttribute(AttributeKey::IS_USED_AS_ARG_BY_REF_VALUE, \false) === \true) {
-            return \true;
-        }
-        return $propertyFetch->getAttribute(AttributeKey::IS_INCREMENT_OR_DECREMENT, \false) === \true;
-    }
     private function hasAllowedNotReadonlyAnnotationOrAttribute(PhpDocInfo $phpDocInfo, Class_ $class) : bool
     {
-        if ($phpDocInfo->hasByAnnotationClasses(self::DOCTRINE_PROPERTY_ANNOTATIONS)) {
+        if ($phpDocInfo->hasByAnnotationClasses(self::ALLOWED_NOT_READONLY_CLASS_ANNOTATIONS)) {
             return \true;
         }
-        return $this->phpAttributeAnalyzer->hasPhpAttributes($class, self::DOCTRINE_PROPERTY_ANNOTATIONS);
+        return $this->phpAttributeAnalyzer->hasPhpAttributes($class, self::ALLOWED_NOT_READONLY_CLASS_ANNOTATIONS);
     }
 }

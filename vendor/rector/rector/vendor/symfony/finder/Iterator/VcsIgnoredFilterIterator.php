@@ -8,26 +8,23 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Finder\Iterator;
+namespace RectorPrefix202506\Symfony\Component\Finder\Iterator;
 
-use RectorPrefix202411\Symfony\Component\Finder\Gitignore;
+use RectorPrefix202506\Symfony\Component\Finder\Gitignore;
 /**
  * @extends \FilterIterator<string, \SplFileInfo>
  */
 final class VcsIgnoredFilterIterator extends \FilterIterator
 {
-    /**
-     * @var string
-     */
-    private $baseDir;
+    private string $baseDir;
     /**
      * @var array<string, array{0: string, 1: string}|null>
      */
-    private $gitignoreFilesCache = [];
+    private array $gitignoreFilesCache = [];
     /**
      * @var array<string, bool>
      */
-    private $ignoredPathsCache = [];
+    private array $ignoredPathsCache = [];
     /**
      * @param \Iterator<string, \SplFileInfo> $iterator
      */
@@ -96,9 +93,7 @@ final class VcsIgnoredFilterIterator extends \FilterIterator
     }
     private function parentDirectoriesUpTo(string $from, string $upTo) : array
     {
-        return \array_filter($this->parentDirectoriesUpwards($from), static function (string $directory) use($upTo) : bool {
-            return \strncmp($directory, $upTo, \strlen($upTo)) === 0;
-        });
+        return \array_filter($this->parentDirectoriesUpwards($from), static fn(string $directory): bool => \strncmp($directory, $upTo, \strlen($upTo)) === 0);
     }
     /**
      * @return list<string>

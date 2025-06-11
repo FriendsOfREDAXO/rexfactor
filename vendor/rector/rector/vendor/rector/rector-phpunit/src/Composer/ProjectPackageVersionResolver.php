@@ -14,16 +14,15 @@ final class ProjectPackageVersionResolver
 {
     /**
      * @readonly
-     * @var \Rector\Composer\InstalledPackageResolver
      */
-    private $installedPackageResolver;
-    public function __construct(InstalledPackageResolver $installedPackageResolver)
+    private InstalledPackageResolver $installedPackageResolver;
+    public function __construct()
     {
-        $this->installedPackageResolver = $installedPackageResolver;
+        $this->installedPackageResolver = new InstalledPackageResolver(\getcwd());
     }
     public function findPackageVersion(string $packageName) : ?string
     {
-        $rootProjectInstalledPackages = $this->installedPackageResolver->resolve(\getcwd());
+        $rootProjectInstalledPackages = $this->installedPackageResolver->resolve();
         foreach ($rootProjectInstalledPackages as $rootProjectInstalledPackage) {
             if ($rootProjectInstalledPackage->getName() === $packageName) {
                 return $rootProjectInstalledPackage->getVersion();

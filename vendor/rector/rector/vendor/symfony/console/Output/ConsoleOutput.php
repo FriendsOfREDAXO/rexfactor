@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Output;
+namespace RectorPrefix202506\Symfony\Component\Console\Output;
 
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatterInterface;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatterInterface;
 /**
  * ConsoleOutput is the default class for all CLI output. It uses STDOUT and STDERR.
  *
@@ -27,14 +27,8 @@ use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatterInterf
  */
 class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
 {
-    /**
-     * @var \Symfony\Component\Console\Output\OutputInterface
-     */
-    private $stderr;
-    /**
-     * @var mixed[]
-     */
-    private $consoleSectionOutputs = [];
+    private OutputInterface $stderr;
+    private array $consoleSectionOutputs = [];
     /**
      * @param int                           $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
      * @param bool|null                     $decorated Whether to decorate messages (null for auto-guessing)

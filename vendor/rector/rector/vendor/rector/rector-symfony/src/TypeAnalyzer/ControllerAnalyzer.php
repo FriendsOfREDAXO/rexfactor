@@ -13,13 +13,13 @@ use PHPStan\Type\ThisType;
 use PHPStan\Type\TypeWithClassName;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Reflection\ReflectionResolver;
+use Rector\Symfony\Enum\SymfonyClass;
 final class ControllerAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     public function __construct(ReflectionResolver $reflectionResolver)
     {
         $this->reflectionResolver = $reflectionResolver;
@@ -63,10 +63,10 @@ final class ControllerAnalyzer
     }
     private function isControllerClassReflection(ClassReflection $classReflection) : bool
     {
-        if ($classReflection->isSubclassOf('Symfony\\Bundle\\FrameworkBundle\\Controller\\Controller')) {
+        if ($classReflection->is(SymfonyClass::CONTROLLER)) {
             return \true;
         }
-        return $classReflection->isSubclassOf('Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController');
+        return $classReflection->is(SymfonyClass::ABSTRACT_CONTROLLER);
     }
     private function isControllerClass(Class_ $class) : bool
     {

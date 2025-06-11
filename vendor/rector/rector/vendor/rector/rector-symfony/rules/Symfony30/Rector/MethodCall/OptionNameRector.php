@@ -4,8 +4,8 @@ declare (strict_types=1);
 namespace Rector\Symfony\Symfony30\Rector\MethodCall;
 
 use PhpParser\Node;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Scalar\String_;
 use Rector\Rector\AbstractRector;
@@ -20,14 +20,12 @@ final class OptionNameRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\NodeAnalyzer\FormAddMethodCallAnalyzer
      */
-    private $formAddMethodCallAnalyzer;
+    private FormAddMethodCallAnalyzer $formAddMethodCallAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Symfony\NodeAnalyzer\FormOptionsArrayMatcher
      */
-    private $formOptionsArrayMatcher;
+    private FormOptionsArrayMatcher $formOptionsArrayMatcher;
     /**
      * @var array<string, string>
      */
@@ -40,12 +38,16 @@ final class OptionNameRector extends AbstractRector
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Turns old option names to new ones in FormTypes in Form in Symfony', [new CodeSample(<<<'CODE_SAMPLE'
-$builder = new FormBuilder;
-$builder->add("...", ["precision" => "...", "virtual" => "..."];
+use Symfony\Component\Form\FormBuilder;
+
+$formBuilder = new FormBuilder;
+$formBuilder->add("...", ["precision" => "...", "virtual" => "..."];
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'
-$builder = new FormBuilder;
-$builder->add("...", ["scale" => "...", "inherit_data" => "..."];
+use Symfony\Component\Form\FormBuilder;
+
+$formBuilder = new FormBuilder;
+$formBuilder->add("...", ["scale" => "...", "inherit_data" => "..."];
 CODE_SAMPLE
 )]);
     }

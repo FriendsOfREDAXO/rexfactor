@@ -10,9 +10,8 @@ final class SymfonyTestCaseAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     public function __construct(ReflectionResolver $reflectionResolver)
     {
         $this->reflectionResolver = $reflectionResolver;
@@ -23,7 +22,7 @@ final class SymfonyTestCaseAnalyzer
         if (!$classReflection instanceof ClassReflection) {
             return \false;
         }
-        return $classReflection->isSubclassOf('Symfony\\Bundle\\FrameworkBundle\\Test\\WebTestCase');
+        return $classReflection->is('Symfony\\Bundle\\FrameworkBundle\\Test\\WebTestCase');
     }
     /**
      * @api
@@ -34,6 +33,6 @@ final class SymfonyTestCaseAnalyzer
         if (!$classReflection instanceof ClassReflection) {
             return \false;
         }
-        return $classReflection->isSubclassOf('Symfony\\Bundle\\FrameworkBundle\\Test\\KernelTestCase');
+        return $classReflection->is('Symfony\\Bundle\\FrameworkBundle\\Test\\KernelTestCase');
     }
 }

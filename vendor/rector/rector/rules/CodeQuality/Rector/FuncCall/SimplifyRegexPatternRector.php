@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\FuncCall;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Scalar\String_;
 use Rector\NodeNameResolver\Regex\RegexPatternDetector;
@@ -17,9 +17,8 @@ final class SimplifyRegexPatternRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\Regex\RegexPatternDetector
      */
-    private $regexPatternDetector;
+    private RegexPatternDetector $regexPatternDetector;
     /**
      * @var array<string, string>
      */

@@ -19,29 +19,29 @@ final class ClassAnnotationMatcher
 {
     /**
      * @readonly
-     * @var \Rector\CodingStyle\NodeAnalyzer\UseImportNameMatcher
      */
-    private $useImportNameMatcher;
+    private UseImportNameMatcher $useImportNameMatcher;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\UseImportsResolver
      */
-    private $useImportsResolver;
+    private UseImportsResolver $useImportsResolver;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
-     * @var array<string, string>
+     * @var array<non-empty-string, string>
      */
-    private $fullyQualifiedNameByHash = [];
+    private array $fullyQualifiedNameByHash = [];
     public function __construct(UseImportNameMatcher $useImportNameMatcher, UseImportsResolver $useImportsResolver, ReflectionProvider $reflectionProvider)
     {
         $this->useImportNameMatcher = $useImportNameMatcher;
         $this->useImportsResolver = $useImportsResolver;
         $this->reflectionProvider = $reflectionProvider;
     }
+    /**
+     * @return non-empty-string
+     */
     public function resolveTagFullyQualifiedName(string $tag, Node $node) : string
     {
         $uniqueId = $tag . \spl_object_id($node);
@@ -59,6 +59,7 @@ final class ClassAnnotationMatcher
     }
     /**
      * @param array<Use_|GroupUse> $uses
+     * @return non-empty-string|null
      */
     private function resolveFullyQualifiedClass(array $uses, Node $node, string $tag) : ?string
     {
@@ -83,6 +84,7 @@ final class ClassAnnotationMatcher
     }
     /**
      * @param array<Use_|GroupUse> $uses
+     * @return non-empty-string|null
      */
     private function resolveAsAliased(array $uses, string $tag) : ?string
     {

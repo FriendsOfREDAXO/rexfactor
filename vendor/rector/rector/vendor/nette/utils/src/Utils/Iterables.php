@@ -5,9 +5,9 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\Nette;
 /**
  * Utilities for iterables.
  */
@@ -168,14 +168,8 @@ final class Iterables
     {
         return new class(self::toIterator($iterable)) implements \IteratorAggregate
         {
-            /**
-             * @var \Iterator
-             */
-            private $iterator;
-            /**
-             * @var mixed[]
-             */
-            private $cache = [];
+            private \Iterator $iterator;
+            private array $cache = [];
             public function __construct(\Iterator $iterator, array $cache = [])
             {
                 $this->iterator = $iterator;
@@ -220,6 +214,8 @@ final class Iterables
                 return self::toIterator($iterable->getIterator());
             case \is_array($iterable):
                 return new \ArrayIterator($iterable);
+            default:
+                throw new Nette\ShouldNotHappenException();
         }
     }
 }

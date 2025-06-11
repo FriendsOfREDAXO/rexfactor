@@ -14,14 +14,14 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\ObjectType;
-use PHPStan\Type\TypeWithClassName;
 use Rector\Naming\Naming\ConflictingNameResolver;
-use Rector\Naming\Naming\OverridenExistingNamesResolver;
+use Rector\Naming\Naming\OverriddenExistingNamesResolver;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\NodeTypeResolver\NodeTypeResolver;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\PHPStanStaticTypeMapper\Utils\TypeUnwrapper;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 use Rector\Util\StringUtils;
 /**
  * This class check if a variable name change breaks existing code in class method
@@ -30,45 +30,39 @@ final class BreakingVariableRenameGuard
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\ConflictingNameResolver
      */
-    private $conflictingNameResolver;
+    private ConflictingNameResolver $conflictingNameResolver;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\OverridenExistingNamesResolver
      */
-    private $overridenExistingNamesResolver;
+    private OverriddenExistingNamesResolver $overriddenExistingNamesResolver;
     /**
      * @readonly
-     * @var \Rector\PHPStanStaticTypeMapper\Utils\TypeUnwrapper
      */
-    private $typeUnwrapper;
+    private TypeUnwrapper $typeUnwrapper;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @var string
      * @see https://regex101.com/r/1pKLgf/1
      */
     public const AT_NAMING_REGEX = '#[\\w+]At$#';
-    public function __construct(BetterNodeFinder $betterNodeFinder, ConflictingNameResolver $conflictingNameResolver, NodeTypeResolver $nodeTypeResolver, OverridenExistingNamesResolver $overridenExistingNamesResolver, TypeUnwrapper $typeUnwrapper, NodeNameResolver $nodeNameResolver)
+    public function __construct(BetterNodeFinder $betterNodeFinder, ConflictingNameResolver $conflictingNameResolver, NodeTypeResolver $nodeTypeResolver, OverriddenExistingNamesResolver $overriddenExistingNamesResolver, TypeUnwrapper $typeUnwrapper, NodeNameResolver $nodeNameResolver)
     {
         $this->betterNodeFinder = $betterNodeFinder;
         $this->conflictingNameResolver = $conflictingNameResolver;
         $this->nodeTypeResolver = $nodeTypeResolver;
-        $this->overridenExistingNamesResolver = $overridenExistingNamesResolver;
+        $this->overriddenExistingNamesResolver = $overriddenExistingNamesResolver;
         $this->typeUnwrapper = $typeUnwrapper;
         $this->nodeNameResolver = $nodeNameResolver;
     }
@@ -85,7 +79,7 @@ final class BreakingVariableRenameGuard
         if ($this->conflictingNameResolver->hasNameIsInFunctionLike($expectedName, $functionLike)) {
             return \true;
         }
-        if (!$functionLike instanceof ArrowFunction && $this->overridenExistingNamesResolver->hasNameInClassMethodForNew($currentName, $functionLike)) {
+        if (!$functionLike instanceof ArrowFunction && $this->overriddenExistingNamesResolver->hasNameInClassMethodForNew($currentName, $functionLike)) {
             return \true;
         }
         if ($this->isVariableAlreadyDefined($variable, $currentName)) {
@@ -113,7 +107,7 @@ final class BreakingVariableRenameGuard
         if ($this->conflictingNameResolver->hasNameIsInFunctionLike($expectedName, $classMethod)) {
             return \true;
         }
-        if ($this->overridenExistingNamesResolver->hasNameInFunctionLikeForParam($expectedName, $classMethod)) {
+        if ($this->overriddenExistingNamesResolver->hasNameInFunctionLikeForParam($expectedName, $classMethod)) {
             return \true;
         }
         if ($param->var instanceof Error) {
@@ -178,10 +172,11 @@ final class BreakingVariableRenameGuard
     {
         $type = $this->nodeTypeResolver->getType($param);
         $type = $this->typeUnwrapper->unwrapFirstObjectTypeFromUnionType($type);
-        if (!$type instanceof TypeWithClassName) {
+        $className = ClassNameFromObjectTypeResolver::resolve($type);
+        if ($className === null) {
             return \false;
         }
-        if (!\is_a($type->getClassName(), DateTimeInterface::class, \true)) {
+        if (!\is_a($className, DateTimeInterface::class, \true)) {
             return \false;
         }
         /** @var string $currentName */

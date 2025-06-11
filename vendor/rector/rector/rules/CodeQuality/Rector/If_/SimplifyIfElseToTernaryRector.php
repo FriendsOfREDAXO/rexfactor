@@ -6,11 +6,13 @@ namespace Rector\CodeQuality\Rector\If_;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Else_;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\If_;
+use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\PhpParser\Printer\BetterStandardPrinter;
 use Rector\Rector\AbstractRector;
@@ -23,14 +25,12 @@ final class SimplifyIfElseToTernaryRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Printer\BetterStandardPrinter
      */
-    private $betterStandardPrinter;
+    private BetterStandardPrinter $betterStandardPrinter;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @var int
      */
@@ -113,6 +113,9 @@ CODE_SAMPLE
         if ($this->isNodeTooLong($assign)) {
             return null;
         }
+        if ($ternary->cond instanceof BinaryOp) {
+            $ternary->cond->setAttribute(AttributeKey::ORIGINAL_NODE, null);
+        }
         $expression = new Expression($assign);
         $this->mirrorComments($expression, $node);
         return $expression;
@@ -145,6 +148,9 @@ CODE_SAMPLE
         }
         $stmt = $stmts[0];
         if (!$stmt instanceof Expression) {
+            return null;
+        }
+        if ($stmt->getComments() !== []) {
             return null;
         }
         $stmtExpr = $stmt->expr;

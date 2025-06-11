@@ -3,13 +3,13 @@
 declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PhpDocNodeVisitor;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node as PhpParserNode;
 use PHPStan\PhpDocParser\Ast\Node;
 use PHPStan\PhpDocParser\Ast\PhpDoc\TemplateTagValueNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 use Rector\Application\Provider\CurrentFileProvider;
 use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
 use Rector\BetterPhpDocParser\PhpDoc\SpacelessPhpDocTagNode;
@@ -21,6 +21,7 @@ use Rector\Exception\ShouldNotHappenException;
 use Rector\PhpDocParser\PhpDocParser\PhpDocNodeVisitor\AbstractPhpDocNodeVisitor;
 use Rector\PostRector\Collector\UseNodesToAddCollector;
 use Rector\StaticTypeMapper\PhpDocParser\IdentifierPhpDocTypeMapper;
+use Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 use Rector\StaticTypeMapper\ValueObject\Type\ShortenedObjectType;
 use Rector\ValueObject\Application\File;
@@ -28,37 +29,26 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
 {
     /**
      * @readonly
-     * @var \Rector\CodingStyle\ClassNameImport\ClassNameImportSkipper
      */
-    private $classNameImportSkipper;
+    private ClassNameImportSkipper $classNameImportSkipper;
     /**
      * @readonly
-     * @var \Rector\PostRector\Collector\UseNodesToAddCollector
      */
-    private $useNodesToAddCollector;
+    private UseNodesToAddCollector $useNodesToAddCollector;
     /**
      * @readonly
-     * @var \Rector\Application\Provider\CurrentFileProvider
      */
-    private $currentFileProvider;
+    private CurrentFileProvider $currentFileProvider;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\PhpDocParser\IdentifierPhpDocTypeMapper
      */
-    private $identifierPhpDocTypeMapper;
-    /**
-     * @var PhpParserNode|null
-     */
-    private $currentPhpParserNode;
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private IdentifierPhpDocTypeMapper $identifierPhpDocTypeMapper;
+    private ?PhpParserNode $currentPhpParserNode = null;
+    private bool $hasChanged = \false;
     public function __construct(ClassNameImportSkipper $classNameImportSkipper, UseNodesToAddCollector $useNodesToAddCollector, CurrentFileProvider $currentFileProvider, ReflectionProvider $reflectionProvider, IdentifierPhpDocTypeMapper $identifierPhpDocTypeMapper)
     {
         $this->classNameImportSkipper = $classNameImportSkipper;
@@ -93,9 +83,7 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
             return null;
         }
         $staticType = $this->identifierPhpDocTypeMapper->mapIdentifierTypeNode($node, $this->currentPhpParserNode);
-        if ($staticType instanceof ShortenedObjectType) {
-            $staticType = new FullyQualifiedObjectType($staticType->getFullyQualifiedName());
-        }
+        $staticType = $this->resolveFullyQualified($staticType);
         if (!$staticType instanceof FullyQualifiedObjectType) {
             return null;
         }
@@ -117,6 +105,16 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
     public function hasChanged() : bool
     {
         return $this->hasChanged;
+    }
+    private function resolveFullyQualified(Type $type) : ?FullyQualifiedObjectType
+    {
+        if ($type instanceof ShortenedObjectType || $type instanceof AliasedObjectType) {
+            return new FullyQualifiedObjectType($type->getFullyQualifiedName());
+        }
+        if ($type instanceof FullyQualifiedObjectType) {
+            return $type;
+        }
+        return null;
     }
     private function processFqnNameImport(PhpParserNode $phpParserNode, IdentifierTypeNode $identifierTypeNode, FullyQualifiedObjectType $fullyQualifiedObjectType, File $file) : ?IdentifierTypeNode
     {
@@ -185,11 +183,9 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
         }
         $identifierTypeNode = $doctrineAnnotationTagValueNode->identifierTypeNode;
         $staticType = $this->identifierPhpDocTypeMapper->mapIdentifierTypeNode($identifierTypeNode, $currentPhpParserNode);
+        $staticType = $this->resolveFullyQualified($staticType);
         if (!$staticType instanceof FullyQualifiedObjectType) {
-            if (!$staticType instanceof ObjectType) {
-                return;
-            }
-            $staticType = new FullyQualifiedObjectType($staticType->getClassName());
+            return;
         }
         $file = $this->currentFileProvider->getFile();
         if (!$file instanceof File) {
@@ -218,11 +214,9 @@ final class NameImportingPhpDocNodeVisitor extends AbstractPhpDocNodeVisitor
             throw new ShouldNotHappenException();
         }
         $staticType = $this->identifierPhpDocTypeMapper->mapIdentifierTypeNode(new IdentifierTypeNode($attributeClass), $currentPhpParserNode);
+        $staticType = $this->resolveFullyQualified($staticType);
         if (!$staticType instanceof FullyQualifiedObjectType) {
-            if (!$staticType instanceof ObjectType) {
-                return null;
-            }
-            $staticType = new FullyQualifiedObjectType($staticType->getClassName());
+            return null;
         }
         $file = $this->currentFileProvider->getFile();
         if (!$file instanceof File) {

@@ -84,10 +84,6 @@ CODE_SAMPLE
             if ($expr instanceof CallLike) {
                 $expr = $assign->var;
             }
-            if (!$assign->expr instanceof Assign) {
-                break;
-            }
-            /** @var Expr $assign */
             $assign = $assign->expr;
         }
         return $expressions;

@@ -3,9 +3,10 @@
 declare (strict_types=1);
 namespace Rector\Set\ValueObject;
 
+use RectorPrefix202506\Composer\Semver\Semver;
 use Rector\Composer\ValueObject\InstalledPackage;
 use Rector\Set\Contract\SetInterface;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @api used by extensions
  */
@@ -13,24 +14,20 @@ final class ComposerTriggeredSet implements SetInterface
 {
     /**
      * @readonly
-     * @var string
      */
-    private $groupName;
+    private string $groupName;
     /**
      * @readonly
-     * @var string
      */
-    private $packageName;
+    private string $packageName;
     /**
      * @readonly
-     * @var string
      */
-    private $version;
+    private string $version;
     /**
      * @readonly
-     * @var string
      */
-    private $setFilePath;
+    private string $setFilePath;
     /**
      * @var string
      * @see https://regex101.com/r/ioYomu/1
@@ -62,7 +59,7 @@ final class ComposerTriggeredSet implements SetInterface
             if ($installedPackage->getName() !== $this->packageName) {
                 continue;
             }
-            return \version_compare($installedPackage->getVersion(), $this->version) !== -1;
+            return Semver::satisfies($installedPackage->getVersion(), '^' . $this->version);
         }
         return \false;
     }

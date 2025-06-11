@@ -3,7 +3,6 @@
 declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
-use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PHPStan\PhpDocParser\Ast\Type\GenericTypeNode;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
@@ -32,22 +31,17 @@ final class ArrayTypeMapper implements TypeMapperInterface
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeAnalyzer\GenericClassStringTypeNormalizer
      */
-    private $genericClassStringTypeNormalizer;
+    private GenericClassStringTypeNormalizer $genericClassStringTypeNormalizer;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeTypeAnalyzer\DetailedTypeAnalyzer
      */
-    private $detailedTypeAnalyzer;
+    private DetailedTypeAnalyzer $detailedTypeAnalyzer;
     /**
      * @var string
      */
     public const HAS_GENERIC_TYPE_PARENT = 'has_generic_type_parent';
-    /**
-     * @var \Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper
-     */
-    private $phpStanStaticTypeMapper;
+    private PHPStanStaticTypeMapper $phpStanStaticTypeMapper;
     public function __construct(GenericClassStringTypeNormalizer $genericClassStringTypeNormalizer, DetailedTypeAnalyzer $detailedTypeAnalyzer)
     {
         $this->genericClassStringTypeNormalizer = $genericClassStringTypeNormalizer;
@@ -69,7 +63,7 @@ final class ArrayTypeMapper implements TypeMapperInterface
     {
         // this cannot be handled by PHPStan $type->toPhpDocNode() as requires space removal around "|" in union type
         // then e.g. "int" instead of explicit number, and nice arrays
-        $itemType = $type->getItemType();
+        $itemType = $type->getIterableValueType();
         $isGenericArray = $this->isGenericArrayCandidate($type);
         if ($itemType instanceof UnionType && !$type instanceof ConstantArrayType && !$isGenericArray) {
             return $this->createArrayTypeNodeFromUnionType($itemType);
@@ -86,7 +80,7 @@ final class ArrayTypeMapper implements TypeMapperInterface
     /**
      * @param ArrayType $type
      */
-    public function mapToPhpParserNode(Type $type, string $typeKind) : ?Node
+    public function mapToPhpParserNode(Type $type, string $typeKind) : Identifier
     {
         return new Identifier('array');
     }
@@ -136,7 +130,7 @@ final class ArrayTypeMapper implements TypeMapperInterface
     }
     private function createGenericArrayType(ArrayType $arrayType, bool $withKey = \false) : GenericTypeNode
     {
-        $itemType = $arrayType->getItemType();
+        $itemType = $arrayType->getIterableValueType();
         $itemTypeNode = $this->phpStanStaticTypeMapper->mapToPHPStanPhpDocTypeNode($itemType);
         $identifierTypeNode = new IdentifierTypeNode('array');
         // is class-string[] list only
@@ -155,7 +149,7 @@ final class ArrayTypeMapper implements TypeMapperInterface
         }
         // @see https://github.com/phpstan/phpdoc-parser/blob/98a088b17966bdf6ee25c8a4b634df313d8aa531/tests/PHPStan/Parser/PhpDocParserTest.php#L2692-L2696
         foreach ($genericTypes as $genericType) {
-            /** @var \PHPStan\PhpDocParser\Ast\Node $genericType */
+            /** @var TypeNode $genericType */
             $genericType->setAttribute(self::HAS_GENERIC_TYPE_PARENT, $withKey);
         }
         $identifierTypeNode->setAttribute(self::HAS_GENERIC_TYPE_PARENT, $withKey);
@@ -176,15 +170,15 @@ final class ArrayTypeMapper implements TypeMapperInterface
         if (!$arrayType->getKeyType()->isInteger()->yes()) {
             return \false;
         }
-        return !$arrayType->getItemType() instanceof ArrayType;
+        return !$arrayType->getIterableValueType()->isArray()->yes();
     }
     private function isClassStringArrayType(ArrayType $arrayType) : bool
     {
         if ($arrayType->getKeyType() instanceof MixedType) {
-            return $arrayType->getItemType() instanceof GenericClassStringType;
+            return $arrayType->getIterableValueType() instanceof GenericClassStringType;
         }
         if ($arrayType->getKeyType() instanceof ConstantIntegerType) {
-            return $arrayType->getItemType() instanceof GenericClassStringType;
+            return $arrayType->getIterableValueType() instanceof GenericClassStringType;
         }
         return \false;
     }

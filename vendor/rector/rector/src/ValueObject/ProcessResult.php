@@ -5,18 +5,18 @@ namespace Rector\ValueObject;
 
 use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class ProcessResult
 {
     /**
      * @var SystemError[]
      */
-    private $systemErrors;
+    private array $systemErrors;
     /**
      * @var FileDiff[]
      * @readonly
      */
-    private $fileDiffs;
+    private array $fileDiffs;
     /**
      * @param SystemError[] $systemErrors
      * @param FileDiff[] $fileDiffs
@@ -38,8 +38,11 @@ final class ProcessResult
     /**
      * @return FileDiff[]
      */
-    public function getFileDiffs() : array
+    public function getFileDiffs(bool $onlyWithChanges = \true) : array
     {
+        if ($onlyWithChanges) {
+            return \array_filter($this->fileDiffs, fn(FileDiff $fileDiff): bool => $fileDiff->getDiff() !== '');
+        }
         return $this->fileDiffs;
     }
     /**

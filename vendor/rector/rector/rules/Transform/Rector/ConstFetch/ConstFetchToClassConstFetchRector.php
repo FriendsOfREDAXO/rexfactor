@@ -11,7 +11,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\ConstFetchToClassConstFetch;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see Rector\Tests\Transform\Rector\ConstFetch\ConstFetchToClassConstFetchRector\ConstFetchToClassConstFetchTest
  */
@@ -20,7 +20,7 @@ final class ConstFetchToClassConstFetchRector extends AbstractRector implements 
     /**
      * @var ConstFetchToClassConstFetch[]
      */
-    private $constFetchToClassConsts = [];
+    private array $constFetchToClassConsts = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Change const fetch to class const fetch', [new ConfiguredCodeSample('$x = CONTEXT_COURSE', '$x = course::LEVEL', [new ConstFetchToClassConstFetch('CONTEXT_COURSE', 'course', 'LEVEL')])]);

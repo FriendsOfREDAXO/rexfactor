@@ -14,7 +14,8 @@ use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use Rector\Enum\ClassName;
 use Rector\PhpParser\Node\BetterNodeFinder;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
@@ -24,27 +25,20 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromMockObjectRector\ReturnTypeFromMockObjectRectorTest
  */
-final class ReturnTypeFromMockObjectRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ReturnTypeFromMockObjectRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
      */
-    private $returnAnalyzer;
-    /**
-     * @var string
-     */
-    private const MOCK_OBJECT_CLASS = 'PHPUnit\\Framework\\MockObject\\MockObject';
+    private ReturnAnalyzer $returnAnalyzer;
     public function __construct(BetterNodeFinder $betterNodeFinder, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnAnalyzer $returnAnalyzer)
     {
         $this->betterNodeFinder = $betterNodeFinder;
@@ -82,8 +76,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         // type is already known
         if ($node->returnType instanceof Node) {
             return null;
@@ -108,7 +103,7 @@ CODE_SAMPLE
         if (!$this->isMockObjectType($returnType)) {
             return null;
         }
-        $node->returnType = new FullyQualified(self::MOCK_OBJECT_CLASS);
+        $node->returnType = new FullyQualified(ClassName::MOCK_OBJECT);
         return $node;
     }
     public function provideMinPhpVersion() : int
@@ -123,11 +118,11 @@ CODE_SAMPLE
         if (\count($type->getTypes()) !== 2) {
             return \false;
         }
-        return \in_array(self::MOCK_OBJECT_CLASS, $type->getObjectClassNames());
+        return \in_array(ClassName::MOCK_OBJECT, $type->getObjectClassNames());
     }
     private function isMockObjectType(Type $returnType) : bool
     {
-        if ($returnType instanceof ObjectType && $returnType->isInstanceOf(self::MOCK_OBJECT_CLASS)->yes()) {
+        if ($returnType instanceof ObjectType && $returnType->isInstanceOf(ClassName::MOCK_OBJECT)->yes()) {
             return \true;
         }
         return $this->isIntersectionWithMockObjectType($returnType);
@@ -139,6 +134,6 @@ CODE_SAMPLE
             return \false;
         }
         // is phpunit test case?
-        return $classReflection->isSubclassOf(ClassName::TEST_CASE_CLASS);
+        return $classReflection->is(ClassName::TEST_CASE_CLASS);
     }
 }

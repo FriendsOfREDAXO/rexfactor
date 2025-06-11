@@ -11,7 +11,7 @@ use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Arguments\Rector\FuncCall\FunctionArgumentDefaultValueReplacerRector\FunctionArgumentDefaultValueReplacerRectorTest
  */
@@ -19,20 +19,19 @@ final class FunctionArgumentDefaultValueReplacerRector extends AbstractRector im
 {
     /**
      * @readonly
-     * @var \Rector\Arguments\ArgumentDefaultValueReplacer
      */
-    private $argumentDefaultValueReplacer;
+    private ArgumentDefaultValueReplacer $argumentDefaultValueReplacer;
     /**
      * @var ReplaceFuncCallArgumentDefaultValue[]
      */
-    private $replacedArguments = [];
+    private array $replacedArguments = [];
     public function __construct(ArgumentDefaultValueReplacer $argumentDefaultValueReplacer)
     {
         $this->argumentDefaultValueReplacer = $argumentDefaultValueReplacer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Streamline the operator arguments of version_compare function', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Streamline the operator arguments of `version_compare` function', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 version_compare(PHP_VERSION, '5.6', 'gte');
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'

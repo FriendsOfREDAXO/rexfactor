@@ -20,11 +20,11 @@ use Rector\Rector\AbstractRector;
 use Rector\Symfony\Configs\NodeAnalyser\ConfigServiceArgumentsResolver;
 use Rector\Symfony\Enum\SymfonyAttribute;
 use Rector\ValueObject\MethodName;
-use RectorPrefix202411\Symfony\Component\Finder\Finder;
-use RectorPrefix202411\Symfony\Component\Finder\SplFileInfo;
+use RectorPrefix202506\Symfony\Component\Finder\Finder;
+use RectorPrefix202506\Symfony\Component\Finder\SplFileInfo;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * The param/env is only available since Symfony 6.3
  * @see https://symfony.com/blog/new-in-symfony-6-3-dependency-injection-improvements#new-options-for-autowire-attribute
@@ -35,17 +35,13 @@ final class AutowireAttributeRector extends AbstractRector implements Configurab
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\Configs\NodeAnalyser\ConfigServiceArgumentsResolver
      */
-    private $configServiceArgumentsResolver;
+    private ConfigServiceArgumentsResolver $configServiceArgumentsResolver;
     /**
      * @var string
      */
     public const CONFIGS_DIRECTORY = 'configs_directory';
-    /**
-     * @var string|null
-     */
-    private $configsDirectory;
+    private ?string $configsDirectory = null;
     public function __construct(ConfigServiceArgumentsResolver $configServiceArgumentsResolver)
     {
         $this->configServiceArgumentsResolver = $configServiceArgumentsResolver;

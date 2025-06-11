@@ -5,21 +5,20 @@ namespace Rector\Doctrine\CodeQuality;
 
 use PHPStan\Reflection\ReflectionProvider;
 use Rector\Doctrine\CodeQuality\ValueObject\EntityMapping;
-use RectorPrefix202411\Symfony\Component\Finder\Finder;
-use RectorPrefix202411\Symfony\Component\Finder\SplFileInfo;
-use RectorPrefix202411\Symfony\Component\Yaml\Yaml;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Symfony\Component\Finder\Finder;
+use RectorPrefix202506\Symfony\Component\Finder\SplFileInfo;
+use RectorPrefix202506\Symfony\Component\Yaml\Yaml;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class EntityMappingResolver
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @var EntityMapping[]
      */
-    private $entityMappings = [];
+    private array $entityMappings = [];
     public function __construct(ReflectionProvider $reflectionProvider)
     {
         $this->reflectionProvider = $reflectionProvider;

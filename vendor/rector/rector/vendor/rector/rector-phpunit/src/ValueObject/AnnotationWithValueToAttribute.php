@@ -7,27 +7,30 @@ final class AnnotationWithValueToAttribute
 {
     /**
      * @readonly
-     * @var string
      */
-    private $annotationName;
+    private string $annotationName;
     /**
      * @readonly
-     * @var string
      */
-    private $attributeClass;
+    private string $attributeClass;
     /**
      * @var array<mixed, mixed>
      * @readonly
      */
-    private $valueMap = [];
+    private array $valueMap = [];
+    /**
+     * @readonly
+     */
+    private bool $isOnClassLevel = \false;
     /**
      * @param array<mixed, mixed> $valueMap
      */
-    public function __construct(string $annotationName, string $attributeClass, array $valueMap = [])
+    public function __construct(string $annotationName, string $attributeClass, array $valueMap = [], bool $isOnClassLevel = \false)
     {
         $this->annotationName = $annotationName;
         $this->attributeClass = $attributeClass;
         $this->valueMap = $valueMap;
+        $this->isOnClassLevel = $isOnClassLevel;
     }
     public function getAnnotationName() : string
     {
@@ -43,5 +46,9 @@ final class AnnotationWithValueToAttribute
     public function getValueMap() : array
     {
         return $this->valueMap;
+    }
+    public function getIsOnClassLevel() : bool
+    {
+        return $this->isOnClassLevel;
     }
 }

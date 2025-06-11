@@ -5,9 +5,9 @@ namespace Rector\Symfony\Twig134\Rector\Return_;
 
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
@@ -30,16 +30,14 @@ final class SimpleFunctionAndFilterRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
-     * @var array<string, class-string>>
+     * @var array<string, class-string>
      */
     private const OLD_TO_NEW_CLASSES = ['Twig_Function_Method' => 'Twig_SimpleFunction', 'Twig_Filter_Method' => 'Twig_SimpleFilter'];
     public function __construct(ReflectionResolver $reflectionResolver, ValueResolver $valueResolver)
@@ -134,10 +132,10 @@ CODE_SAMPLE
         if (!$classReflection instanceof ClassReflection) {
             return \true;
         }
-        if (!$classReflection->isSubclassOf('Twig_Extension')) {
+        if (!$classReflection->is('Twig_Extension')) {
             return \true;
         }
-        return !$this->nodeNameResolver->isNames($classMethod, ['getFunctions', 'getFilters']);
+        return !$this->isNames($classMethod, ['getFunctions', 'getFilters']);
     }
     private function processArrayItem(ArrayItem $arrayItem, Type $newNodeType, bool &$hasChanged) : void
     {

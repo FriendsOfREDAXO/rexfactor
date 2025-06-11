@@ -5,9 +5,9 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\Nette;
 /**
  * File system tool.
  */
@@ -220,6 +220,20 @@ final class FileSystem
     public static function joinPaths(string ...$paths) : string
     {
         return self::normalizePath(\implode('/', $paths));
+    }
+    /**
+     * Resolves a path against a base path. If the path is absolute, returns it directly, if it's relative, joins it with the base path.
+     */
+    public static function resolvePath(string $basePath, string $path) : string
+    {
+        switch (\true) {
+            case self::isAbsolute($path):
+                return self::platformSlashes($path);
+            case $path === '':
+                return self::platformSlashes($basePath);
+            default:
+                return self::joinPaths($basePath, $path);
+        }
     }
     /**
      * Converts backslashes to slashes.

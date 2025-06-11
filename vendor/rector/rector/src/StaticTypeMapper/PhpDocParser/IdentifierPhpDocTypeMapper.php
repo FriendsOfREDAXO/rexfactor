@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\StaticTypeMapper\PhpDocParser;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PHPStan\Analyser\NameScope;
 use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
@@ -36,24 +36,20 @@ final class IdentifierPhpDocTypeMapper implements PhpDocTypeMapperInterface
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\PHPStan\ObjectTypeSpecifier
      */
-    private $objectTypeSpecifier;
+    private ObjectTypeSpecifier $objectTypeSpecifier;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\Mapper\ScalarStringToTypeMapper
      */
-    private $scalarStringToTypeMapper;
+    private ScalarStringToTypeMapper $scalarStringToTypeMapper;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     public function __construct(ObjectTypeSpecifier $objectTypeSpecifier, ScalarStringToTypeMapper $scalarStringToTypeMapper, ReflectionProvider $reflectionProvider, ReflectionResolver $reflectionResolver)
     {
         $this->objectTypeSpecifier = $objectTypeSpecifier;
@@ -94,19 +90,22 @@ final class IdentifierPhpDocTypeMapper implements PhpDocTypeMapperInterface
         if ($loweredName === 'iterable') {
             return new IterableType(new MixedType(), new MixedType());
         }
+        $withPreslash = \false;
         if (\strncmp($identifierTypeNode->name, '\\', \strlen('\\')) === 0) {
             $typeWithoutPreslash = Strings::substring($identifierTypeNode->name, 1);
             $objectType = new FullyQualifiedObjectType($typeWithoutPreslash);
+            $withPreslash = \true;
         } else {
             if ($identifierTypeNode->name === 'scalar') {
                 // pseudo type, see https://www.php.net/manual/en/language.types.intro.php
                 $scalarTypes = [new BooleanType(), new StringType(), new IntegerType(), new FloatType()];
                 return new UnionType($scalarTypes);
             }
+            $identifierTypeNode->name = \ltrim($identifierTypeNode->name, '@');
             $objectType = new ObjectType($identifierTypeNode->name);
         }
         $scope = $node->getAttribute(AttributeKey::SCOPE);
-        return $this->objectTypeSpecifier->narrowToFullyQualifiedOrAliasedObjectType($node, $objectType, $scope);
+        return $this->objectTypeSpecifier->narrowToFullyQualifiedOrAliasedObjectType($node, $objectType, $scope, $withPreslash);
     }
     /**
      * @return \PHPStan\Type\MixedType|\Rector\StaticTypeMapper\ValueObject\Type\SelfObjectType

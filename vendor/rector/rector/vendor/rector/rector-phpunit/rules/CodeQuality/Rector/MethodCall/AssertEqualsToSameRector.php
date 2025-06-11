@@ -4,16 +4,23 @@ declare (strict_types=1);
 namespace Rector\PHPUnit\CodeQuality\Rector\MethodCall;
 
 use PhpParser\Node;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
-use PhpParser\Node\Scalar\Encapsed;
+use PhpParser\Node\Scalar\InterpolatedString;
+use PHPStan\Type\BooleanType;
 use PHPStan\Type\Constant\ConstantArrayType;
+use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\FloatType;
 use PHPStan\Type\IntegerType;
+use PHPStan\Type\MixedType;
+use PHPStan\Type\NeverType;
+use PHPStan\Type\ObjectType;
 use PHPStan\Type\StringType;
 use PHPStan\Type\Type;
+use PHPStan\Type\TypeCombinator;
 use Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
 use Rector\Rector\AbstractRector;
@@ -26,14 +33,12 @@ final class AssertEqualsToSameRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\IdentifierManipulator
      */
-    private $identifierManipulator;
+    private IdentifierManipulator $identifierManipulator;
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
     /**
      * @var array<string, string>
      */
@@ -78,7 +83,7 @@ final class AssertEqualsToSameRector extends AbstractRector
             return null;
         }
         $args = $node->getArgs();
-        if (!isset($args[0])) {
+        if (!isset($args[0], $args[1])) {
             return null;
         }
         $firstArgValue = $args[0]->value;
@@ -88,12 +93,39 @@ final class AssertEqualsToSameRector extends AbstractRector
         if ($this->shouldSkipConstantArrayType($firstArgValue)) {
             return null;
         }
+        if ($this->shouldSkipLooseComparison($args)) {
+            return null;
+        }
         $hasChanged = $this->identifierManipulator->renameNodeWithMap($node, self::RENAME_METHODS_MAP);
         return $hasChanged ? $node : null;
     }
+    /**
+     * @param Arg[] $args
+     */
+    private function shouldSkipLooseComparison(array $args) : bool
+    {
+        $firstArgType = $this->nodeTypeResolver->getNativeType($args[0]->value);
+        $secondArgType = TypeCombinator::removeNull($this->nodeTypeResolver->getNativeType($args[1]->value));
+        // loose comparison
+        if ($firstArgType instanceof IntegerType && ($secondArgType instanceof FloatType || $secondArgType instanceof StringType)) {
+            return \true;
+        }
+        if ($firstArgType instanceof FloatType && ($secondArgType instanceof IntegerType || $secondArgType instanceof StringType)) {
+            return \true;
+        }
+        if ($firstArgType instanceof StringType && $secondArgType instanceof ObjectType && $this->isObjectType($args[1]->value, new ObjectType('Stringable'))) {
+            return \true;
+        }
+        // compare to mixed type is can be anything
+        if ($secondArgType instanceof MixedType) {
+            return \true;
+        }
+        // can happen with magic process
+        return $secondArgType instanceof NeverType;
+    }
     private function shouldSkipConstantArrayType(Expr $expr) : bool
     {
-        $type = $this->getType($expr);
+        $type = $this->nodeTypeResolver->getNativeType($expr);
         if (!$type instanceof ConstantArrayType) {
             return \false;
         }
@@ -124,17 +156,20 @@ final class AssertEqualsToSameRector extends AbstractRector
                 return \true;
             }
         }
-        return \false;
+        if ($valueNodeType instanceof ConstantBooleanType) {
+            return \false;
+        }
+        return $valueNodeType instanceof BooleanType;
     }
     private function isScalarOrEnumValue(Expr $expr) : bool
     {
         if ($expr instanceof ClassConstFetch) {
             return \true;
         }
-        if ($expr instanceof Encapsed) {
+        if ($expr instanceof InterpolatedString) {
             return \true;
         }
-        $valueNodeType = $this->nodeTypeResolver->getType($expr);
+        $valueNodeType = $this->nodeTypeResolver->getNativeType($expr);
         return $this->isScalarType($valueNodeType);
     }
 }

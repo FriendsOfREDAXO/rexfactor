@@ -14,17 +14,19 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Function_;
 use PHPStan\Analyser\Scope;
+use PHPStan\Type\Accessory\AccessoryArrayListType;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
-use PHPStan\Type\IntegerType;
 use PHPStan\Type\IntersectionType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\Type;
+use PHPStan\Type\TypeCombinator;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger;
 use Rector\PhpParser\Node\BetterNodeFinder;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
 use Rector\ValueObject\PhpVersion;
@@ -35,38 +37,32 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromStrictNewArrayRector\ReturnTypeFromStrictNewArrayRectorTest
  */
-final class ReturnTypeFromStrictNewArrayRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ReturnTypeFromStrictNewArrayRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger
      */
-    private $phpDocTypeChanger;
+    private PhpDocTypeChanger $phpDocTypeChanger;
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer
      */
-    private $returnTypeInferer;
+    private ReturnTypeInferer $returnTypeInferer;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
      */
-    private $returnAnalyzer;
+    private ReturnAnalyzer $returnAnalyzer;
     public function __construct(PhpDocTypeChanger $phpDocTypeChanger, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnTypeInferer $returnTypeInferer, PhpDocInfoFactory $phpDocInfoFactory, BetterNodeFinder $betterNodeFinder, ReturnAnalyzer $returnAnalyzer)
     {
         $this->phpDocTypeChanger = $phpDocTypeChanger;
@@ -112,8 +108,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod|Function_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         if ($this->shouldSkip($node, $scope)) {
             return null;
         }
@@ -164,7 +161,7 @@ CODE_SAMPLE
         // always returns array
         $node->returnType = new Identifier('array');
         // add more precise array type if suitable
-        if ($returnType instanceof ArrayType && $this->shouldAddReturnArrayDocType($returnType)) {
+        if ($this->shouldAddReturnArrayDocType($returnType)) {
             $this->changeReturnType($node, $returnType);
         }
         return $node;
@@ -182,7 +179,7 @@ CODE_SAMPLE
     /**
      * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|\PhpParser\Node\Expr\Closure $node
      */
-    private function changeReturnType($node, ArrayType $arrayType) : void
+    private function changeReturnType($node, Type $arrayType) : void
     {
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
         // skip already filled type, on purpose
@@ -193,11 +190,14 @@ CODE_SAMPLE
         if ($arrayType instanceof ConstantArrayType && \count($arrayType->getValueTypes()) !== 1) {
             return;
         }
-        $itemType = $arrayType->getItemType();
+        $itemType = $arrayType->getIterableValueType();
         if ($itemType instanceof IntersectionType) {
             $narrowArrayType = $arrayType;
         } else {
             $narrowArrayType = new ArrayType(new MixedType(), $itemType);
+        }
+        if ($arrayType->isList()->yes()) {
+            $narrowArrayType = TypeCombinator::intersect($narrowArrayType, new AccessoryArrayListType());
         }
         $this->phpDocTypeChanger->changeReturnType($node, $phpDocInfo, $narrowArrayType);
     }
@@ -208,7 +208,7 @@ CODE_SAMPLE
      */
     private function matchVariableNotOverriddenByNonArray($functionLike, array $variables) : array
     {
-        // is variable overriden?
+        // is variable overridden?
         /** @var Assign[] $assigns */
         $assigns = $this->betterNodeFinder->findInstancesOfInFunctionLikeScoped($functionLike, Assign::class);
         foreach ($assigns as $assign) {
@@ -255,14 +255,14 @@ CODE_SAMPLE
         }
         return $variables;
     }
-    private function shouldAddReturnArrayDocType(ArrayType $arrayType) : bool
+    private function shouldAddReturnArrayDocType(Type $arrayType) : bool
     {
         if ($arrayType instanceof ConstantArrayType) {
-            if ($arrayType->getItemType() instanceof NeverType) {
+            if ($arrayType->getIterableValueType() instanceof NeverType) {
                 return \false;
             }
             // handle only simple arrays
-            if (!$arrayType->getKeyType() instanceof IntegerType) {
+            if (!$arrayType->getIterableKeyType()->isInteger()->yes()) {
                 return \false;
             }
         }

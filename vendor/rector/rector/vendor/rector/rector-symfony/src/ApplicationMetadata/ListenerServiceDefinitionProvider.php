@@ -11,22 +11,18 @@ final class ListenerServiceDefinitionProvider
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\DataProvider\ServiceMapProvider
      */
-    private $serviceMapProvider;
+    private ServiceMapProvider $serviceMapProvider;
     /**
      * @var string
      * @see https://regex101.com/r/j6SAga/1
      */
     private const SYMFONY_FAMILY_REGEX = '#^(Symfony|Sensio|Doctrine)\\b#';
-    /**
-     * @var bool
-     */
-    private $areListenerClassesLoaded = \false;
+    private bool $areListenerClassesLoaded = \false;
     /**
      * @var ServiceDefinition[][][]
      */
-    private $listenerClassesToEvents = [];
+    private array $listenerClassesToEvents = [];
     public function __construct(ServiceMapProvider $serviceMapProvider)
     {
         $this->serviceMapProvider = $serviceMapProvider;
@@ -51,6 +47,12 @@ final class ListenerServiceDefinitionProvider
                     continue;
                 }
                 $eventName = $tag->getEvent();
+                // fill method based on the event
+                if ($tag->getMethod() === '' && \strncmp($tag->getEvent(), 'kernel.', \strlen('kernel.')) === 0) {
+                    [, $event] = \explode('.', $tag->getEvent());
+                    $methodName = 'onKernel' . \ucfirst($event);
+                    $tag->changeMethod($methodName);
+                }
                 $this->listenerClassesToEvents[$eventListener->getClass()][$eventName][] = $eventListener;
             }
         }

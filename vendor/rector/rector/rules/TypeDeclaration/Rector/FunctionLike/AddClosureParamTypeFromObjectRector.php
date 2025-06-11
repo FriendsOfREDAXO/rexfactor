@@ -22,7 +22,7 @@ use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\TypeDeclaration\ValueObject\AddClosureParamTypeFromObject;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\FunctionLike\AddClosureParamTypeFromObjectRector\AddClosureParamTypeFromObjectRectorTest
  */
@@ -30,14 +30,12 @@ final class AddClosureParamTypeFromObjectRector extends AbstractRector implement
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\TypeComparator\TypeComparator
      */
-    private $typeComparator;
+    private TypeComparator $typeComparator;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @var int
      */
@@ -45,7 +43,7 @@ final class AddClosureParamTypeFromObjectRector extends AbstractRector implement
     /**
      * @var AddClosureParamTypeFromObject[]
      */
-    private $addClosureParamTypeFromObjects = [];
+    private array $addClosureParamTypeFromObjects = [];
     public function __construct(TypeComparator $typeComparator, StaticTypeMapper $staticTypeMapper)
     {
         $this->typeComparator = $typeComparator;

@@ -17,7 +17,7 @@ use PHPStan\Type\StringType;
 use Rector\PhpParser\NodeTransformer;
 use Rector\Rector\AbstractRector;
 use Rector\Util\Reflection\PrivatesAccessor;
-use RectorPrefix202411\Symfony\Component\Console\Input\StringInput;
+use RectorPrefix202506\Symfony\Component\Console\Input\StringInput;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
@@ -29,9 +29,8 @@ final class StringToArrayArgumentProcessRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\NodeTransformer
      */
-    private $nodeTransformer;
+    private NodeTransformer $nodeTransformer;
     /**
      * @var string[]
      */
@@ -97,34 +96,41 @@ CODE_SAMPLE
         if (!$activeValueType instanceof StringType) {
             return null;
         }
-        $this->processStringType($node, $argumentPosition, $activeArgValue);
+        $hasChanged = $this->processStringType($node, $argumentPosition, $activeArgValue);
+        if (!$hasChanged) {
+            return null;
+        }
         return $node;
     }
     private function shouldSkipProcessMethodCall(MethodCall $methodCall) : bool
     {
-        $methodName = (string) $this->nodeNameResolver->getName($methodCall->name);
+        $methodName = (string) $this->getName($methodCall->name);
         return \in_array($methodName, self::EXCLUDED_PROCESS_METHOD_CALLS, \true);
     }
     /**
      * @param \PhpParser\Node\Expr\New_|\PhpParser\Node\Expr\MethodCall $expr
      */
-    private function processStringType($expr, int $argumentPosition, Expr $firstArgumentExpr) : void
+    private function processStringType($expr, int $argumentPosition, Expr $firstArgumentExpr) : bool
     {
         if ($firstArgumentExpr instanceof Concat) {
             $arrayNode = $this->nodeTransformer->transformConcatToStringArray($firstArgumentExpr);
             $expr->args[$argumentPosition] = new Arg($arrayNode);
-            return;
+            return \true;
         }
         $args = $expr->getArgs();
+        $hasChanged = \false;
         if ($firstArgumentExpr instanceof FuncCall && $this->isName($firstArgumentExpr, 'sprintf')) {
             $arrayNode = $this->nodeTransformer->transformSprintfToArray($firstArgumentExpr);
             if ($arrayNode instanceof Array_) {
                 $args[$argumentPosition]->value = $arrayNode;
+                $hasChanged = \true;
             }
         } elseif ($firstArgumentExpr instanceof String_) {
             $parts = $this->splitProcessCommandToItems($firstArgumentExpr->value);
             $args[$argumentPosition]->value = $this->nodeFactory->createArray($parts);
+            $hasChanged = \true;
         }
+        return $hasChanged;
     }
     /**
      * @return string[]

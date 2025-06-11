@@ -3,8 +3,8 @@
 declare (strict_types=1);
 namespace Rector\Php;
 
-use RectorPrefix202411\Nette\Utils\FileSystem;
-use RectorPrefix202411\Nette\Utils\Json;
+use RectorPrefix202506\Nette\Utils\FileSystem;
+use RectorPrefix202506\Nette\Utils\Json;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\ValueObject\PolyfillPackage;
@@ -43,8 +43,6 @@ final class PolyfillPackagesProvider
      */
     private function filterPolyfillPackages(array $require) : array
     {
-        return \array_filter(\array_keys($require), static function (string $packageName) : bool {
-            return \strncmp($packageName, 'symfony/polyfill-', \strlen('symfony/polyfill-')) === 0;
-        });
+        return \array_filter(\array_keys($require), static fn(string $packageName): bool => \strncmp($packageName, 'symfony/polyfill-', \strlen('symfony/polyfill-')) === 0);
     }
 }

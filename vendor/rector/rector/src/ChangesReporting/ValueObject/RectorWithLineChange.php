@@ -4,15 +4,14 @@ declare (strict_types=1);
 namespace Rector\ChangesReporting\ValueObject;
 
 use Rector\Contract\Rector\RectorInterface;
-use RectorPrefix202411\Symplify\EasyParallel\Contract\SerializableInterface;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Symplify\EasyParallel\Contract\SerializableInterface;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class RectorWithLineChange implements SerializableInterface
 {
     /**
      * @readonly
-     * @var int
      */
-    private $line;
+    private int $line;
     /**
      * @var string
      */
@@ -25,7 +24,7 @@ final class RectorWithLineChange implements SerializableInterface
      * @var class-string<RectorInterface>
      * @readonly
      */
-    private $rectorClass;
+    private string $rectorClass;
     /**
      * @param class-string<RectorInterface>|RectorInterface $rectorClass
      */
@@ -46,9 +45,8 @@ final class RectorWithLineChange implements SerializableInterface
     }
     /**
      * @param array<string, mixed> $json
-     * @return $this
      */
-    public static function decode(array $json) : \RectorPrefix202411\Symplify\EasyParallel\Contract\SerializableInterface
+    public static function decode(array $json) : self
     {
         /** @var class-string<RectorInterface> $rectorClass */
         $rectorClass = $json[self::KEY_RECTOR_CLASS];

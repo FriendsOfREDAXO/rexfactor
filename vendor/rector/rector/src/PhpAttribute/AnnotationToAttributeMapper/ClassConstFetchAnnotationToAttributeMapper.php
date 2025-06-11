@@ -3,8 +3,10 @@
 declare (strict_types=1);
 namespace Rector\PhpAttribute\AnnotationToAttributeMapper;
 
+use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\String_;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
 /**
  * @implements AnnotationToAttributeMapperInterface<string>
@@ -27,10 +29,18 @@ final class ClassConstFetchAnnotationToAttributeMapper implements AnnotationToAt
     }
     /**
      * @param string $value
+     * @return String_|ClassConstFetch
      */
-    public function map($value) : \PhpParser\Node\Expr
+    public function map($value) : Node
     {
-        [$class, $constant] = \explode('::', $value);
+        $values = \explode('::', $value);
+        if (\count($values) !== 2) {
+            return new String_($value);
+        }
+        [$class, $constant] = $values;
+        if ($class === '') {
+            return new String_($value);
+        }
         return new ClassConstFetch(new Name($class), $constant);
     }
 }

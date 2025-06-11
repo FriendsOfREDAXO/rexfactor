@@ -7,7 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
-use RectorPrefix202411\PHPUnit\Framework\MockObject\MockObject;
+use RectorPrefix202506\PHPUnit\Framework\MockObject\MockObject;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -19,9 +19,8 @@ final class SingleMockPropertyTypeRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;

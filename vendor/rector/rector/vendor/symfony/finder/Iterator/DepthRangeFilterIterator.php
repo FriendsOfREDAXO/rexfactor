@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Finder\Iterator;
+namespace RectorPrefix202506\Symfony\Component\Finder\Iterator;
 
 /**
  * DepthRangeFilterIterator limits the directory depth.
@@ -22,10 +22,7 @@ namespace RectorPrefix202411\Symfony\Component\Finder\Iterator;
  */
 class DepthRangeFilterIterator extends \FilterIterator
 {
-    /**
-     * @var int
-     */
-    private $minDepth = 0;
+    private int $minDepth = 0;
     /**
      * @param \RecursiveIteratorIterator<\RecursiveIterator<TKey, TValue>> $iterator The Iterator to filter
      * @param int                                                          $minDepth The min depth

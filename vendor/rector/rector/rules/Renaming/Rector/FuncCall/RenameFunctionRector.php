@@ -11,7 +11,7 @@ use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\FuncCall\RenameFunctionRector\RenameFunctionRectorTest
  */
@@ -20,10 +20,10 @@ final class RenameFunctionRector extends AbstractRector implements ConfigurableR
     /**
      * @var array<string, string>
      */
-    private $oldFunctionToNewFunction = [];
+    private array $oldFunctionToNewFunction = [];
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Turns defined function call new one.', [new ConfiguredCodeSample('view("...", []);', 'Laravel\\Templating\\render("...", []);', ['view' => 'Laravel\\Templating\\render'])]);
+        return new RuleDefinition('Turn defined function call new one', [new ConfiguredCodeSample('view("...", []);', 'Laravel\\Templating\\render("...", []);', ['view' => 'Laravel\\Templating\\render'])]);
     }
     /**
      * @return array<class-string<Node>>

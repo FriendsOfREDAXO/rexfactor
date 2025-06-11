@@ -3,12 +3,15 @@
 declare (strict_types=1);
 namespace Rector\Set\ValueObject;
 
-use Rector\Set\Contract\SetListInterface;
 /**
  * @api
  */
-final class LevelSetList implements SetListInterface
+final class LevelSetList
 {
+    /**
+     * @var string
+     */
+    public const UP_TO_PHP_85 = __DIR__ . '/../../../config/set/level/up-to-php85.php';
     /**
      * @var string
      */

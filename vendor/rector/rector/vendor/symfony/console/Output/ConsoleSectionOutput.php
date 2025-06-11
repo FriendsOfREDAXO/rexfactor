@@ -8,37 +8,22 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Output;
+namespace RectorPrefix202506\Symfony\Component\Console\Output;
 
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatterInterface;
-use RectorPrefix202411\Symfony\Component\Console\Helper\Helper;
-use RectorPrefix202411\Symfony\Component\Console\Terminal;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatterInterface;
+use RectorPrefix202506\Symfony\Component\Console\Helper\Helper;
+use RectorPrefix202506\Symfony\Component\Console\Terminal;
 /**
  * @author Pierre du Plessis <pdples@gmail.com>
  * @author Gabriel Ostrolucký <gabriel.ostrolucky@gmail.com>
  */
 class ConsoleSectionOutput extends StreamOutput
 {
-    /**
-     * @var mixed[]
-     */
-    private $content = [];
-    /**
-     * @var int
-     */
-    private $lines = 0;
-    /**
-     * @var mixed[]
-     */
-    private $sections;
-    /**
-     * @var \Symfony\Component\Console\Terminal
-     */
-    private $terminal;
-    /**
-     * @var int
-     */
-    private $maxHeight = 0;
+    private array $content = [];
+    private int $lines = 0;
+    private array $sections;
+    private Terminal $terminal;
+    private int $maxHeight = 0;
     /**
      * @param resource               $stream
      * @param ConsoleSectionOutput[] $sections

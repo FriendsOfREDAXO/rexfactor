@@ -9,7 +9,7 @@ declare (strict_types=1);
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\SebastianBergmann\Diff\Output;
+namespace RectorPrefix202506\SebastianBergmann\Diff\Output;
 
 use function array_splice;
 use function count;
@@ -21,33 +21,20 @@ use function min;
 use function str_ends_with;
 use function stream_get_contents;
 use function substr;
-use RectorPrefix202411\SebastianBergmann\Diff\Differ;
+use RectorPrefix202506\SebastianBergmann\Diff\Differ;
 /**
  * Builds a diff string representation in unified diff format in chunks.
  */
 final class UnifiedDiffOutputBuilder extends AbstractChunkOutputBuilder
 {
+    private bool $collapseRanges = \true;
+    private int $commonLineThreshold = 6;
     /**
-     * @var bool
+     * @var positive-int
      */
-    private $collapseRanges = \true;
-    /**
-     * @var int
-     */
-    private $commonLineThreshold = 6;
-    /**
-     * @psalm-var positive-int
-     * @var int
-     */
-    private $contextLines = 3;
-    /**
-     * @var string
-     */
-    private $header;
-    /**
-     * @var bool
-     */
-    private $addLineNumbers;
+    private int $contextLines = 3;
+    private string $header;
+    private bool $addLineNumbers;
     public function __construct(string $header = "--- Original\n+++ New\n", bool $addLineNumbers = \false)
     {
         $this->header = $header;

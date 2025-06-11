@@ -21,14 +21,12 @@ final class SpecificAssertContainsWithoutIdentityRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @var array<string, array<string, string>>
      */
@@ -80,6 +78,9 @@ CODE_SAMPLE
             return null;
         }
         if ($node->isFirstClassCallable()) {
+            return null;
+        }
+        if (\count($node->getArgs()) < 2) {
             return null;
         }
         // when second argument is string: do nothing

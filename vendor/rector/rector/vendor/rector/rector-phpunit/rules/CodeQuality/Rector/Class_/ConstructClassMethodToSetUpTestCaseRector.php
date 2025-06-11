@@ -12,7 +12,7 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PHPStan\Reflection\ClassReflection;
 use Rector\NodeAnalyzer\ClassAnalyzer;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -33,29 +33,24 @@ final class ConstructClassMethodToSetUpTestCaseRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ClassAnalyzer
      */
-    private $classAnalyzer;
+    private ClassAnalyzer $classAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
-    private $visibilityManipulator;
+    private VisibilityManipulator $visibilityManipulator;
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\SetUpMethodDecorator
      */
-    private $setUpMethodDecorator;
+    private SetUpMethodDecorator $setUpMethodDecorator;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     public function __construct(TestsNodeAnalyzer $testsNodeAnalyzer, ClassAnalyzer $classAnalyzer, VisibilityManipulator $visibilityManipulator, SetUpMethodDecorator $setUpMethodDecorator, ReflectionResolver $reflectionResolver)
     {
         $this->testsNodeAnalyzer = $testsNodeAnalyzer;
@@ -112,11 +107,11 @@ CODE_SAMPLE
         if (!$this->testsNodeAnalyzer->isInTestClass($node)) {
             return null;
         }
-        $constructClassMethod = $node->getMethod(MethodName::CONSTRUCT);
-        if (!$constructClassMethod instanceof ClassMethod) {
+        if ($this->shouldSkipClass($node)) {
             return null;
         }
-        if ($this->classAnalyzer->isAnonymousClass($node)) {
+        $constructClassMethod = $node->getMethod(MethodName::CONSTRUCT);
+        if (!$constructClassMethod instanceof ClassMethod) {
             return null;
         }
         if ($this->shouldSkip($node, $constructClassMethod)) {
@@ -158,11 +153,11 @@ CODE_SAMPLE
         $isFoundParamUsed = \false;
         $this->traverseNodesWithCallable((array) $classMethod->stmts, function (Node $subNode) use($paramNames, &$isFoundParamUsed) : ?int {
             if ($subNode instanceof StaticCall && $this->isName($subNode->name, MethodName::CONSTRUCT)) {
-                return NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return NodeVisitor::DONT_TRAVERSE_CHILDREN;
             }
             if ($subNode instanceof Variable && $this->isNames($subNode, $paramNames)) {
                 $isFoundParamUsed = \true;
-                return NodeTraverser::STOP_TRAVERSAL;
+                return NodeVisitor::STOP_TRAVERSAL;
             }
             return null;
         });
@@ -194,12 +189,21 @@ CODE_SAMPLE
         if ($node->class instanceof Expr) {
             return \false;
         }
-        if (!$this->nodeNameResolver->isName($node->class, 'parent')) {
+        if (!$this->isName($node->class, 'parent')) {
             return \false;
         }
         if ($node->name instanceof Expr) {
             return \false;
         }
-        return $this->nodeNameResolver->isName($node->name, $desiredMethodName);
+        return $this->isName($node->name, $desiredMethodName);
+    }
+    private function shouldSkipClass(Class_ $class) : bool
+    {
+        $className = $this->getName($class);
+        // probably helper class with access to protected methods like createMock()
+        if (\substr_compare((string) $className, 'Test', -\strlen('Test')) !== 0 && \substr_compare((string) $className, 'TestCase', -\strlen('TestCase')) !== 0) {
+            return \true;
+        }
+        return $this->classAnalyzer->isAnonymousClass($class);
     }
 }

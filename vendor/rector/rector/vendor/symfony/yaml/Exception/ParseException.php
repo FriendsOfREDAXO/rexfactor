@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Yaml\Exception;
+namespace RectorPrefix202506\Symfony\Component\Yaml\Exception;
 
 /**
  * Exception class thrown when an error occurs during parsing.
@@ -20,19 +20,19 @@ class ParseException extends RuntimeException
     /**
      * @var string
      */
-    private $rawMessage;
+    private string $rawMessage;
     /**
      * @var int
      */
-    private $parsedLine = -1;
+    private int $parsedLine = -1;
     /**
      * @var string|null
      */
-    private $snippet;
+    private ?string $snippet = null;
     /**
      * @var string|null
      */
-    private $parsedFile;
+    private ?string $parsedFile = null;
     /**
      * @param string      $rawMessage The error message
      * @param int         $parsedLine The line where the error occurred

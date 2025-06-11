@@ -14,7 +14,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\ParentClassToTraits;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * Can handle cases like:
  * - https://doc.nette.org/en/2.4/migration-2-4#toc-nette-smartobject
@@ -26,20 +26,19 @@ final class ParentClassToTraitsRector extends AbstractRector implements Configur
 {
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ClassAnalyzer
      */
-    private $classAnalyzer;
+    private ClassAnalyzer $classAnalyzer;
     /**
      * @var ParentClassToTraits[]
      */
-    private $parentClassToTraits = [];
+    private array $parentClassToTraits = [];
     public function __construct(ClassAnalyzer $classAnalyzer)
     {
         $this->classAnalyzer = $classAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Replaces parent class to specific traits', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Replace parent class to specific traits', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 class SomeClass extends Nette\Object
 {
 }

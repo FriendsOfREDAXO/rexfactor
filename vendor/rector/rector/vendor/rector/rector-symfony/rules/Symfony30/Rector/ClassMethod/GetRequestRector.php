@@ -25,27 +25,21 @@ final class GetRequestRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\Bridge\NodeAnalyzer\ControllerMethodAnalyzer
      */
-    private $controllerMethodAnalyzer;
+    private ControllerMethodAnalyzer $controllerMethodAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Symfony\TypeAnalyzer\ControllerAnalyzer
      */
-    private $controllerAnalyzer;
+    private ControllerAnalyzer $controllerAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @var string
      */
     private const REQUEST_CLASS = 'Symfony\\Component\\HttpFoundation\\Request';
-    /**
-     * @var string|null
-     */
-    private $requestVariableAndParamName;
+    private ?string $requestVariableAndParamName = null;
     public function __construct(ControllerMethodAnalyzer $controllerMethodAnalyzer, ControllerAnalyzer $controllerAnalyzer, BetterNodeFinder $betterNodeFinder)
     {
         $this->controllerMethodAnalyzer = $controllerMethodAnalyzer;
@@ -133,7 +127,7 @@ CODE_SAMPLE
             if (!$node->var instanceof Variable) {
                 return \false;
             }
-            return $this->nodeNameResolver->isName($node->name, 'get');
+            return $this->isName($node->name, 'get');
         });
         foreach ($getMethodCalls as $getMethodCall) {
             if ($this->isGetMethodCallWithRequestParameters($getMethodCall)) {
@@ -148,7 +142,7 @@ CODE_SAMPLE
         if (!$methodCall->var instanceof Variable) {
             return \false;
         }
-        if (!$this->nodeNameResolver->isName($methodCall->var, 'this')) {
+        if (!$this->isName($methodCall->var, 'this')) {
             return \false;
         }
         if (!$this->isName($methodCall->name, 'getRequest') && !$this->isGetMethodCallWithRequestParameters($methodCall)) {
@@ -168,7 +162,7 @@ CODE_SAMPLE
             if (!$this->isName($node->var, 'this')) {
                 return \false;
             }
-            return $this->nodeNameResolver->isName($node->name, 'getRequest');
+            return $this->isName($node->name, 'getRequest');
         });
     }
     private function isGetMethodCallWithRequestParameters(MethodCall $methodCall) : bool

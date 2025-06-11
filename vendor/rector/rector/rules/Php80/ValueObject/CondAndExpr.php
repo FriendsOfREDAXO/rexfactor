@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Php80\ValueObject;
 
+use PhpParser\Comment;
 use PhpParser\Node\Expr;
 use Rector\Php80\Enum\MatchKind;
 final class CondAndExpr
@@ -14,23 +15,29 @@ final class CondAndExpr
     private $condExprs;
     /**
      * @readonly
-     * @var \PhpParser\Node\Expr
      */
-    private $expr;
+    private Expr $expr;
     /**
      * @var MatchKind::*
      * @readonly
      */
-    private $matchKind;
+    private string $matchKind;
+    /**
+     * @var Comment[]
+     * @readonly
+     */
+    private array $comments = [];
     /**
      * @param Expr[]|null $condExprs
      * @param MatchKind::* $matchKind
+     * @param Comment[] $comments
      */
-    public function __construct(?array $condExprs, Expr $expr, string $matchKind)
+    public function __construct(?array $condExprs, Expr $expr, string $matchKind, array $comments = [])
     {
         $this->condExprs = $condExprs;
         $this->expr = $expr;
         $this->matchKind = $matchKind;
+        $this->comments = $comments;
     }
     public function getExpr() : Expr
     {
@@ -45,7 +52,10 @@ final class CondAndExpr
         if ($this->condExprs === []) {
             return null;
         }
-        return $this->condExprs;
+        if ($this->condExprs === null) {
+            return null;
+        }
+        return \array_values($this->condExprs);
     }
     /**
      * @return MatchKind::*
@@ -60,5 +70,12 @@ final class CondAndExpr
     public function equalsMatchKind(string $matchKind) : bool
     {
         return $this->matchKind === $matchKind;
+    }
+    /**
+     * @return Comment[]
+     */
+    public function getComments() : array
+    {
+        return $this->comments;
     }
 }

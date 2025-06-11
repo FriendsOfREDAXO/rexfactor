@@ -7,6 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor;
+use Rector\Configuration\ConfigurationRuleFilter;
 use Rector\Contract\Rector\RectorInterface;
 use Rector\VersionBonding\PhpVersionedFilter;
 final class RectorNodeTraverser extends NodeTraverser
@@ -14,27 +15,28 @@ final class RectorNodeTraverser extends NodeTraverser
     /**
      * @var RectorInterface[]
      */
-    private $rectors;
+    private array $rectors;
     /**
      * @readonly
-     * @var \Rector\VersionBonding\PhpVersionedFilter
      */
-    private $phpVersionedFilter;
+    private PhpVersionedFilter $phpVersionedFilter;
     /**
-     * @var bool
+     * @readonly
      */
-    private $areNodeVisitorsPrepared = \false;
+    private ConfigurationRuleFilter $configurationRuleFilter;
+    private bool $areNodeVisitorsPrepared = \false;
     /**
      * @var array<class-string<Node>,RectorInterface[]>
      */
-    private $visitorsPerNodeClass = [];
+    private array $visitorsPerNodeClass = [];
     /**
      * @param RectorInterface[] $rectors
      */
-    public function __construct(array $rectors, PhpVersionedFilter $phpVersionedFilter)
+    public function __construct(array $rectors, PhpVersionedFilter $phpVersionedFilter, ConfigurationRuleFilter $configurationRuleFilter)
     {
         $this->rectors = $rectors;
         $this->phpVersionedFilter = $phpVersionedFilter;
+        $this->configurationRuleFilter = $configurationRuleFilter;
         parent::__construct();
     }
     /**
@@ -93,6 +95,8 @@ final class RectorNodeTraverser extends NodeTraverser
         }
         // filer out by version
         $this->visitors = $this->phpVersionedFilter->filter($this->rectors);
+        // filter by configuration
+        $this->visitors = $this->configurationRuleFilter->filter($this->visitors);
         $this->areNodeVisitorsPrepared = \true;
     }
 }

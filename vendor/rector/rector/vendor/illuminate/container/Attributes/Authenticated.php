@@ -1,17 +1,14 @@
 <?php
 
-namespace RectorPrefix202411\Illuminate\Container\Attributes;
+namespace RectorPrefix202506\Illuminate\Container\Attributes;
 
 use Attribute;
-use RectorPrefix202411\Illuminate\Contracts\Container\Container;
-use RectorPrefix202411\Illuminate\Contracts\Container\ContextualAttribute;
+use RectorPrefix202506\Illuminate\Contracts\Container\Container;
+use RectorPrefix202506\Illuminate\Contracts\Container\ContextualAttribute;
 #[Attribute(Attribute::TARGET_PARAMETER)]
 class Authenticated implements ContextualAttribute
 {
-    /**
-     * @var string|null
-     */
-    public $guard;
+    public ?string $guard = null;
     /**
      * Create a new class instance.
      */
@@ -28,6 +25,6 @@ class Authenticated implements ContextualAttribute
      */
     public static function resolve(self $attribute, Container $container)
     {
-        return $container->make('auth')->guard($attribute->guard)->user();
+        return \call_user_func($container->make('auth')->userResolver(), $attribute->guard);
     }
 }

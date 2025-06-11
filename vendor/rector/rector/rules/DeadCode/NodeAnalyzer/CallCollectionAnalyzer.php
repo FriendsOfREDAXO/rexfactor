@@ -10,22 +10,20 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PHPStan\Type\MixedType;
-use PHPStan\Type\TypeWithClassName;
 use Rector\Enum\ObjectReference;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 final class CallCollectionAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     public function __construct(NodeTypeResolver $nodeTypeResolver, NodeNameResolver $nodeNameResolver)
     {
         $this->nodeTypeResolver = $nodeTypeResolver;
@@ -39,7 +37,8 @@ final class CallCollectionAnalyzer
         foreach ($calls as $call) {
             $callerRoot = $call instanceof StaticCall ? $call->class : $call->var;
             $callerType = $this->nodeTypeResolver->getType($callerRoot);
-            if (!$callerType instanceof TypeWithClassName) {
+            $callerTypeClassName = ClassNameFromObjectTypeResolver::resolve($callerType);
+            if ($callerTypeClassName === null) {
                 // handle fluent by $this->bar()->baz()->qux()
                 // that methods don't have return type
                 if ($callerType instanceof MixedType && !$callerType->isExplicitMixed()) {
@@ -66,7 +65,7 @@ final class CallCollectionAnalyzer
             if ($this->isSelfStatic($call) && $this->shouldSkip($call, $classMethodName)) {
                 return \true;
             }
-            if ($callerType->getClassName() !== $className) {
+            if ($callerTypeClassName !== $className) {
                 continue;
             }
             if ($this->shouldSkip($call, $classMethodName)) {

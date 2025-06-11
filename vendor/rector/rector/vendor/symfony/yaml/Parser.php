@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Yaml;
+namespace RectorPrefix202506\Symfony\Component\Yaml;
 
-use RectorPrefix202411\Symfony\Component\Yaml\Exception\ParseException;
-use RectorPrefix202411\Symfony\Component\Yaml\Tag\TaggedValue;
+use RectorPrefix202506\Symfony\Component\Yaml\Exception\ParseException;
+use RectorPrefix202506\Symfony\Component\Yaml\Tag\TaggedValue;
 /**
  * Parser parses YAML strings to convert them to PHP arrays.
  *
@@ -24,55 +24,22 @@ class Parser
     public const TAG_PATTERN = '(?P<tag>![\\w!.\\/:-]+)';
     public const BLOCK_SCALAR_HEADER_PATTERN = '(?P<separator>\\||>)(?P<modifiers>\\+|\\-|\\d+|\\+\\d+|\\-\\d+|\\d+\\+|\\d+\\-)?(?P<comments> +#.*)?';
     public const REFERENCE_PATTERN = '#^&(?P<ref>[^ ]++) *+(?P<value>.*)#u';
-    /**
-     * @var string|null
-     */
-    private $filename;
-    /**
-     * @var int
-     */
-    private $offset = 0;
-    /**
-     * @var int
-     */
-    private $numberOfParsedLines = 0;
-    /**
-     * @var int|null
-     */
-    private $totalNumberOfLines;
-    /**
-     * @var mixed[]
-     */
-    private $lines = [];
-    /**
-     * @var int
-     */
-    private $currentLineNb = -1;
-    /**
-     * @var string
-     */
-    private $currentLine = '';
-    /**
-     * @var mixed[]
-     */
-    private $refs = [];
-    /**
-     * @var mixed[]
-     */
-    private $skippedLineNumbers = [];
-    /**
-     * @var mixed[]
-     */
-    private $locallySkippedLineNumbers = [];
-    /**
-     * @var mixed[]
-     */
-    private $refsBeingParsed = [];
+    private ?string $filename = null;
+    private int $offset = 0;
+    private int $numberOfParsedLines = 0;
+    private ?int $totalNumberOfLines = null;
+    private array $lines = [];
+    private int $currentLineNb = -1;
+    private string $currentLine = '';
+    private array $refs = [];
+    private array $skippedLineNumbers = [];
+    private array $locallySkippedLineNumbers = [];
+    private array $refsBeingParsed = [];
     /**
      * Parses a YAML file into a PHP value.
      *
-     * @param string $filename The path to the YAML file to be parsed
-     * @param int    $flags    A bit field of Yaml::PARSE_* constants to customize the YAML parser behavior
+     * @param string                     $filename The path to the YAML file to be parsed
+     * @param int-mask-of<Yaml::PARSE_*> $flags    A bit field of Yaml::PARSE_* constants to customize the YAML parser behavior
      *
      * @throws ParseException If the file could not be read or the YAML is not valid
      * @return mixed
@@ -95,8 +62,8 @@ class Parser
     /**
      * Parses a YAML string to a PHP value.
      *
-     * @param string $value A YAML string
-     * @param int    $flags A bit field of Yaml::PARSE_* constants to customize the YAML parser behavior
+     * @param string                     $value A YAML string
+     * @param int-mask-of<Yaml::PARSE_*> $flags A bit field of Yaml::PARSE_* constants to customize the YAML parser behavior
      *
      * @throws ParseException If the YAML is not valid
      * @return mixed
@@ -133,7 +100,7 @@ class Parser
         $this->lines = \explode("\n", $value);
         $this->numberOfParsedLines = \count($this->lines);
         $this->locallySkippedLineNumbers = [];
-        $this->totalNumberOfLines = $this->totalNumberOfLines ?? $this->numberOfParsedLines;
+        $this->totalNumberOfLines ??= $this->numberOfParsedLines;
         if (!$this->moveToNextLine()) {
             return null;
         }
@@ -287,6 +254,9 @@ class Parser
                         // Spec: Keys MUST be unique; first one wins.
                         // But overwriting is allowed when a merge node is used in current block.
                         if ($allowOverwrite || !isset($data[$key])) {
+                            if (!$allowOverwrite && \array_key_exists($key, $data)) {
+                                trigger_deprecation('symfony/yaml', '7.2', 'Duplicate key "%s" detected on line %d whilst parsing YAML. Silent handling of duplicate mapping keys in YAML is deprecated and will throw a ParseException in 8.0.', $key, $this->getRealCurrentLineNb() + 1);
+                            }
                             if (null !== $subTag) {
                                 $data[$key] = new TaggedValue($subTag, '');
                             } else {
@@ -306,6 +276,9 @@ class Parser
                             }
                             $data += $value;
                         } elseif ($allowOverwrite || !isset($data[$key])) {
+                            if (!$allowOverwrite && \array_key_exists($key, $data)) {
+                                trigger_deprecation('symfony/yaml', '7.2', 'Duplicate key "%s" detected on line %d whilst parsing YAML. Silent handling of duplicate mapping keys in YAML is deprecated and will throw a ParseException in 8.0.', $key, $this->getRealCurrentLineNb() + 1);
+                            }
                             // Spec: Keys MUST be unique; first one wins.
                             // But overwriting is allowed when a merge node is used in current block.
                             if (null !== $subTag) {
@@ -322,6 +295,9 @@ class Parser
                     // Spec: Keys MUST be unique; first one wins.
                     // But overwriting is allowed when a merge node is used in current block.
                     if ($allowOverwrite || !isset($data[$key])) {
+                        if (!$allowOverwrite && \array_key_exists($key, $data)) {
+                            trigger_deprecation('symfony/yaml', '7.2', 'Duplicate key "%s" detected on line %d whilst parsing YAML. Silent handling of duplicate mapping keys in YAML is deprecated and will throw a ParseException in 8.0.', $key, $this->getRealCurrentLineNb() + 1);
+                        }
                         $data[$key] = $value;
                     } else {
                         throw new ParseException(\sprintf('Duplicate key "%s" detected.', $key), $this->getRealCurrentLineNb() + 1, $this->currentLine);
@@ -746,7 +722,7 @@ class Parser
         if ($notEOF) {
             $blockLines[] = '';
             $this->moveToPreviousLine();
-        } elseif (!$notEOF && !$this->isCurrentLineLastLineInDocument()) {
+        } elseif (!$this->isCurrentLineLastLineInDocument()) {
             $blockLines[] = '';
         }
         // folded style
@@ -984,21 +960,29 @@ class Parser
     private function lexUnquotedString(int &$cursor) : string
     {
         $offset = $cursor;
-        $cursor += \strcspn($this->currentLine, '[]{},: ', $cursor);
+        while ($cursor < \strlen($this->currentLine)) {
+            if (\in_array($this->currentLine[$cursor], ['[', ']', '{', '}', ',', ':'], \true)) {
+                break;
+            }
+            if (\in_array($this->currentLine[$cursor], [' ', "\t"], \true) && '#' === ($this->currentLine[$cursor + 1] ?? '')) {
+                break;
+            }
+            ++$cursor;
+        }
         if ($cursor === $offset) {
             throw new ParseException('Malformed unquoted YAML string.');
         }
         return \substr($this->currentLine, $offset, $cursor - $offset);
     }
-    private function lexInlineMapping(int &$cursor = 0) : string
+    private function lexInlineMapping(int &$cursor = 0, bool $consumeUntilEol = \true) : string
     {
-        return $this->lexInlineStructure($cursor, '}');
+        return $this->lexInlineStructure($cursor, '}', $consumeUntilEol);
     }
-    private function lexInlineSequence(int &$cursor = 0) : string
+    private function lexInlineSequence(int &$cursor = 0, bool $consumeUntilEol = \true) : string
     {
-        return $this->lexInlineStructure($cursor, ']');
+        return $this->lexInlineStructure($cursor, ']', $consumeUntilEol);
     }
-    private function lexInlineStructure(int &$cursor, string $closingTag) : string
+    private function lexInlineStructure(int &$cursor, string $closingTag, bool $consumeUntilEol = \true) : string
     {
         $value = $this->currentLine[$cursor];
         ++$cursor;
@@ -1016,14 +1000,17 @@ class Parser
                         ++$cursor;
                         break;
                     case '{':
-                        $value .= $this->lexInlineMapping($cursor);
+                        $value .= $this->lexInlineMapping($cursor, \false);
                         break;
                     case '[':
-                        $value .= $this->lexInlineSequence($cursor);
+                        $value .= $this->lexInlineSequence($cursor, \false);
                         break;
                     case $closingTag:
                         $value .= $this->currentLine[$cursor];
                         ++$cursor;
+                        if ($consumeUntilEol && isset($this->currentLine[$cursor]) && ($whitespaces = \strspn($this->currentLine, ' ', $cursor) + $cursor) < \strlen($this->currentLine) && '#' !== $this->currentLine[$whitespaces]) {
+                            throw new ParseException(\sprintf('Unexpected token "%s".', \trim(\substr($this->currentLine, $cursor))));
+                        }
                         return $value;
                     case '#':
                         break 2;
@@ -1044,7 +1031,7 @@ class Parser
     {
         $whitespacesConsumed = 0;
         do {
-            $whitespaceOnlyTokenLength = \strspn($this->currentLine, ' ', $cursor);
+            $whitespaceOnlyTokenLength = \strspn($this->currentLine, " \t", $cursor);
             $whitespacesConsumed += $whitespaceOnlyTokenLength;
             $cursor += $whitespaceOnlyTokenLength;
             if (isset($this->currentLine[$cursor])) {

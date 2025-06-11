@@ -3,11 +3,10 @@
 declare (strict_types=1);
 namespace Rector\PHPUnit\Set;
 
-use Rector\Set\Contract\SetListInterface;
 /**
  * @api
  */
-final class PHPUnitSetList implements SetListInterface
+final class PHPUnitSetList
 {
     /**
      * @var string
@@ -41,6 +40,10 @@ final class PHPUnitSetList implements SetListInterface
      * @var string
      */
     public const PHPUNIT_110 = __DIR__ . '/../../config/sets/phpunit110.php';
+    /**
+     * @var string
+     */
+    public const PHPUNIT_120 = __DIR__ . '/../../config/sets/phpunit120.php';
     /**
      * @var string
      */

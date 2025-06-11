@@ -12,17 +12,17 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\UnionType as PhpParserUnionType;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
-use PHPStan\Type\CallableType;
 use PHPStan\Type\Type;
 use PHPStan\Type\UnionType;
 use Rector\BetterPhpDocParser\ValueObject\Type\BracketsAwareUnionTypeNode;
+use Rector\NodeAnalyzer\PropertyAnalyzer;
 use Rector\Php\PhpVersionProvider;
 use Rector\PHPStanStaticTypeMapper\Contract\TypeMapperInterface;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper;
 use Rector\ValueObject\PhpVersionFeature;
-use RectorPrefix202411\Webmozart\Assert\Assert;
-use RectorPrefix202411\Webmozart\Assert\InvalidArgumentException;
+use RectorPrefix202506\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\InvalidArgumentException;
 /**
  * @implements TypeMapperInterface<UnionType>
  */
@@ -30,16 +30,17 @@ final class UnionTypeMapper implements TypeMapperInterface
 {
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     /**
-     * @var \Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper
+     * @readonly
      */
-    private $phpStanStaticTypeMapper;
-    public function __construct(PhpVersionProvider $phpVersionProvider)
+    private PropertyAnalyzer $propertyAnalyzer;
+    private PHPStanStaticTypeMapper $phpStanStaticTypeMapper;
+    public function __construct(PhpVersionProvider $phpVersionProvider, PropertyAnalyzer $propertyAnalyzer)
     {
         $this->phpVersionProvider = $phpVersionProvider;
+        $this->propertyAnalyzer = $propertyAnalyzer;
     }
     public function autowire(PHPStanStaticTypeMapper $phpStanStaticTypeMapper) : void
     {
@@ -164,7 +165,7 @@ final class UnionTypeMapper implements TypeMapperInterface
                 return null;
             }
             // special callable type only not allowed on property
-            if ($typeKind === TypeKind::PROPERTY && $unionedType instanceof CallableType) {
+            if ($typeKind === TypeKind::PROPERTY && $this->propertyAnalyzer->isForbiddenType($unionedType)) {
                 return null;
             }
             $phpParserUnionedTypes[] = $phpParserNode;

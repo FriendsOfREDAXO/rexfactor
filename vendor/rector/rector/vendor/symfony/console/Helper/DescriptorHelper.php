@@ -8,16 +8,16 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Helper;
+namespace RectorPrefix202506\Symfony\Component\Console\Helper;
 
-use RectorPrefix202411\Symfony\Component\Console\Descriptor\DescriptorInterface;
-use RectorPrefix202411\Symfony\Component\Console\Descriptor\JsonDescriptor;
-use RectorPrefix202411\Symfony\Component\Console\Descriptor\MarkdownDescriptor;
-use RectorPrefix202411\Symfony\Component\Console\Descriptor\ReStructuredTextDescriptor;
-use RectorPrefix202411\Symfony\Component\Console\Descriptor\TextDescriptor;
-use RectorPrefix202411\Symfony\Component\Console\Descriptor\XmlDescriptor;
-use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Descriptor\DescriptorInterface;
+use RectorPrefix202506\Symfony\Component\Console\Descriptor\JsonDescriptor;
+use RectorPrefix202506\Symfony\Component\Console\Descriptor\MarkdownDescriptor;
+use RectorPrefix202506\Symfony\Component\Console\Descriptor\ReStructuredTextDescriptor;
+use RectorPrefix202506\Symfony\Component\Console\Descriptor\TextDescriptor;
+use RectorPrefix202506\Symfony\Component\Console\Descriptor\XmlDescriptor;
+use RectorPrefix202506\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
 /**
  * This class adds helper method to describe objects in various formats.
  *
@@ -28,7 +28,7 @@ class DescriptorHelper extends Helper
     /**
      * @var DescriptorInterface[]
      */
-    private $descriptors = [];
+    private array $descriptors = [];
     public function __construct()
     {
         $this->register('txt', new TextDescriptor())->register('xml', new XmlDescriptor())->register('json', new JsonDescriptor())->register('md', new MarkdownDescriptor())->register('rst', new ReStructuredTextDescriptor());

@@ -13,7 +13,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\ArrayDimFetchToMethodCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\ArrayDimFetch\ArrayDimFetchToMethodCallRector\ArrayDimFetchToMethodCallRectorTest
  */
@@ -22,7 +22,7 @@ class ArrayDimFetchToMethodCallRector extends AbstractRector implements Configur
     /**
      * @var ArrayDimFetchToMethodCall[]
      */
-    private $arrayDimFetchToMethodCalls;
+    private array $arrayDimFetchToMethodCalls;
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Change array dim fetch to method call', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

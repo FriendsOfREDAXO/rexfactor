@@ -6,14 +6,15 @@ namespace Rector\TypeDeclaration\Rector\ClassMethod;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\Encapsed;
+use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Return_;
 use PHPStan\Analyser\Scope;
 use Rector\PhpParser\Node\BetterNodeFinder;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\ValueObject\PhpVersion;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
@@ -23,23 +24,20 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\StringReturnTypeFromStrictStringReturnsRector\StringReturnTypeFromStrictStringReturnsRectorTest
  */
-final class StringReturnTypeFromStrictStringReturnsRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class StringReturnTypeFromStrictStringReturnsRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
      */
-    private $returnAnalyzer;
+    private ReturnAnalyzer $returnAnalyzer;
     public function __construct(ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, BetterNodeFinder $betterNodeFinder, ReturnAnalyzer $returnAnalyzer)
     {
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
@@ -86,8 +84,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod|Function_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         // already added → skip
         if ($node->returnType instanceof Node) {
             return null;
@@ -131,7 +130,7 @@ CODE_SAMPLE
     {
         foreach ($returns as $return) {
             // we need exact string "value" return
-            if (!$return->expr instanceof String_ && !$return->expr instanceof Encapsed) {
+            if (!$return->expr instanceof String_ && !$return->expr instanceof InterpolatedString) {
                 return \false;
             }
         }

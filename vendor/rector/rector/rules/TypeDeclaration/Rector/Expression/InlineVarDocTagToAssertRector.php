@@ -29,19 +29,16 @@ final class InlineVarDocTagToAssertRector extends AbstractRector implements MinP
 {
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\PhpDocParser\TypeExpressionFromVarTagResolver
      */
-    private $typeExpressionFromVarTagResolver;
+    private TypeExpressionFromVarTagResolver $typeExpressionFromVarTagResolver;
     public function __construct(PhpDocInfoFactory $phpDocInfoFactory, DocBlockUpdater $docBlockUpdater, TypeExpressionFromVarTagResolver $typeExpressionFromVarTagResolver)
     {
         $this->phpDocInfoFactory = $phpDocInfoFactory;
@@ -50,7 +47,7 @@ final class InlineVarDocTagToAssertRector extends AbstractRector implements MinP
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Convert inline @var tags to calls to assert()', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Convert inline `@var` tags to calls to `assert()`', [new CodeSample(<<<'CODE_SAMPLE'
 /** @var Foo $foo */
 $foo = createFoo();
 CODE_SAMPLE

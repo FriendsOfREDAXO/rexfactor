@@ -3,12 +3,12 @@
 declare (strict_types=1);
 namespace Rector\TypeDeclaration\PHPStan;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\GroupUse;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\Node\Stmt\UseUse;
+use PhpParser\Node\UseItem;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
@@ -31,19 +31,16 @@ final class ObjectTypeSpecifier
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\UseImportsResolver
      */
-    private $useImportsResolver;
+    private UseImportsResolver $useImportsResolver;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\Naming\NameScopeFactory
      */
-    private $nameScopeFactory;
+    private NameScopeFactory $nameScopeFactory;
     public function __construct(ReflectionProvider $reflectionProvider, UseImportsResolver $useImportsResolver, NameScopeFactory $nameScopeFactory)
     {
         $this->reflectionProvider = $reflectionProvider;
@@ -53,8 +50,12 @@ final class ObjectTypeSpecifier
     /**
      * @return \PHPStan\Type\TypeWithClassName|\Rector\StaticTypeMapper\ValueObject\Type\NonExistingObjectType|\PHPStan\Type\UnionType|\PHPStan\Type\MixedType|\PHPStan\Type\Generic\TemplateType
      */
-    public function narrowToFullyQualifiedOrAliasedObjectType(Node $node, ObjectType $objectType, ?\PHPStan\Analyser\Scope $scope)
+    public function narrowToFullyQualifiedOrAliasedObjectType(Node $node, ObjectType $objectType, ?\PHPStan\Analyser\Scope $scope, bool $withPreslash = \false)
     {
+        $className = \ltrim($objectType->getClassName(), '\\');
+        if (\strncmp($objectType->getClassName(), '\\', \strlen('\\')) === 0) {
+            return new FullyQualifiedObjectType($className);
+        }
         $uses = $this->useImportsResolver->resolve();
         $aliasedObjectType = $this->matchAliasedObjectType($objectType, $uses);
         if ($aliasedObjectType instanceof AliasedObjectType) {
@@ -64,11 +65,11 @@ final class ObjectTypeSpecifier
         if ($shortenedObjectType !== null) {
             return $shortenedObjectType;
         }
-        $className = \ltrim($objectType->getClassName(), '\\');
         if ($this->reflectionProvider->hasClass($className)) {
             return new FullyQualifiedObjectType($className);
         }
         // probably in same namespace
+        $namespaceName = null;
         if ($scope instanceof Scope) {
             $namespaceName = $scope->getNamespace();
             if ($namespaceName !== null) {
@@ -77,8 +78,6 @@ final class ObjectTypeSpecifier
                     return new FullyQualifiedObjectType($newClassName);
                 }
             }
-        }
-        if ($scope instanceof Scope) {
             $classReflection = $scope->getClassReflection();
             if ($classReflection instanceof ClassReflection) {
                 $templateTags = $classReflection->getTemplateTags();
@@ -86,18 +85,31 @@ final class ObjectTypeSpecifier
                 $templateTypeScope = $nameScope->getTemplateTypeScope();
                 if (!$templateTypeScope instanceof TemplateTypeScope) {
                     // invalid type
-                    return new NonExistingObjectType($className);
+                    return $this->resolveNamespacedNonExistingObjectType($namespaceName, $className, $withPreslash);
                 }
                 $currentTemplateTag = $templateTags[$className] ?? null;
                 if ($currentTemplateTag === null) {
                     // invalid type
-                    return new NonExistingObjectType($className);
+                    return $this->resolveNamespacedNonExistingObjectType($namespaceName, $className, $withPreslash);
                 }
                 return TemplateTypeFactory::create($templateTypeScope, $currentTemplateTag->getName(), $currentTemplateTag->getBound(), $currentTemplateTag->getVariance());
             }
         }
         // invalid type
-        return new NonExistingObjectType($className);
+        return $this->resolveNamespacedNonExistingObjectType($namespaceName, $className, $withPreslash);
+    }
+    private function resolveNamespacedNonExistingObjectType(?string $namespacedName, string $className, bool $withPreslash) : NonExistingObjectType
+    {
+        if ($namespacedName === null) {
+            return new NonExistingObjectType($className);
+        }
+        if ($withPreslash) {
+            return new NonExistingObjectType($className);
+        }
+        if (\strpos($className, '\\') !== \false) {
+            return new NonExistingObjectType($className);
+        }
+        return new NonExistingObjectType($namespacedName . '\\' . $className);
     }
     /**
      * @param array<Use_|GroupUse> $uses
@@ -129,11 +141,14 @@ final class ObjectTypeSpecifier
     {
         // A. is alias in use statement matching this class alias
         if ($alias === $className) {
-            return new AliasedObjectType($alias, $fullyQualifiedName);
+            return new AliasedObjectType($className, $fullyQualifiedName);
         }
         // B. is aliased classes matching the class name
         if ($useName === $className) {
-            return new AliasedObjectType($alias, $fullyQualifiedName);
+            return new AliasedObjectType($className, $fullyQualifiedName);
+        }
+        if (\strncmp($className, $alias . '\\', \strlen($alias . '\\')) === 0) {
+            return new AliasedObjectType($className, $fullyQualifiedName . \ltrim($className, $alias));
         }
         return null;
     }
@@ -171,17 +186,17 @@ final class ObjectTypeSpecifier
         }
         return null;
     }
-    private function matchPartialNamespaceObjectType(string $prefix, ObjectType $objectType, UseUse $useUse) : ?ShortenedObjectType
+    private function matchPartialNamespaceObjectType(string $prefix, ObjectType $objectType, UseItem $useItem) : ?ShortenedObjectType
     {
+        if ($objectType->getClassName() === $useItem->name->getLast()) {
+            return new ShortenedObjectType($objectType->getClassName(), $prefix . $useItem->name->toString());
+        }
         // partial namespace
-        if (\strncmp($objectType->getClassName(), $useUse->name->getLast() . '\\', \strlen($useUse->name->getLast() . '\\')) !== 0) {
+        if (\strncmp($objectType->getClassName(), $useItem->name->getLast() . '\\', \strlen($useItem->name->getLast() . '\\')) !== 0) {
             return null;
         }
         $classNameWithoutLastUsePart = Strings::after($objectType->getClassName(), '\\', 1);
-        $connectedClassName = $prefix . $useUse->name->toString() . '\\' . $classNameWithoutLastUsePart;
-        if (!$this->reflectionProvider->hasClass($connectedClassName)) {
-            return null;
-        }
+        $connectedClassName = $prefix . $useItem->name->toString() . '\\' . $classNameWithoutLastUsePart;
         if ($objectType->getClassName() === $connectedClassName) {
             return null;
         }
@@ -190,17 +205,17 @@ final class ObjectTypeSpecifier
     /**
      * @return FullyQualifiedObjectType|ShortenedObjectType|null
      */
-    private function matchClassWithLastUseImportPart(string $prefix, ObjectType $objectType, UseUse $useUse) : ?ObjectType
+    private function matchClassWithLastUseImportPart(string $prefix, ObjectType $objectType, UseItem $useItem) : ?ObjectType
     {
-        if ($useUse->name->getLast() !== $objectType->getClassName()) {
+        if ($useItem->name->getLast() !== $objectType->getClassName()) {
             return null;
         }
-        if (!$this->reflectionProvider->hasClass($prefix . $useUse->name->toString())) {
+        if (!$this->reflectionProvider->hasClass($prefix . $useItem->name->toString())) {
             return null;
         }
-        if ($objectType->getClassName() === $prefix . $useUse->name->toString()) {
+        if ($objectType->getClassName() === $prefix . $useItem->name->toString()) {
             return new FullyQualifiedObjectType($objectType->getClassName());
         }
-        return new ShortenedObjectType($objectType->getClassName(), $prefix . $useUse->name->toString());
+        return new ShortenedObjectType($objectType->getClassName(), $prefix . $useItem->name->toString());
     }
 }

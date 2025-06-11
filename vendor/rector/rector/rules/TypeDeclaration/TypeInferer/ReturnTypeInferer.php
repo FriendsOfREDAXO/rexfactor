@@ -9,7 +9,6 @@ use PhpParser\Node\Stmt\Function_;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\Type;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer\ReturnedNodesReturnTypeInfererTypeInferer;
-use Rector\TypeDeclaration\TypeNormalizer;
 /**
  * @internal
  */
@@ -17,17 +16,10 @@ final class ReturnTypeInferer
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeNormalizer
      */
-    private $typeNormalizer;
-    /**
-     * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer\ReturnedNodesReturnTypeInfererTypeInferer
-     */
-    private $returnedNodesReturnTypeInfererTypeInferer;
-    public function __construct(TypeNormalizer $typeNormalizer, ReturnedNodesReturnTypeInfererTypeInferer $returnedNodesReturnTypeInfererTypeInferer)
+    private ReturnedNodesReturnTypeInfererTypeInferer $returnedNodesReturnTypeInfererTypeInferer;
+    public function __construct(ReturnedNodesReturnTypeInfererTypeInferer $returnedNodesReturnTypeInfererTypeInferer)
     {
-        $this->typeNormalizer = $typeNormalizer;
         $this->returnedNodesReturnTypeInfererTypeInferer = $returnedNodesReturnTypeInfererTypeInferer;
     }
     /**
@@ -39,6 +31,6 @@ final class ReturnTypeInferer
         if ($originalType instanceof MixedType) {
             return new MixedType();
         }
-        return $this->typeNormalizer->normalizeArrayTypeAndArrayNever($originalType);
+        return $originalType;
     }
 }

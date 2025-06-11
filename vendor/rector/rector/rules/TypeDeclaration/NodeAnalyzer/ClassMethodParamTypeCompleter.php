@@ -8,7 +8,6 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
-use PHPStan\Type\CallableType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
@@ -20,14 +19,12 @@ final class ClassMethodParamTypeCompleter
 {
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodParamVendorLockResolver
      */
-    private $classMethodParamVendorLockResolver;
+    private ClassMethodParamVendorLockResolver $classMethodParamVendorLockResolver;
     public function __construct(StaticTypeMapper $staticTypeMapper, ClassMethodParamVendorLockResolver $classMethodParamVendorLockResolver)
     {
         $this->staticTypeMapper = $staticTypeMapper;
@@ -106,10 +103,10 @@ final class ClassMethodParamTypeCompleter
     }
     private function isClosureAndCallableType(Type $parameterStaticType, Type $argumentStaticType) : bool
     {
-        if ($parameterStaticType instanceof CallableType && $this->isClosureObjectType($argumentStaticType)) {
+        if ($parameterStaticType->isCallable()->yes() && $this->isClosureObjectType($argumentStaticType)) {
             return \true;
         }
-        return $argumentStaticType instanceof CallableType && $this->isClosureObjectType($parameterStaticType);
+        return $argumentStaticType->isCallable()->yes() && $this->isClosureObjectType($parameterStaticType);
     }
     private function isClosureObjectType(Type $type) : bool
     {

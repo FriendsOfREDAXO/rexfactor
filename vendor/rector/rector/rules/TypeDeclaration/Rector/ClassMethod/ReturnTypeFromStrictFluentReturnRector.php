@@ -6,13 +6,13 @@ namespace Rector\TypeDeclaration\Rector\ClassMethod;
 use PhpParser\Node;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassMethod;
-use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\StaticType;
 use PHPStan\Type\ThisType;
 use Rector\Php\PhpVersionProvider;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
 use Rector\ValueObject\PhpVersionFeature;
@@ -23,28 +23,24 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromStrictFluentReturnRector\ReturnTypeFromStrictFluentReturnRectorTest
  */
-final class ReturnTypeFromStrictFluentReturnRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ReturnTypeFromStrictFluentReturnRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer
      */
-    private $returnTypeInferer;
+    private ReturnTypeInferer $returnTypeInferer;
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     public function __construct(ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReflectionResolver $reflectionResolver, ReturnTypeInferer $returnTypeInferer, PhpVersionProvider $phpVersionProvider)
     {
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
@@ -88,8 +84,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         // already typed → skip
         if ($node->returnType instanceof Node) {
             return null;

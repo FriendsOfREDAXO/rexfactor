@@ -8,16 +8,16 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\DataCollector;
+namespace RectorPrefix202506\Symfony\Component\Console\DataCollector;
 
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Debug\CliRequest;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202411\Symfony\Component\Console\SignalRegistry\SignalMap;
-use RectorPrefix202411\Symfony\Component\HttpFoundation\Request;
-use RectorPrefix202411\Symfony\Component\HttpFoundation\Response;
-use RectorPrefix202411\Symfony\Component\HttpKernel\DataCollector\DataCollector;
-use RectorPrefix202411\Symfony\Component\VarDumper\Cloner\Data;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Debug\CliRequest;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\SignalRegistry\SignalMap;
+use RectorPrefix202506\Symfony\Component\HttpFoundation\Request;
+use RectorPrefix202506\Symfony\Component\HttpFoundation\Response;
+use RectorPrefix202506\Symfony\Component\HttpKernel\DataCollector\DataCollector;
+use RectorPrefix202506\Symfony\Component\VarDumper\Cloner\Data;
 /**
  * @internal
  *
@@ -157,15 +157,11 @@ final class CommandDataCollector extends DataCollector
     }
     public function getSignalable() : array
     {
-        return \array_map(static function (int $signal) : string {
-            return \sprintf('%s (%d)', SignalMap::getSignalName($signal), $signal);
-        }, $this->data['signalable']);
+        return \array_map(static fn(int $signal): string => \sprintf('%s (%d)', SignalMap::getSignalName($signal), $signal), $this->data['signalable']);
     }
     public function getHandledSignals() : array
     {
-        $keys = \array_map(static function (int $signal) : string {
-            return \sprintf('%s (%d)', SignalMap::getSignalName($signal), $signal);
-        }, \array_keys($this->data['handled_signals']));
+        $keys = \array_map(static fn(int $signal): string => \sprintf('%s (%d)', SignalMap::getSignalName($signal), $signal), \array_keys($this->data['handled_signals']));
         return \array_combine($keys, \array_values($this->data['handled_signals']));
     }
     /**

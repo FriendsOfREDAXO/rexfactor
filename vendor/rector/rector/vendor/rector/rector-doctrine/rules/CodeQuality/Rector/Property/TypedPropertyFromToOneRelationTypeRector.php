@@ -25,7 +25,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Doctrine\Tests\CodeQuality\Rector\Property\TypedPropertyFromToOneRelationTypeRector\TypedPropertyFromToOneRelationTypeRectorTest
  */
@@ -33,39 +33,30 @@ final class TypedPropertyFromToOneRelationTypeRector extends AbstractRector impl
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeTypeAnalyzer\PropertyTypeDecorator
      */
-    private $propertyTypeDecorator;
+    private PropertyTypeDecorator $propertyTypeDecorator;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger
      */
-    private $phpDocTypeChanger;
+    private PhpDocTypeChanger $phpDocTypeChanger;
     /**
      * @readonly
-     * @var \Rector\Doctrine\NodeManipulator\ToOneRelationPropertyTypeResolver
      */
-    private $toOneRelationPropertyTypeResolver;
+    private ToOneRelationPropertyTypeResolver $toOneRelationPropertyTypeResolver;
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     public const FORCE_NULLABLE = 'force_nullable';
-    /**
-     * @var bool
-     */
-    private $forceNullable = \true;
+    private bool $forceNullable = \true;
     public function __construct(PropertyTypeDecorator $propertyTypeDecorator, PhpDocTypeChanger $phpDocTypeChanger, ToOneRelationPropertyTypeResolver $toOneRelationPropertyTypeResolver, PhpVersionProvider $phpVersionProvider, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper)
     {
         $this->propertyTypeDecorator = $propertyTypeDecorator;

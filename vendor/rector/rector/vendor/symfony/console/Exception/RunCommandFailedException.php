@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Exception;
+namespace RectorPrefix202506\Symfony\Component\Console\Exception;
 
-use RectorPrefix202411\Symfony\Component\Console\Messenger\RunCommandContext;
+use RectorPrefix202506\Symfony\Component\Console\Messenger\RunCommandContext;
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  */
@@ -18,9 +18,8 @@ final class RunCommandFailedException extends RuntimeException
 {
     /**
      * @readonly
-     * @var \Symfony\Component\Console\Messenger\RunCommandContext
      */
-    public $context;
+    public RunCommandContext $context;
     /**
      * @param \Throwable|string $exception
      */

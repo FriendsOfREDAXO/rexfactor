@@ -12,7 +12,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Renaming\ValueObject\RenameStaticMethod;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\StaticCall\RenameStaticMethodRector\RenameStaticMethodRectorTest
  */
@@ -21,10 +21,10 @@ final class RenameStaticMethodRector extends AbstractRector implements Configura
     /**
      * @var RenameStaticMethod[]
      */
-    private $staticMethodRenames = [];
+    private array $staticMethodRenames = [];
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Turns method names to new ones.', [new ConfiguredCodeSample('SomeClass::oldStaticMethod();', 'AnotherExampleClass::newStaticMethod();', [new RenameStaticMethod('SomeClass', 'oldMethod', 'AnotherExampleClass', 'newStaticMethod')])]);
+        return new RuleDefinition('Turn method names to new ones', [new ConfiguredCodeSample('SomeClass::oldStaticMethod();', 'AnotherExampleClass::newStaticMethod();', [new RenameStaticMethod('SomeClass', 'oldMethod', 'AnotherExampleClass', 'newStaticMethod')])]);
     }
     /**
      * @return array<class-string<Node>>

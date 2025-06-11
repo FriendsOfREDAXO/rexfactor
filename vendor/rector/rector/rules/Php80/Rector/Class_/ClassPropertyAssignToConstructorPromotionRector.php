@@ -7,6 +7,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
@@ -14,6 +15,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\UnionType;
+use PhpParser\NodeVisitor;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\MixedType;
@@ -44,54 +46,44 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
 {
     /**
      * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PromotedPropertyCandidateResolver
      */
-    private $promotedPropertyCandidateResolver;
+    private PromotedPropertyCandidateResolver $promotedPropertyCandidateResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\VariableRenamer
      */
-    private $variableRenamer;
+    private VariableRenamer $variableRenamer;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ParamAnalyzer
      */
-    private $paramAnalyzer;
+    private ParamAnalyzer $paramAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Php80\DocBlock\PropertyPromotionDocBlockMerger
      */
-    private $propertyPromotionDocBlockMerger;
+    private PropertyPromotionDocBlockMerger $propertyPromotionDocBlockMerger;
     /**
      * @readonly
-     * @var \Rector\Php80\Guard\MakePropertyPromotionGuard
      */
-    private $makePropertyPromotionGuard;
+    private MakePropertyPromotionGuard $makePropertyPromotionGuard;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\TypeComparator\TypeComparator
      */
-    private $typeComparator;
+    private TypeComparator $typeComparator;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\PropertyRenamer\PropertyPromotionRenamer
      */
-    private $propertyPromotionRenamer;
+    private PropertyPromotionRenamer $propertyPromotionRenamer;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @api
      * @var string
@@ -109,14 +101,12 @@ final class ClassPropertyAssignToConstructorPromotionRector extends AbstractRect
      *  - protected/public modifier property when property typed
      *
      * Set to true will allow change whether property is typed or not as far as not forbidden, eg: callable type, null type, etc.
-     * @var bool
      */
-    private $inlinePublic = \false;
+    private bool $inlinePublic = \false;
     /**
      * Set to false will skip property promotion when parameter and property have different names.
-     * @var bool
      */
-    private $renameProperty = \true;
+    private bool $renameProperty = \true;
     public function __construct(PromotedPropertyCandidateResolver $promotedPropertyCandidateResolver, VariableRenamer $variableRenamer, ParamAnalyzer $paramAnalyzer, PropertyPromotionDocBlockMerger $propertyPromotionDocBlockMerger, MakePropertyPromotionGuard $makePropertyPromotionGuard, TypeComparator $typeComparator, ReflectionResolver $reflectionResolver, PropertyPromotionRenamer $propertyPromotionRenamer, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper)
     {
         $this->promotedPropertyCandidateResolver = $promotedPropertyCandidateResolver;
@@ -185,6 +175,7 @@ CODE_SAMPLE
         if (!$classReflection instanceof ClassReflection) {
             return null;
         }
+        $hasChanged = \false;
         foreach ($promotionCandidates as $promotionCandidate) {
             $param = $promotionCandidate->getParam();
             if ($this->shouldSkipParam($param)) {
@@ -200,6 +191,7 @@ CODE_SAMPLE
             if (!$this->renameProperty && $paramName !== $propertyName) {
                 continue;
             }
+            $hasChanged = \true;
             // remove property from class
             $propertyStmtKey = $property->getAttribute(AttributeKey::STMT_KEY);
             unset($node->stmts[$propertyStmtKey]);
@@ -224,7 +216,10 @@ CODE_SAMPLE
             $this->processUnionType($property, $param);
             $this->propertyPromotionDocBlockMerger->mergePropertyAndParamDocBlocks($property, $param, $paramTagValueNode);
             // update variable to property fetch references
-            $this->traverseNodesWithCallable((array) $constructClassMethod->stmts, function (Node $node) use($promotionCandidate, $propertyName) : ?PropertyFetch {
+            $this->traverseNodesWithCallable((array) $constructClassMethod->stmts, function (Node $node) use($promotionCandidate, $propertyName) {
+                if ($node instanceof Class_ || $node instanceof FunctionLike) {
+                    return NodeVisitor::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+                }
                 if (!$node instanceof Variable) {
                     return null;
                 }
@@ -233,6 +228,9 @@ CODE_SAMPLE
                 }
                 return new PropertyFetch(new Variable('this'), $propertyName);
             });
+        }
+        if (!$hasChanged) {
+            return null;
         }
         return $node;
     }

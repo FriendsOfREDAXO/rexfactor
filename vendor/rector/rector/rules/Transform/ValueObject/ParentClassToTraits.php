@@ -4,19 +4,18 @@ declare (strict_types=1);
 namespace Rector\Transform\ValueObject;
 
 use Rector\Validation\RectorAssert;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class ParentClassToTraits
 {
     /**
      * @readonly
-     * @var string
      */
-    private $parentType;
+    private string $parentType;
     /**
      * @var string[]
      * @readonly
      */
-    private $traitNames;
+    private array $traitNames;
     /**
      * @param string[] $traitNames
      */

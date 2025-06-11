@@ -18,13 +18,14 @@ use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
 use Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory;
 use Rector\Rector\AbstractRector;
-use Rector\Symfony\Enum\SymfonyAnnotation;
+use Rector\Symfony\Enum\SymfonyAttribute;
+use Rector\Symfony\Enum\SymfonyClass;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
- * @changelog https://symfony.com/doc/current/console.html#registering-the-command
+ * @see https://symfony.com/doc/current/console.html#registering-the-command
  *
  * @see \Rector\Symfony\Tests\Symfony61\Rector\Class_\CommandConfigureToAttributeRector\CommandConfigureToAttributeRectorTest
  */
@@ -32,14 +33,12 @@ final class CommandConfigureToAttributeRector extends AbstractRector implements 
 {
     /**
      * @readonly
-     * @var \Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory
      */
-    private $phpAttributeGroupFactory;
+    private PhpAttributeGroupFactory $phpAttributeGroupFactory;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @var array<string, string>
      */
@@ -94,10 +93,10 @@ CODE_SAMPLE
         if ($node->isAbstract()) {
             return null;
         }
-        if (!$this->reflectionProvider->hasClass(SymfonyAnnotation::AS_COMMAND)) {
+        if (!$this->reflectionProvider->hasClass(SymfonyAttribute::AS_COMMAND)) {
             return null;
         }
-        if (!$this->isObjectType($node, new ObjectType('Symfony\\Component\\Console\\Command\\Command'))) {
+        if (!$this->isObjectType($node, new ObjectType(SymfonyClass::COMMAND))) {
             return null;
         }
         $configureClassMethod = $node->getMethod('configure');
@@ -109,7 +108,7 @@ CODE_SAMPLE
         $attributeArgs = [];
         foreach ($node->attrGroups as $attrGroup) {
             foreach ($attrGroup->attrs as $attribute) {
-                if (!$this->nodeNameResolver->isName($attribute->name, SymfonyAnnotation::AS_COMMAND)) {
+                if (!$this->isName($attribute->name, SymfonyAttribute::AS_COMMAND)) {
                     continue;
                 }
                 $asCommandAttribute = $attribute;
@@ -124,7 +123,7 @@ CODE_SAMPLE
             }
         }
         if (!$asCommandAttribute instanceof Attribute) {
-            $asCommandAttributeGroup = $this->phpAttributeGroupFactory->createFromClass(SymfonyAnnotation::AS_COMMAND);
+            $asCommandAttributeGroup = $this->phpAttributeGroupFactory->createFromClass(SymfonyAttribute::AS_COMMAND);
             $asCommandAttribute = $asCommandAttributeGroup->attrs[0];
             $node->attrGroups[] = $asCommandAttributeGroup;
         }
@@ -150,7 +149,7 @@ CODE_SAMPLE
     private function findAndRemoveMethodExpr(ClassMethod $classMethod, string $methodName) : ?Expr
     {
         $expr = null;
-        $this->traverseNodesWithCallable((array) $classMethod->stmts, function (Node $node) use(&$expr, $methodName) {
+        $this->traverseNodesWithCallable((array) $classMethod->stmts, function (Node $node) use(&$expr, $methodName) : ?Expr {
             // find setName() method call
             if (!$node instanceof MethodCall) {
                 return null;

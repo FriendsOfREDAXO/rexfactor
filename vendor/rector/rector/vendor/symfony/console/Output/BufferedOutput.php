@@ -8,17 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Output;
+namespace RectorPrefix202506\Symfony\Component\Console\Output;
 
 /**
  * @author Jean-François Simon <contact@jfsimon.fr>
  */
 class BufferedOutput extends Output
 {
-    /**
-     * @var string
-     */
-    private $buffer = '';
+    private string $buffer = '';
     /**
      * Empties buffer and returns its content.
      */

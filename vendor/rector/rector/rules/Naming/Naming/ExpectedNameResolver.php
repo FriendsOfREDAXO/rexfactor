@@ -26,24 +26,20 @@ final class ExpectedNameResolver
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\PropertyNaming
      */
-    private $propertyNaming;
+    private \Rector\Naming\Naming\PropertyNaming $propertyNaming;
     /**
      * @readonly
-     * @var \Rector\Naming\ExpectedNameResolver\MatchParamTypeExpectedNameResolver
      */
-    private $matchParamTypeExpectedNameResolver;
+    private MatchParamTypeExpectedNameResolver $matchParamTypeExpectedNameResolver;
     public function __construct(NodeNameResolver $nodeNameResolver, NodeTypeResolver $nodeTypeResolver, \Rector\Naming\Naming\PropertyNaming $propertyNaming, MatchParamTypeExpectedNameResolver $matchParamTypeExpectedNameResolver)
     {
         $this->nodeNameResolver = $nodeNameResolver;
@@ -116,10 +112,7 @@ final class ExpectedNameResolver
             return null;
         }
         $returnedType = $this->nodeTypeResolver->getType($expr);
-        if (!$returnedType->isObject()->yes()) {
-            return null;
-        }
-        if ($this->isDateTimeType($returnedType)) {
+        if (!$returnedType instanceof ObjectType) {
             return null;
         }
         $expectedName = $this->propertyNaming->getExpectedNameFromType($returnedType);
@@ -189,22 +182,9 @@ final class ExpectedNameResolver
     }
     private function resolveReturnTypeFromArrayType(ArrayType $arrayType) : ?Type
     {
-        if (!$arrayType->getItemType() instanceof ObjectType) {
+        if (!$arrayType->getIterableValueType() instanceof ObjectType) {
             return null;
         }
-        return $arrayType->getItemType();
-    }
-    /**
-     * Skip date time, as custom naming
-     */
-    private function isDateTimeType(Type $type) : bool
-    {
-        if (!$type instanceof ObjectType) {
-            return \false;
-        }
-        if ($type->isInstanceOf('DateTimeInterface')->yes()) {
-            return \true;
-        }
-        return $type->isInstanceOf('DateTime')->yes();
+        return $arrayType->getIterableValueType();
     }
 }

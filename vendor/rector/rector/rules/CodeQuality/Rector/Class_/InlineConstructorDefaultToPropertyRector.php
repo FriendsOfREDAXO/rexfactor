@@ -24,9 +24,8 @@ final class InlineConstructorDefaultToPropertyRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ExprAnalyzer
      */
-    private $exprAnalyzer;
+    private ExprAnalyzer $exprAnalyzer;
     public function __construct(ExprAnalyzer $exprAnalyzer)
     {
         $this->exprAnalyzer = $exprAnalyzer;
@@ -112,10 +111,10 @@ CODE_SAMPLE
             return null;
         }
         $propertyFetch = $assign->var;
-        if (!$this->nodeNameResolver->isName($propertyFetch->var, 'this')) {
+        if (!$this->isName($propertyFetch->var, 'this')) {
             return null;
         }
-        $propertyName = $this->nodeNameResolver->getName($propertyFetch->name);
+        $propertyName = $this->getName($propertyFetch->name);
         if (!\is_string($propertyName)) {
             return null;
         }

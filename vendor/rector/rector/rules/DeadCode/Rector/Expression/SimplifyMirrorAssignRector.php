@@ -6,7 +6,7 @@ namespace Rector\DeadCode\Rector\Expression;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Stmt\Expression;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -17,7 +17,7 @@ final class SimplifyMirrorAssignRector extends AbstractRector
 {
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Removes unneeded $value = $value assigns', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Remove unneeded `$value = $value` assigns', [new CodeSample(<<<'CODE_SAMPLE'
 function run() {
     $result = $result;
 }
@@ -47,6 +47,6 @@ CODE_SAMPLE
         if (!$this->nodeComparator->areNodesEqual($assign->var, $assign->expr)) {
             return null;
         }
-        return NodeTraverser::REMOVE_NODE;
+        return NodeVisitor::REMOVE_NODE;
     }
 }

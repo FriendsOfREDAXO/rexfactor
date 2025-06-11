@@ -8,22 +8,22 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Helper;
+namespace RectorPrefix202506\Symfony\Component\Console\Helper;
 
-use RectorPrefix202411\Symfony\Component\Console\Cursor;
-use RectorPrefix202411\Symfony\Component\Console\Exception\MissingInputException;
-use RectorPrefix202411\Symfony\Component\Console\Exception\RuntimeException;
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatter;
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatterStyle;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Input\StreamableInputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Output\ConsoleOutputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Output\ConsoleSectionOutput;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Question\ChoiceQuestion;
-use RectorPrefix202411\Symfony\Component\Console\Question\Question;
-use RectorPrefix202411\Symfony\Component\Console\Terminal;
-use function RectorPrefix202411\Symfony\Component\String\s;
+use RectorPrefix202506\Symfony\Component\Console\Cursor;
+use RectorPrefix202506\Symfony\Component\Console\Exception\MissingInputException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatterStyle;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Input\StreamableInputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Output\ConsoleOutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Output\ConsoleSectionOutput;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Question\ChoiceQuestion;
+use RectorPrefix202506\Symfony\Component\Console\Question\Question;
+use RectorPrefix202506\Symfony\Component\Console\Terminal;
+use function RectorPrefix202506\Symfony\Component\String\s;
 /**
  * The QuestionHelper class provides helpers to interact with the user.
  *
@@ -35,14 +35,8 @@ class QuestionHelper extends Helper
      * @var resource|null
      */
     private $inputStream;
-    /**
-     * @var bool
-     */
-    private static $stty = \true;
-    /**
-     * @var bool
-     */
-    private static $stdinIsInteractive;
+    private static bool $stty = \true;
+    private static bool $stdinIsInteractive;
     /**
      * Asks a question to the user.
      *
@@ -65,9 +59,7 @@ class QuestionHelper extends Helper
             if (!$question->getValidator()) {
                 return $this->doAsk($output, $question);
             }
-            $interviewer = function () use($output, $question) {
-                return $this->doAsk($output, $question);
-            };
+            $interviewer = fn() => $this->doAsk($output, $question);
             return $this->validateAttempts($interviewer, $output, $question);
         } catch (MissingInputException $exception) {
             $input->setInteractive(\false);
@@ -281,9 +273,7 @@ class QuestionHelper extends Helper
                         $output->write($remainingCharacters);
                         $fullChoice .= $remainingCharacters;
                         $i = \false === ($encoding = \mb_detect_encoding($fullChoice, null, \true)) ? \strlen($fullChoice) : \mb_strlen($fullChoice, $encoding);
-                        $matches = \array_filter($autocomplete($ret), function ($match) use($ret) {
-                            return '' === $ret || \strncmp($match, $ret, \strlen($ret)) === 0;
-                        });
+                        $matches = \array_filter($autocomplete($ret), fn($match) => '' === $ret || \strncmp($match, $ret, \strlen($ret)) === 0);
                         $numMatches = \count($matches);
                         $ofs = -1;
                     }

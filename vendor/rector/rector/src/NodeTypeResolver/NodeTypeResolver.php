@@ -8,11 +8,15 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Ternary;
+use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Name;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassConst;
@@ -20,13 +24,15 @@ use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\UnionType as NodeUnionType;
 use PHPStan\Analyser\Scope;
-use PHPStan\Broker\ClassAutoloadingException;
+use PHPStan\Broker\ClassNotFoundException;
 use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\Native\NativeFunctionReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\Constant\ConstantArrayType;
 use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\Constant\ConstantStringType;
+use PHPStan\Type\ErrorType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\NeverType;
 use PHPStan\Type\NullType;
@@ -40,6 +46,7 @@ use PHPStan\Type\UnionType;
 use Rector\Configuration\RenamedClassesDataCollector;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\NodeAnalyzer\ClassAnalyzer;
+use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\Contract\NodeTypeResolverAwareInterface;
 use Rector\NodeTypeResolver\Contract\NodeTypeResolverInterface;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -53,34 +60,32 @@ final class NodeTypeResolver
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\PHPStan\ObjectTypeSpecifier
      */
-    private $objectTypeSpecifier;
+    private ObjectTypeSpecifier $objectTypeSpecifier;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ClassAnalyzer
      */
-    private $classAnalyzer;
+    private ClassAnalyzer $classAnalyzer;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeCorrector\GenericClassStringTypeCorrector
      */
-    private $genericClassStringTypeCorrector;
+    private GenericClassStringTypeCorrector $genericClassStringTypeCorrector;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeCorrector\AccessoryNonEmptyStringTypeCorrector
      */
-    private $accessoryNonEmptyStringTypeCorrector;
+    private AccessoryNonEmptyStringTypeCorrector $accessoryNonEmptyStringTypeCorrector;
     /**
      * @readonly
-     * @var \Rector\Configuration\RenamedClassesDataCollector
      */
-    private $renamedClassesDataCollector;
+    private RenamedClassesDataCollector $renamedClassesDataCollector;
+    /**
+     * @readonly
+     */
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @var string
      */
@@ -88,11 +93,11 @@ final class NodeTypeResolver
     /**
      * @var array<class-string<Node>, NodeTypeResolverInterface>
      */
-    private $nodeTypeResolvers = [];
+    private array $nodeTypeResolvers = [];
     /**
      * @param NodeTypeResolverInterface[] $nodeTypeResolvers
      */
-    public function __construct(ObjectTypeSpecifier $objectTypeSpecifier, ClassAnalyzer $classAnalyzer, GenericClassStringTypeCorrector $genericClassStringTypeCorrector, ReflectionProvider $reflectionProvider, AccessoryNonEmptyStringTypeCorrector $accessoryNonEmptyStringTypeCorrector, RenamedClassesDataCollector $renamedClassesDataCollector, iterable $nodeTypeResolvers)
+    public function __construct(ObjectTypeSpecifier $objectTypeSpecifier, ClassAnalyzer $classAnalyzer, GenericClassStringTypeCorrector $genericClassStringTypeCorrector, ReflectionProvider $reflectionProvider, AccessoryNonEmptyStringTypeCorrector $accessoryNonEmptyStringTypeCorrector, RenamedClassesDataCollector $renamedClassesDataCollector, NodeNameResolver $nodeNameResolver, iterable $nodeTypeResolvers)
     {
         $this->objectTypeSpecifier = $objectTypeSpecifier;
         $this->classAnalyzer = $classAnalyzer;
@@ -100,6 +105,7 @@ final class NodeTypeResolver
         $this->reflectionProvider = $reflectionProvider;
         $this->accessoryNonEmptyStringTypeCorrector = $accessoryNonEmptyStringTypeCorrector;
         $this->renamedClassesDataCollector = $renamedClassesDataCollector;
+        $this->nodeNameResolver = $nodeNameResolver;
         foreach ($nodeTypeResolvers as $nodeTypeResolver) {
             if ($nodeTypeResolver instanceof NodeTypeResolverAwareInterface) {
                 $nodeTypeResolver->autowire($this);
@@ -132,6 +138,20 @@ final class NodeTypeResolver
             throw new ShouldNotHappenException(\sprintf(self::ERROR_MESSAGE, \get_class($node), ClassLike::class));
         }
         $resolvedType = $this->getType($node);
+        // cover call $this on trait
+        if ($resolvedType instanceof ErrorType && ($node instanceof Variable && $this->nodeNameResolver->isName($node, 'this'))) {
+            $scope = $node->getAttribute(AttributeKey::SCOPE);
+            if (!$scope instanceof Scope) {
+                return \false;
+            }
+            $classReflection = $scope->getClassReflection();
+            if (!$classReflection instanceof ClassReflection) {
+                return \false;
+            }
+            if ($classReflection->isTrait()) {
+                $resolvedType = new ObjectType($classReflection->getName());
+            }
+        }
         if ($resolvedType instanceof MixedType) {
             return \false;
         }
@@ -141,7 +161,7 @@ final class NodeTypeResolver
         if ($resolvedType instanceof ObjectType) {
             try {
                 return $this->resolveObjectType($resolvedType, $requiredObjectType);
-            } catch (ClassAutoloadingException $exception) {
+            } catch (ClassNotFoundException $exception) {
                 // in some type checks, the provided type in rector.php configuration does not have to exists
                 return \false;
             }
@@ -178,7 +198,7 @@ final class NodeTypeResolver
             $type = $this->genericClassStringTypeCorrector->correct($type);
             if ($type instanceof ObjectType) {
                 $scope = $node->getAttribute(AttributeKey::SCOPE);
-                $type = $this->objectTypeSpecifier->narrowToFullyQualifiedOrAliasedObjectType($node, $type, $scope);
+                $type = $this->objectTypeSpecifier->narrowToFullyQualifiedOrAliasedObjectType($node, $type, $scope, \true);
             }
             return $type;
         }
@@ -278,6 +298,9 @@ final class NodeTypeResolver
     public function isMethodStaticCallOrClassMethodObjectType(Node $node, ObjectType $objectType) : bool
     {
         if ($node instanceof MethodCall || $node instanceof NullsafeMethodCall) {
+            if ($this->isEnumTypeMatch($node, $objectType)) {
+                return \true;
+            }
             // method call is variable return
             return $this->isObjectType($node->var, $objectType);
         }
@@ -295,7 +318,10 @@ final class NodeTypeResolver
         if ($classReflection->getName() === $objectType->getClassName()) {
             return \true;
         }
-        return $classReflection->isSubclassOf($objectType->getClassName());
+        if ($classReflection->is($objectType->getClassName())) {
+            return \true;
+        }
+        return $classReflection->hasTraitUse($objectType->getClassName());
     }
     /**
      * Allow pull type from
@@ -316,7 +342,7 @@ final class NodeTypeResolver
     private function resolveArrayDimFetchType(ArrayDimFetch $arrayDimFetch, Scope $scope, Type $originalNativeType) : Type
     {
         $nativeVariableType = $scope->getNativeType($arrayDimFetch->var);
-        if ($nativeVariableType instanceof MixedType || $nativeVariableType instanceof ArrayType && $nativeVariableType->getItemType() instanceof MixedType) {
+        if ($nativeVariableType instanceof MixedType || $nativeVariableType instanceof ArrayType && $nativeVariableType->getIterableValueType() instanceof MixedType) {
             return $originalNativeType;
         }
         $type = $scope->getType($arrayDimFetch);
@@ -353,9 +379,9 @@ final class NodeTypeResolver
             }
         }
         if ($hasChanged) {
-            return $this->accessoryNonEmptyStringTypeCorrector->correct(new UnionType($types));
+            return new UnionType($types);
         }
-        return $this->accessoryNonEmptyStringTypeCorrector->correct($unionType);
+        return $unionType;
     }
     private function isMatchObjectWithoutClassType(ObjectWithoutClassType $objectWithoutClassType, ObjectType $requiredObjectType) : bool
     {
@@ -381,7 +407,7 @@ final class NodeTypeResolver
     }
     private function isUnionTypeable(Type $first, Type $second) : bool
     {
-        return !$first instanceof UnionType && !$second instanceof UnionType && !$second instanceof NullType;
+        return !$first instanceof UnionType && !$second instanceof UnionType && !$second->isNull()->yes();
     }
     private function isMatchingUnionType(Type $resolvedType, ObjectType $requiredObjectType) : bool
     {
@@ -478,6 +504,43 @@ final class NodeTypeResolver
                 return $scope->getType($expr);
             }
         }
+        if ($expr instanceof FuncCall) {
+            if (!$expr->name instanceof Name) {
+                return $scope->getNativeType($expr);
+            }
+            $functionName = new Name((string) $this->nodeNameResolver->getName($expr));
+            if (!$this->reflectionProvider->hasFunction($functionName, null)) {
+                return $scope->getNativeType($expr);
+            }
+            $functionReflection = $this->reflectionProvider->getFunction($functionName, null);
+            if (!$functionReflection instanceof NativeFunctionReflection) {
+                return $scope->getNativeType($expr);
+            }
+            return $scope->getType($expr);
+        }
         return $scope->getNativeType($expr);
+    }
+    /**
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\NullsafeMethodCall $call
+     */
+    private function isEnumTypeMatch($call, ObjectType $objectType) : bool
+    {
+        if (!$call->var instanceof ClassConstFetch) {
+            return \false;
+        }
+        // possibly enum
+        $classConstFetch = $call->var;
+        if (!$classConstFetch->class instanceof FullyQualified) {
+            return \false;
+        }
+        $className = $classConstFetch->class->toString();
+        if (!$this->reflectionProvider->hasClass($className)) {
+            return \false;
+        }
+        $classReflection = $this->reflectionProvider->getClass($className);
+        if (!$classReflection->isEnum()) {
+            return \false;
+        }
+        return $classReflection->getName() === $objectType->getClassName();
     }
 }

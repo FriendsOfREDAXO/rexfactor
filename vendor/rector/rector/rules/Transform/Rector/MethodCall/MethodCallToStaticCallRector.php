@@ -10,7 +10,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\MethodCallToStaticCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\MethodCall\MethodCallToStaticCallRector\MethodCallToStaticCallRectorTest
  */
@@ -19,7 +19,7 @@ final class MethodCallToStaticCallRector extends AbstractRector implements Confi
     /**
      * @var MethodCallToStaticCall[]
      */
-    private $methodCallsToStaticCalls = [];
+    private array $methodCallsToStaticCalls = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Change method call to desired static call', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

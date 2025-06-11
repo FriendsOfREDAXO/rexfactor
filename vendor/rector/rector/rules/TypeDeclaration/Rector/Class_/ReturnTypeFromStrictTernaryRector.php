@@ -13,8 +13,9 @@ use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\UnionType;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\PHPStan\ScopeFetcher;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Rector\AbstractRector;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
@@ -26,33 +27,28 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\Class_\ReturnTypeFromStrictTernaryRector\ReturnTypeFromStrictTernaryRectorTest
  */
-final class ReturnTypeFromStrictTernaryRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ReturnTypeFromStrictTernaryRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer
      */
-    private $returnTypeInferer;
+    private ReturnTypeInferer $returnTypeInferer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
      */
-    private $returnAnalyzer;
+    private ReturnAnalyzer $returnAnalyzer;
     public function __construct(ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnTypeInferer $returnTypeInferer, BetterNodeFinder $betterNodeFinder, StaticTypeMapper $staticTypeMapper, ReturnAnalyzer $returnAnalyzer)
     {
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
@@ -93,8 +89,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod|Function_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         if ($this->shouldSkip($node, $scope)) {
             return null;
         }

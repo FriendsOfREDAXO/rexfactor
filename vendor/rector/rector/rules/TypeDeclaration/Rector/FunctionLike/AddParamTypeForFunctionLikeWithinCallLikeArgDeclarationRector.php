@@ -23,7 +23,7 @@ use Rector\TypeDeclaration\ValueObject\AddParamTypeForFunctionLikeWithinCallLike
 use Rector\ValueObject\PhpVersionFeature;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\FunctionLike\AddParamTypeForFunctionLikeWithinCallLikeArgDeclarationRector\AddParamTypeForFunctionLikeWithinCallLikeArgDeclarationRectorTest
  */
@@ -31,27 +31,21 @@ final class AddParamTypeForFunctionLikeWithinCallLikeArgDeclarationRector extend
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\TypeComparator\TypeComparator
      */
-    private $typeComparator;
+    private TypeComparator $typeComparator;
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @var AddParamTypeForFunctionLikeWithinCallLikeArgDeclaration[]
      */
-    private $addParamTypeForFunctionLikeParamDeclarations = [];
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private array $addParamTypeForFunctionLikeParamDeclarations = [];
+    private bool $hasChanged = \false;
     public function __construct(TypeComparator $typeComparator, PhpVersionProvider $phpVersionProvider, StaticTypeMapper $staticTypeMapper)
     {
         $this->typeComparator = $typeComparator;
@@ -93,7 +87,7 @@ CODE_SAMPLE
                     $type = null;
                     break;
             }
-            if ($type === null) {
+            if (!$type instanceof Node) {
                 continue;
             }
             if (!$this->isObjectType($type, $addParamTypeForFunctionLikeParamDeclaration->getObjectType())) {
@@ -134,12 +128,12 @@ CODE_SAMPLE
                 return;
             }
             // int positions shouldn't have names
-            if ($arg->name !== null) {
+            if ($arg->name instanceof Identifier) {
                 return;
             }
         } else {
             $args = \array_filter($callLike->getArgs(), static function (Arg $arg) use($addParamTypeForFunctionLikeWithinCallLikeArgDeclaration) : bool {
-                if ($arg->name === null) {
+                if (!$arg->name instanceof Identifier) {
                     return \false;
                 }
                 return $arg->name->name === $addParamTypeForFunctionLikeWithinCallLikeArgDeclaration->getCallLikePosition();
@@ -162,7 +156,7 @@ CODE_SAMPLE
     {
         $newParameterType = $addParamTypeForFunctionLikeWithinCallLikeArgDeclaration->getParamType();
         // already set → no change
-        if ($param->type !== null) {
+        if ($param->type instanceof Node) {
             $currentParamType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($param->type);
             if ($this->typeComparator->areTypesEqual($currentParamType, $newParameterType)) {
                 return;

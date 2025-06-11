@@ -10,14 +10,13 @@ use Rector\PhpParser\Node\NodeFactory;
 use Rector\Symfony\Configs\Enum\GroupingMethods;
 use Rector\Symfony\Configs\Enum\SecurityConfigKey;
 use Rector\Symfony\Utils\StringUtils;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class NestedConfigCallsFactory
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\NodeFactory
      */
-    private $nodeFactory;
+    private NodeFactory $nodeFactory;
     public function __construct(NodeFactory $nodeFactory)
     {
         $this->nodeFactory = $nodeFactory;

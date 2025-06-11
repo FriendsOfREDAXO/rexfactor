@@ -13,7 +13,7 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
 use Rector\Php70\EregToPcreTransformer;
 use Rector\Rector\AbstractRector;
@@ -21,7 +21,7 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Php70\Rector\FuncCall\EregToPregMatchRector\EregToPregMatchRectorTest
  */
@@ -29,9 +29,8 @@ final class EregToPregMatchRector extends AbstractRector implements MinPhpVersio
 {
     /**
      * @readonly
-     * @var \Rector\Php70\EregToPcreTransformer
      */
-    private $eregToPcreTransformer;
+    private EregToPcreTransformer $eregToPcreTransformer;
     /**
      * @var array<string, string>
      */
@@ -121,10 +120,10 @@ final class EregToPregMatchRector extends AbstractRector implements MinPhpVersio
             return;
         }
         // 3rd argument - $limit, 0 → 1
-        if (!$funcCall->args[2]->value instanceof LNumber) {
+        if (!$funcCall->args[2]->value instanceof Int_) {
             return;
         }
-        /** @var LNumber $limitNumberNode */
+        /** @var Int_ $limitNumberNode */
         $limitNumberNode = $funcCall->args[2]->value;
         if ($limitNumberNode->value !== 0) {
             return;
@@ -134,7 +133,7 @@ final class EregToPregMatchRector extends AbstractRector implements MinPhpVersio
     private function createTernaryWithStrlenOfFirstMatch(FuncCall $funcCall) : Ternary
     {
         $thirdArg = $funcCall->getArgs()[2];
-        $arrayDimFetch = new ArrayDimFetch($thirdArg->value, new LNumber(0));
+        $arrayDimFetch = new ArrayDimFetch($thirdArg->value, new Int_(0));
         $strlenFuncCall = $this->nodeFactory->createFuncCall('strlen', [$arrayDimFetch]);
         return new Ternary($funcCall, $strlenFuncCall, $this->nodeFactory->createFalse());
     }

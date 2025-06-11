@@ -18,7 +18,7 @@ use Rector\Reflection\ReflectionResolver;
 use Rector\TypeDeclaration\NodeAnalyzer\AutowiredClassMethodOrPropertyAnalyzer;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @changelog https://www.php.net/manual/en/migration72.new-features.php#migration72.new-features.param-type-widening
  * @changelog https://3v4l.org/fOgSE
@@ -29,38 +29,32 @@ final class DowngradeParameterTypeWideningRector extends AbstractRector implemen
 {
     /**
      * @readonly
-     * @var \Rector\DowngradePhp72\PhpDoc\NativeParamToPhpDocDecorator
      */
-    private $nativeParamToPhpDocDecorator;
+    private NativeParamToPhpDocDecorator $nativeParamToPhpDocDecorator;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\AutowiredClassMethodOrPropertyAnalyzer
      */
-    private $autowiredClassMethodOrPropertyAnalyzer;
+    private AutowiredClassMethodOrPropertyAnalyzer $autowiredClassMethodOrPropertyAnalyzer;
     /**
      * @readonly
-     * @var \Rector\DowngradePhp72\NodeAnalyzer\BuiltInMethodAnalyzer
      */
-    private $builtInMethodAnalyzer;
+    private BuiltInMethodAnalyzer $builtInMethodAnalyzer;
     /**
      * @readonly
-     * @var \Rector\DowngradePhp72\NodeAnalyzer\OverrideFromAnonymousClassMethodAnalyzer
      */
-    private $overrideFromAnonymousClassMethodAnalyzer;
+    private OverrideFromAnonymousClassMethodAnalyzer $overrideFromAnonymousClassMethodAnalyzer;
     /**
      * @readonly
-     * @var \Rector\DowngradePhp72\NodeAnalyzer\SealedClassAnalyzer
      */
-    private $sealedClassAnalyzer;
+    private SealedClassAnalyzer $sealedClassAnalyzer;
     /**
      * @var array<string, string[]>
      */
-    private $unsafeTypesToMethods = [];
+    private array $unsafeTypesToMethods = [];
     public function __construct(NativeParamToPhpDocDecorator $nativeParamToPhpDocDecorator, ReflectionResolver $reflectionResolver, AutowiredClassMethodOrPropertyAnalyzer $autowiredClassMethodOrPropertyAnalyzer, BuiltInMethodAnalyzer $builtInMethodAnalyzer, OverrideFromAnonymousClassMethodAnalyzer $overrideFromAnonymousClassMethodAnalyzer, SealedClassAnalyzer $sealedClassAnalyzer)
     {
         $this->nativeParamToPhpDocDecorator = $nativeParamToPhpDocDecorator;
@@ -212,7 +206,7 @@ CODE_SAMPLE
             if (!$this->isNames($classMethod, $unsafeMethods)) {
                 continue;
             }
-            if ($classReflection->isSubclassOf($unsafeType)) {
+            if ($classReflection->is($unsafeType)) {
                 return \false;
             }
             // skip self too

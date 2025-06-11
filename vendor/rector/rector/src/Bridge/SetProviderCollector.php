@@ -9,6 +9,12 @@ use Rector\Set\Contract\SetInterface;
 use Rector\Set\Contract\SetProviderInterface;
 use Rector\Set\SetProvider\CoreSetProvider;
 use Rector\Set\SetProvider\PHPSetProvider;
+use Rector\Set\ValueObject\ComposerTriggeredSet;
+use Rector\Symfony\Set\SetProvider\Symfony3SetProvider;
+use Rector\Symfony\Set\SetProvider\Symfony4SetProvider;
+use Rector\Symfony\Set\SetProvider\Symfony5SetProvider;
+use Rector\Symfony\Set\SetProvider\Symfony6SetProvider;
+use Rector\Symfony\Set\SetProvider\Symfony7SetProvider;
 use Rector\Symfony\Set\SetProvider\SymfonySetProvider;
 use Rector\Symfony\Set\SetProvider\TwigSetProvider;
 /**
@@ -22,7 +28,7 @@ final class SetProviderCollector
      * @var SetProviderInterface[]
      * @readonly
      */
-    private $setProviders;
+    private array $setProviders;
     /**
      * @param SetProviderInterface[] $extraSetProviders
      */
@@ -34,6 +40,11 @@ final class SetProviderCollector
             new CoreSetProvider(),
             new PHPUnitSetProvider(),
             new SymfonySetProvider(),
+            new Symfony3SetProvider(),
+            new Symfony4SetProvider(),
+            new Symfony5SetProvider(),
+            new Symfony6SetProvider(),
+            new Symfony7SetProvider(),
             new DoctrineSetProvider(),
             new TwigSetProvider(),
         ];
@@ -56,5 +67,12 @@ final class SetProviderCollector
             $sets = \array_merge($sets, $setProvider->provide());
         }
         return $sets;
+    }
+    /**
+     * @return array<ComposerTriggeredSet>
+     */
+    public function provideComposerTriggeredSets() : array
+    {
+        return \array_filter($this->provideSets(), fn(SetInterface $set): bool => $set instanceof ComposerTriggeredSet);
     }
 }

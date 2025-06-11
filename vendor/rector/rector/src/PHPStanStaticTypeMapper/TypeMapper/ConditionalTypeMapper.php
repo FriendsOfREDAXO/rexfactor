@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Reflection\ClassReflection;
@@ -20,10 +20,7 @@ use Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper;
  */
 final class ConditionalTypeMapper implements TypeMapperInterface
 {
-    /**
-     * @var \Rector\PHPStanStaticTypeMapper\PHPStanStaticTypeMapper
-     */
-    private $phpStanStaticTypeMapper;
+    private PHPStanStaticTypeMapper $phpStanStaticTypeMapper;
     public function autowire(PHPStanStaticTypeMapper $phpStanStaticTypeMapper) : void
     {
         $this->phpStanStaticTypeMapper = $phpStanStaticTypeMapper;

@@ -11,7 +11,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Removing\ValueObject\RemoveFuncCallArg;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Removing\Rector\FuncCall\RemoveFuncCallArgRector\RemoveFuncCallArgRectorTest
  */
@@ -20,7 +20,7 @@ final class RemoveFuncCallArgRector extends AbstractRector implements Configurab
     /**
      * @var RemoveFuncCallArg[]
      */
-    private $removedFunctionArguments = [];
+    private array $removedFunctionArguments = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Remove argument by position by function name', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

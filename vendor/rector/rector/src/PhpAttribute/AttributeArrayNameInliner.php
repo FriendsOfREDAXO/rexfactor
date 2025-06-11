@@ -4,19 +4,18 @@ declare (strict_types=1);
 namespace Rector\PhpAttribute;
 
 use PhpParser\Node\Arg;
-use PhpParser\Node\Expr;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\Scalar\Float_;
+use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
-use Rector\Exception\NotImplementedYetException;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class AttributeArrayNameInliner
 {
     /**
-     * @param Array_|Arg[] $array
-     * @return Arg[]
+     * @param Array_|list<Arg> $array
+     * @return list<Arg>
      */
     public function inlineArrayToArgs($array) : array
     {
@@ -26,7 +25,7 @@ final class AttributeArrayNameInliner
         return $this->inlineArrayNode($array);
     }
     /**
-     * @return Arg[]
+     * @return list<Arg>
      */
     private function inlineArrayNode(Array_ $array) : array
     {
@@ -46,32 +45,21 @@ final class AttributeArrayNameInliner
         return $args;
     }
     /**
-     * @param Arg[] $args
-     * @return Arg[]
+     * @param list<Arg> $args
+     * @return list<Arg>
      */
     private function inlineArray(array $args) : array
     {
         Assert::allIsAOf($args, Arg::class);
-        $newArgs = [];
         foreach ($args as $arg) {
-            // matching top root array key
-            if ($arg->value instanceof ArrayItem) {
-                $arrayItem = $arg->value;
-                if ($arrayItem->key instanceof LNumber) {
-                    $newArgs[] = new Arg($arrayItem->value);
-                } elseif ($arrayItem->key instanceof String_) {
-                    $arrayItemString = $arrayItem->key;
-                    $newArgs[] = new Arg($arrayItem->value, \false, \false, [], new Identifier($arrayItemString->value));
-                } elseif (!$arrayItem->key instanceof Expr) {
-                    // silent key
-                    $newArgs[] = new Arg($arrayItem->value);
+            if ($arg->value instanceof String_ && \is_numeric($arg->value->value)) {
+                // use equal over identical on purpose to verify if it is an integer
+                if ((float) $arg->value->value == (int) $arg->value->value) {
+                    $arg->value = new Int_((int) $arg->value->value);
                 } else {
-                    throw new NotImplementedYetException(\get_debug_type($arrayItem->key));
+                    $arg->value = new Float_((float) $arg->value->value);
                 }
             }
-        }
-        if ($newArgs !== []) {
-            return $newArgs;
         }
         return $args;
     }

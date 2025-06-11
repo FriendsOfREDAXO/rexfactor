@@ -4,12 +4,12 @@ declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\Equal;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\BinaryOp\Equal;
 use PhpParser\Node\Expr\BinaryOp\Identical;
 use PhpParser\Node\Expr\BinaryOp\NotEqual;
 use PhpParser\Node\Expr\BinaryOp\NotIdentical;
 use PHPStan\Type\MixedType;
-use PHPStan\Type\ObjectType;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
@@ -26,7 +26,7 @@ class SomeClass
     public function run(int $firstValue, int $secondValue)
     {
          $isSame = $firstValue == $secondValue;
-         $isDiffernt = $firstValue != $secondValue;
+         $isDifferent = $firstValue != $secondValue;
     }
 }
 CODE_SAMPLE
@@ -36,7 +36,7 @@ class SomeClass
     public function run(int $firstValue, int $secondValue)
     {
          $isSame = $firstValue === $secondValue;
-         $isDiffernt = $firstValue !== $secondValue;
+         $isDifferent = $firstValue !== $secondValue;
     }
 }
 CODE_SAMPLE
@@ -54,10 +54,13 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        if ($node->left instanceof ArrayDimFetch || $node->right instanceof ArrayDimFetch) {
+            return null;
+        }
         $leftStaticType = $this->nodeTypeResolver->getNativeType($node->left);
         $rightStaticType = $this->nodeTypeResolver->getNativeType($node->right);
         // objects can be different by content
-        if ($leftStaticType instanceof ObjectType || $rightStaticType instanceof ObjectType) {
+        if (!$leftStaticType->isObject()->no() || !$rightStaticType->isObject()->no()) {
             return null;
         }
         if ($leftStaticType instanceof MixedType || $rightStaticType instanceof MixedType) {

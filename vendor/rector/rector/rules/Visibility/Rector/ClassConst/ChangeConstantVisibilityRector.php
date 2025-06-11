@@ -13,7 +13,7 @@ use Rector\ValueObject\Visibility;
 use Rector\Visibility\ValueObject\ChangeConstantVisibility;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Visibility\Rector\ClassConst\ChangeConstantVisibilityRector\ChangeConstantVisibilityRectorTest
  */
@@ -21,13 +21,12 @@ final class ChangeConstantVisibilityRector extends AbstractRector implements Con
 {
     /**
      * @readonly
-     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
-    private $visibilityManipulator;
+    private VisibilityManipulator $visibilityManipulator;
     /**
      * @var ChangeConstantVisibility[]
      */
-    private $classConstantVisibilityChanges = [];
+    private array $classConstantVisibilityChanges = [];
     public function __construct(VisibilityManipulator $visibilityManipulator)
     {
         $this->visibilityManipulator = $visibilityManipulator;

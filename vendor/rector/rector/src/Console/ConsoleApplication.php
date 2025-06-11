@@ -3,17 +3,18 @@
 declare (strict_types=1);
 namespace Rector\Console;
 
-use RectorPrefix202411\Composer\XdebugHandler\XdebugHandler;
+use RectorPrefix202506\Composer\XdebugHandler\XdebugHandler;
 use Rector\Application\VersionResolver;
 use Rector\ChangesReporting\Output\ConsoleOutputFormatter;
 use Rector\Configuration\Option;
-use RectorPrefix202411\Symfony\Component\Console\Application;
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputDefinition;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use Rector\Util\Reflection\PrivatesAccessor;
+use RectorPrefix202506\Symfony\Component\Console\Application;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputDefinition;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class ConsoleApplication extends Application
 {
     /**
@@ -49,6 +50,15 @@ final class ConsoleApplication extends Application
         }
         if ($shouldFollowByNewline) {
             $output->write(\PHP_EOL);
+        }
+        $commandName = $input->getFirstArgument();
+        // if paths exist
+        if (\is_string($commandName) && \file_exists($commandName)) {
+            // prepend command name if implicit
+            $privatesAccessor = new PrivatesAccessor();
+            $tokens = $privatesAccessor->getPrivateProperty($input, 'tokens');
+            $tokens = \array_merge(['process'], $tokens);
+            $privatesAccessor->setPrivateProperty($input, 'tokens', $tokens);
         }
         return parent::doRun($input, $output);
     }

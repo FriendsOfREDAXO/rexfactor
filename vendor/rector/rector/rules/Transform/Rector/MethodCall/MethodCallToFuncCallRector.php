@@ -13,7 +13,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Transform\ValueObject\MethodCallToFuncCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\MethodCall\MethodCallToFuncCallRector\MethodCallToFuncCallRectorTest
  */
@@ -22,7 +22,7 @@ final class MethodCallToFuncCallRector extends AbstractRector implements Configu
     /**
      * @var MethodCallToFuncCall[]
      */
-    private $methodCallsToFuncCalls = [];
+    private array $methodCallsToFuncCalls = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Change method call to function call', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

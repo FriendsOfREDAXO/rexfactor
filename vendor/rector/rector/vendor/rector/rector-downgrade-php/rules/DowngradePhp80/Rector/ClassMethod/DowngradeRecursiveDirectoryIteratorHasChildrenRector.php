@@ -16,9 +16,8 @@ final class DowngradeRecursiveDirectoryIteratorHasChildrenRector extends Abstrac
 {
     /**
      * @readonly
-     * @var \Rector\FamilyTree\Reflection\FamilyRelationsAnalyzer
      */
-    private $familyRelationsAnalyzer;
+    private FamilyRelationsAnalyzer $familyRelationsAnalyzer;
     public function __construct(FamilyRelationsAnalyzer $familyRelationsAnalyzer)
     {
         $this->familyRelationsAnalyzer = $familyRelationsAnalyzer;
@@ -64,7 +63,7 @@ CODE_SAMPLE
             if ($classMethod->params[0]->type === null) {
                 continue;
             }
-            if (!$this->nodeNameResolver->isName($classMethod, 'hasChildren')) {
+            if (!$this->isName($classMethod, 'hasChildren')) {
                 continue;
             }
             $ancestorClassNames = $this->familyRelationsAnalyzer->getClassLikeAncestorNames($node);

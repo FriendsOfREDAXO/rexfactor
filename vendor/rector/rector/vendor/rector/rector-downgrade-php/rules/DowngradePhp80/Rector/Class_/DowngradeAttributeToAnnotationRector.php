@@ -21,7 +21,7 @@ use Rector\NodeFactory\DoctrineAnnotationFactory;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @changelog https://php.watch/articles/php-attributes#syntax
  *
@@ -31,31 +31,25 @@ final class DowngradeAttributeToAnnotationRector extends AbstractRector implemen
 {
     /**
      * @readonly
-     * @var \Rector\NodeFactory\DoctrineAnnotationFactory
      */
-    private $doctrineAnnotationFactory;
+    private DoctrineAnnotationFactory $doctrineAnnotationFactory;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @var string[]
      */
-    private const SKIPPED_ATTRIBUTES = ['Attribute', 'ReturnTypeWillChange'];
+    private const SKIPPED_ATTRIBUTES = ['Attribute', 'ReturnTypeWillChange', 'AllowDynamicProperties'];
     /**
      * @var DowngradeAttributeToAnnotation[]
      */
-    private $attributesToAnnotations = [];
-    /**
-     * @var bool
-     */
-    private $isDowngraded = \false;
+    private array $attributesToAnnotations = [];
+    private bool $isDowngraded = \false;
     public function __construct(DoctrineAnnotationFactory $doctrineAnnotationFactory, DocBlockUpdater $docBlockUpdater, PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->doctrineAnnotationFactory = $doctrineAnnotationFactory;
@@ -107,9 +101,15 @@ CODE_SAMPLE
         }
         $this->isDowngraded = \false;
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($node);
+        $oldTokens = $this->file->getOldTokens();
         foreach ($node->attrGroups as $attrGroup) {
             foreach ($attrGroup->attrs as $key => $attribute) {
                 if ($this->shouldSkipAttribute($attribute)) {
+                    if (isset($oldTokens[$attrGroup->getEndTokenPos() + 1]) && \strpos((string) $oldTokens[$attrGroup->getEndTokenPos() + 1], "\n") === \false) {
+                        // add new line
+                        $oldTokens[$attrGroup->getEndTokenPos() + 1]->text = "\n" . $oldTokens[$attrGroup->getEndTokenPos() + 1]->text;
+                        $this->isDowngraded = \true;
+                    }
                     continue;
                 }
                 $attributeToAnnotation = $this->matchAttributeToAnnotation($attribute, $this->attributesToAnnotations);
@@ -138,7 +138,7 @@ CODE_SAMPLE
         return $node;
     }
     /**
-     * @param mixed[] $configuration
+     * @param DowngradeAttributeToAnnotation[] $configuration
      */
     public function configure(array $configuration) : void
     {

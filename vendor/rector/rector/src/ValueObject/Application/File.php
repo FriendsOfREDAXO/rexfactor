@@ -5,6 +5,9 @@ namespace Rector\ValueObject\Application;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\InlineHTML;
+use PhpParser\NodeFinder;
+use PhpParser\Token;
 use Rector\ChangesReporting\ValueObject\RectorWithLineChange;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\ValueObject\Reporting\FileDiff;
@@ -12,42 +15,35 @@ final class File
 {
     /**
      * @readonly
-     * @var string
      */
-    private $filePath;
-    /**
-     * @var string
-     */
-    private $fileContent;
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private string $filePath;
+    private string $fileContent;
+    private bool $hasChanged = \false;
     /**
      * @readonly
-     * @var string
      */
-    private $originalFileContent;
-    /**
-     * @var \Rector\ValueObject\Reporting\FileDiff|null
-     */
-    private $fileDiff;
+    private string $originalFileContent;
+    private ?FileDiff $fileDiff = null;
     /**
      * @var Node[]
      */
-    private $oldStmts = [];
+    private array $oldStmts = [];
     /**
      * @var Node[]
      */
-    private $newStmts = [];
+    private array $newStmts = [];
     /**
-     * @var array<int, array{int, string, int}|string>
+     * @var array<int, Token>
      */
-    private $oldTokens = [];
+    private array $oldTokens = [];
     /**
      * @var RectorWithLineChange[]
      */
-    private $rectorWithLineChanges = [];
+    private array $rectorWithLineChanges = [];
+    /**
+     * Cached result per file
+     */
+    private ?bool $containsHtml = null;
     public function __construct(string $filePath, string $fileContent)
     {
         $this->filePath = $filePath;
@@ -93,7 +89,7 @@ final class File
     /**
      * @param Stmt[] $newStmts
      * @param Stmt[] $oldStmts
-     * @param array<int, array{int, string, int}|string> $oldTokens
+     * @param array<int, Token> $oldTokens
      */
     public function hydrateStmtsAndTokens(array $newStmts, array $oldStmts, array $oldTokens) : void
     {
@@ -119,7 +115,7 @@ final class File
         return $this->newStmts;
     }
     /**
-     * @return array<int, array{int, string, int}|string>
+     * @return array<int, Token>
      */
     public function getOldTokens() : array
     {
@@ -142,5 +138,14 @@ final class File
     public function getRectorWithLineChanges() : array
     {
         return $this->rectorWithLineChanges;
+    }
+    public function containsHTML() : bool
+    {
+        if ($this->containsHtml !== null) {
+            return $this->containsHtml;
+        }
+        $nodeFinder = new NodeFinder();
+        $this->containsHtml = (bool) $nodeFinder->findFirstInstanceOf($this->oldStmts, InlineHTML::class);
+        return $this->containsHtml;
     }
 }

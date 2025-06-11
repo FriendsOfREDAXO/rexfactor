@@ -12,29 +12,26 @@ use PHPStan\Type\ObjectType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeTypeResolver;
+use Rector\PHPUnit\Enum\PHPUnitClassName;
 use Rector\Reflection\ReflectionResolver;
 final class TestsNodeAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @var string[]
      */
@@ -53,7 +50,7 @@ final class TestsNodeAnalyzer
             return \false;
         }
         foreach (self::TEST_CASE_OBJECT_CLASSES as $testCaseObjectClass) {
-            if ($classReflection->isSubclassOf($testCaseObjectClass)) {
+            if ($classReflection->is($testCaseObjectClass)) {
                 return \true;
             }
         }
@@ -66,6 +63,13 @@ final class TestsNodeAnalyzer
         }
         if (\strncmp($classMethod->name->toString(), 'test', \strlen('test')) === 0) {
             return \true;
+        }
+        foreach ($classMethod->getAttrGroups() as $attributeGroup) {
+            foreach ($attributeGroup->attrs as $attribute) {
+                if ($attribute->name->toString() === 'PHPUnit\\Framework\\Attributes\\Test') {
+                    return \true;
+                }
+            }
         }
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($classMethod);
         return $phpDocInfo->hasByName('test');
@@ -99,9 +103,20 @@ final class TestsNodeAnalyzer
     }
     public function isPHPUnitTestCaseCall(Node $node) : bool
     {
-        if (!$this->isInTestClass($node)) {
-            return \false;
+        if ($node instanceof MethodCall) {
+            return $this->isInTestClass($node);
         }
-        return $node instanceof MethodCall || $node instanceof StaticCall;
+        if ($node instanceof StaticCall) {
+            $classType = $this->nodeTypeResolver->getType($node->class);
+            if ($classType instanceof ObjectType) {
+                if ($classType->isInstanceOf(PHPUnitClassName::TEST_CASE)->yes()) {
+                    return \true;
+                }
+                if ($classType->isInstanceOf(PHPUnitClassName::ASSERT)->yes()) {
+                    return \true;
+                }
+            }
+        }
+        return \false;
     }
 }

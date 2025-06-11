@@ -18,27 +18,24 @@ use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
-use PHPStan\Type\TypeWithClassName;
 use Rector\Naming\Naming\PropertyNaming;
 use Rector\NodeNameResolver\NodeNameResolver;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 use Rector\ValueObject\MethodName;
 final class TypeProvidingExprFromClassResolver
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\PropertyNaming
      */
-    private $propertyNaming;
+    private PropertyNaming $propertyNaming;
     public function __construct(ReflectionProvider $reflectionProvider, NodeNameResolver $nodeNameResolver, PropertyNaming $propertyNaming)
     {
         $this->reflectionProvider = $reflectionProvider;
@@ -107,7 +104,8 @@ final class TypeProvidingExprFromClassResolver
             return \false;
         }
         $readableType = TypeCombinator::removeNull($readableType);
-        if (!$readableType instanceof TypeWithClassName) {
+        $className = ClassNameFromObjectTypeResolver::resolve($readableType);
+        if ($className === null) {
             return \false;
         }
         return $readableType->equals($objectType);

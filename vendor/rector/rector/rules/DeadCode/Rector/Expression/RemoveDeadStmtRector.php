@@ -8,7 +8,7 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Nop;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PHPStan\Reflection\Php\PhpPropertyReflection;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\DeadCode\NodeManipulator\LivingCodeManipulator;
@@ -25,24 +25,20 @@ final class RemoveDeadStmtRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\DeadCode\NodeManipulator\LivingCodeManipulator
      */
-    private $livingCodeManipulator;
+    private LivingCodeManipulator $livingCodeManipulator;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\PropertyFetchAnalyzer
      */
-    private $propertyFetchAnalyzer;
+    private PropertyFetchAnalyzer $propertyFetchAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     public function __construct(LivingCodeManipulator $livingCodeManipulator, PropertyFetchAnalyzer $propertyFetchAnalyzer, ReflectionResolver $reflectionResolver, PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->livingCodeManipulator = $livingCodeManipulator;
@@ -52,7 +48,7 @@ final class RemoveDeadStmtRector extends AbstractRector
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Removes dead code statements', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Remove dead code statements', [new CodeSample(<<<'CODE_SAMPLE'
 $value = 5;
 $value;
 CODE_SAMPLE
@@ -118,6 +114,6 @@ CODE_SAMPLE
             $nop->setAttribute(AttributeKey::PHP_DOC_INFO, $phpDocInfo);
             return $nop;
         }
-        return NodeTraverser::REMOVE_NODE;
+        return NodeVisitor::REMOVE_NODE;
     }
 }

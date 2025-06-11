@@ -6,7 +6,6 @@ namespace Rector\NodeTypeResolver\PHPStan\Type;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
 use PHPStan\Type\Constant\ConstantArrayType;
-use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\Constant\ConstantFloatType;
 use PHPStan\Type\Constant\ConstantIntegerType;
 use PHPStan\Type\Constant\ConstantStringType;
@@ -24,9 +23,8 @@ final class TypeFactory
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PHPStan\TypeHasher
      */
-    private $typeHasher;
+    private TypeHasher $typeHasher;
     public function __construct(TypeHasher $typeHasher)
     {
         $this->typeHasher = $typeHasher;
@@ -93,15 +91,13 @@ final class TypeFactory
     }
     private function normalizeBooleanType(bool &$hasFalse, bool &$hasTrue, Type $type) : Type
     {
-        if ($type instanceof ConstantBooleanType) {
-            if ($type->getValue()) {
-                $hasTrue = \true;
-            }
-            if ($type->getValue() === \false) {
-                $hasFalse = \true;
-            }
+        if ($type->isTrue()->yes()) {
+            $hasTrue = \true;
         }
-        if ($hasFalse && $hasTrue && $type instanceof ConstantBooleanType) {
+        if ($type->isFalse()->yes()) {
+            $hasFalse = \true;
+        }
+        if ($hasFalse && $hasTrue && ($type->isTrue()->yes() || $type->isFalse()->yes())) {
             return new BooleanType();
         }
         return $type;
@@ -160,7 +156,7 @@ final class TypeFactory
         if ($type instanceof ConstantIntegerType) {
             return new IntegerType();
         }
-        if ($type instanceof ConstantBooleanType) {
+        if ($type->isTrue()->yes() || $type->isFalse()->yes()) {
             return new BooleanType();
         }
         return $type;
@@ -171,8 +167,8 @@ final class TypeFactory
     private function unwrapConstantArrayTypes(ConstantArrayType $constantArrayType) : array
     {
         $unwrappedTypes = [];
-        $flattenKeyTypes = TypeUtils::flattenTypes($constantArrayType->getKeyType());
-        $flattenItemTypes = TypeUtils::flattenTypes($constantArrayType->getItemType());
+        $flattenKeyTypes = TypeUtils::flattenTypes($constantArrayType->getIterableKeyType());
+        $flattenItemTypes = TypeUtils::flattenTypes($constantArrayType->getIterableValueType());
         foreach ($flattenItemTypes as $position => $nestedFlattenItemType) {
             $nestedFlattenKeyType = $flattenKeyTypes[$position] ?? null;
             if (!$nestedFlattenKeyType instanceof Type) {

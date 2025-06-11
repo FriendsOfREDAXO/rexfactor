@@ -20,9 +20,9 @@ final class RemoveEmptyTableAttributeRector extends AbstractRector implements Mi
         return new RuleDefinition("Remove empty Table attribute on entities because it's useless", [new CodeSample(<<<'CODE_SAMPLE'
 <?php
 
-namespace RectorPrefix202411;
+namespace RectorPrefix202506;
 
-use RectorPrefix202411\Doctrine\ORM\Mapping as ORM;
+use RectorPrefix202506\Doctrine\ORM\Mapping as ORM;
 #[ORM\Table]
 #[ORM\Entity]
 class Product
@@ -33,9 +33,9 @@ CODE_SAMPLE
 , <<<'CODE_SAMPLE'
 <?php
 
-namespace RectorPrefix202411;
+namespace RectorPrefix202506;
 
-use RectorPrefix202411\Doctrine\ORM\Mapping as ORM;
+use RectorPrefix202506\Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 class Product
 {
@@ -59,7 +59,7 @@ CODE_SAMPLE
         $hasChanged = \false;
         foreach ($node->attrGroups as $attrGroupKey => $attrGroup) {
             foreach ($attrGroup->attrs as $key => $attribute) {
-                if (!$this->nodeNameResolver->isName($attribute, 'Doctrine\\ORM\\Mapping\\Table')) {
+                if (!$this->isName($attribute, 'Doctrine\\ORM\\Mapping\\Table')) {
                     continue;
                 }
                 if ($attribute->args !== []) {

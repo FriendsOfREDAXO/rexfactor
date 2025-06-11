@@ -1,6 +1,6 @@
 <?php
 
-namespace RectorPrefix202411\Illuminate\Contracts\Console;
+namespace RectorPrefix202506\Illuminate\Contracts\Console;
 
 interface Isolatable
 {

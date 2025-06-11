@@ -4,8 +4,8 @@ declare (strict_types=1);
 namespace Rector\CodeQuality;
 
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Scalar\String_;
@@ -15,9 +15,8 @@ final class CompactConverter
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;

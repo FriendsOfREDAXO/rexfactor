@@ -15,7 +15,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Removing\ValueObject\ArgumentRemover;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Removing\Rector\ClassMethod\ArgumentRemoverRector\ArgumentRemoverRectorTest
  */
@@ -23,17 +23,13 @@ final class ArgumentRemoverRector extends AbstractRector implements Configurable
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @var ArgumentRemover[]
      */
-    private $removedArguments = [];
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private array $removedArguments = [];
+    private bool $hasChanged = \false;
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;

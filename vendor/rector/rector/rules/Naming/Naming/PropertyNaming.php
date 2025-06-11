@@ -3,19 +3,18 @@
 declare (strict_types=1);
 namespace Rector\Naming\Naming;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\StaticType;
 use PHPStan\Type\ThisType;
 use PHPStan\Type\Type;
 use PHPStan\Type\TypeCombinator;
-use PHPStan\Type\TypeWithClassName;
+use Rector\Enum\ClassName;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\Naming\RectorNamingInflector;
 use Rector\Naming\ValueObject\ExpectedName;
-use Rector\NodeTypeResolver\NodeTypeResolver;
-use Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 use Rector\StaticTypeMapper\ValueObject\Type\SelfObjectType;
 use Rector\Util\StringUtils;
 /**
@@ -25,14 +24,8 @@ final class PropertyNaming
 {
     /**
      * @readonly
-     * @var \Rector\Naming\RectorNamingInflector
      */
-    private $rectorNamingInflector;
-    /**
-     * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
-     */
-    private $nodeTypeResolver;
+    private RectorNamingInflector $rectorNamingInflector;
     /**
      * @var string[]
      */
@@ -55,10 +48,9 @@ final class PropertyNaming
      * @var string
      */
     private const GET_PREFIX_REGEX = '#^get(?<root_name>[A-Z].+)#';
-    public function __construct(RectorNamingInflector $rectorNamingInflector, NodeTypeResolver $nodeTypeResolver)
+    public function __construct(RectorNamingInflector $rectorNamingInflector)
     {
         $this->rectorNamingInflector = $rectorNamingInflector;
-        $this->nodeTypeResolver = $nodeTypeResolver;
     }
     public function getExpectedNameFromMethodName(string $methodName) : ?ExpectedName
     {
@@ -71,12 +63,16 @@ final class PropertyNaming
     }
     public function getExpectedNameFromType(Type $type) : ?ExpectedName
     {
+        $type = TypeCombinator::removeNull($type);
         // keep collections untouched
         if ($type instanceof ObjectType) {
             if ($type->isInstanceOf('Doctrine\\Common\\Collections\\Collection')->yes()) {
                 return null;
             }
             if ($type->isInstanceOf('Illuminate\\Support\\Collection')->yes()) {
+                return null;
+            }
+            if ($type->isInstanceOf(ClassName::DATE_TIME_INTERFACE)->yes()) {
                 return null;
             }
         }
@@ -155,7 +151,7 @@ final class PropertyNaming
     }
     private function prolongIfTooShort(string $shortClassName, string $className) : string
     {
-        if (\in_array($shortClassName, ['Factory', 'Repository'], \true)) {
+        if (\in_array($shortClassName, ['Factory', 'Repository'], \true) && \substr_compare($className, 'Repository', -\strlen('Repository')) !== 0 && \substr_compare($className, 'Factory', -\strlen('Factory')) !== 0) {
             $namespaceAbove = (string) Strings::after($className, '\\', -2);
             $namespaceAbove = (string) Strings::before($namespaceAbove, '\\');
             return \lcfirst($namespaceAbove) . $shortClassName;
@@ -237,8 +233,8 @@ final class PropertyNaming
     }
     private function resolveClassNameFromType(Type $type) : ?string
     {
-        $type = TypeCombinator::removeNull($type);
-        if (!$type instanceof TypeWithClassName) {
+        $className = ClassNameFromObjectTypeResolver::resolve($type);
+        if ($className === null) {
             return null;
         }
         if ($type instanceof SelfObjectType) {
@@ -251,6 +247,6 @@ final class PropertyNaming
         if ($type instanceof GenericObjectType) {
             return null;
         }
-        return $type instanceof AliasedObjectType ? $type->getClassName() : $this->nodeTypeResolver->getFullyQualifiedClassName($type);
+        return $className;
     }
 }

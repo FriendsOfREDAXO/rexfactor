@@ -14,19 +14,16 @@ final class DynamicSourceLocatorDecorator
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider
      */
-    private $dynamicSourceLocatorProvider;
+    private DynamicSourceLocatorProvider $dynamicSourceLocatorProvider;
     /**
      * @readonly
-     * @var \Rector\FileSystem\FileAndDirectoryFilter
      */
-    private $fileAndDirectoryFilter;
+    private FileAndDirectoryFilter $fileAndDirectoryFilter;
     /**
      * @readonly
-     * @var \Rector\FileSystem\FilesystemTweaker
      */
-    private $filesystemTweaker;
+    private FilesystemTweaker $filesystemTweaker;
     public function __construct(DynamicSourceLocatorProvider $dynamicSourceLocatorProvider, FileAndDirectoryFilter $fileAndDirectoryFilter, FilesystemTweaker $filesystemTweaker)
     {
         $this->dynamicSourceLocatorProvider = $dynamicSourceLocatorProvider;
@@ -35,20 +32,22 @@ final class DynamicSourceLocatorDecorator
     }
     /**
      * @param string[] $paths
+     * @return string[]
      */
-    public function addPaths(array $paths) : void
+    public function addPaths(array $paths) : array
     {
         if ($paths === []) {
-            return;
+            return [];
         }
         $paths = $this->filesystemTweaker->resolveWithFnmatch($paths);
         $files = $this->fileAndDirectoryFilter->filterFiles($paths);
         $this->dynamicSourceLocatorProvider->addFiles($files);
         $directories = $this->fileAndDirectoryFilter->filterDirectories($paths);
         $this->dynamicSourceLocatorProvider->addDirectories($directories);
+        return \array_merge($files, $directories);
     }
-    public function isPathsEmpty() : bool
+    public function arePathsEmpty() : bool
     {
-        return $this->dynamicSourceLocatorProvider->isPathsEmpty();
+        return $this->dynamicSourceLocatorProvider->arePathsEmpty();
     }
 }

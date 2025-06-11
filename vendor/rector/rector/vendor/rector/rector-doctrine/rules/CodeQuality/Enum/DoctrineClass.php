@@ -3,10 +3,14 @@
 declare (strict_types=1);
 namespace Rector\Doctrine\CodeQuality\Enum;
 
+/**
+ * @deprecated Switch to @see \Rector\Doctrine\Enum\DoctrineClass instead
+ * @api
+ */
 final class DoctrineClass
 {
     /**
-     * @var string
+     * @deprecated BC only
      */
-    public const COLLECTION = 'Doctrine\\Common\\Collections\\Collection';
+    public const COLLECTION = \Rector\Doctrine\Enum\DoctrineClass::COLLECTION;
 }

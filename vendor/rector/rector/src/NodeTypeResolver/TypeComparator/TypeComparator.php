@@ -8,7 +8,6 @@ use PHPStan\PhpDocParser\Ast\Type\TypeNode;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\ArrayType;
 use PHPStan\Type\BooleanType;
-use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\ConstantScalarType;
 use PHPStan\Type\Generic\TemplateType;
 use PHPStan\Type\MixedType;
@@ -21,43 +20,31 @@ use Rector\NodeTypeResolver\PHPStan\TypeHasher;
 use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\StaticTypeMapper\ValueObject\Type\AliasedObjectType;
-use Rector\TypeDeclaration\TypeNormalizer;
 final class TypeComparator
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PHPStan\TypeHasher
      */
-    private $typeHasher;
+    private TypeHasher $typeHasher;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeNormalizer
      */
-    private $typeNormalizer;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private \Rector\NodeTypeResolver\TypeComparator\ArrayTypeComparator $arrayTypeComparator;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\TypeComparator\ArrayTypeComparator
      */
-    private $arrayTypeComparator;
+    private \Rector\NodeTypeResolver\TypeComparator\ScalarTypeComparator $scalarTypeComparator;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\TypeComparator\ScalarTypeComparator
      */
-    private $scalarTypeComparator;
-    /**
-     * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
-     */
-    private $reflectionResolver;
-    public function __construct(TypeHasher $typeHasher, TypeNormalizer $typeNormalizer, StaticTypeMapper $staticTypeMapper, \Rector\NodeTypeResolver\TypeComparator\ArrayTypeComparator $arrayTypeComparator, \Rector\NodeTypeResolver\TypeComparator\ScalarTypeComparator $scalarTypeComparator, ReflectionResolver $reflectionResolver)
+    private ReflectionResolver $reflectionResolver;
+    public function __construct(TypeHasher $typeHasher, StaticTypeMapper $staticTypeMapper, \Rector\NodeTypeResolver\TypeComparator\ArrayTypeComparator $arrayTypeComparator, \Rector\NodeTypeResolver\TypeComparator\ScalarTypeComparator $scalarTypeComparator, ReflectionResolver $reflectionResolver)
     {
         $this->typeHasher = $typeHasher;
-        $this->typeNormalizer = $typeNormalizer;
         $this->staticTypeMapper = $staticTypeMapper;
         $this->arrayTypeComparator = $arrayTypeComparator;
         $this->scalarTypeComparator = $scalarTypeComparator;
@@ -79,8 +66,6 @@ final class TypeComparator
         if ($this->areAliasedObjectMatchingFqnObject($firstType, $secondType)) {
             return \true;
         }
-        $firstType = $this->typeNormalizer->normalizeArrayOfUnionToUnionArray($firstType);
-        $secondType = $this->typeNormalizer->normalizeArrayOfUnionToUnionArray($secondType);
         if ($this->typeHasher->areTypesEqual($firstType, $secondType)) {
             return \true;
         }
@@ -154,8 +139,8 @@ final class TypeComparator
         if (!$secondType instanceof ArrayType) {
             return \false;
         }
-        $firstArrayItemType = $firstType->getItemType();
-        $secondArrayItemType = $secondType->getItemType();
+        $firstArrayItemType = $firstType->getIterableValueType();
+        $secondArrayItemType = $secondType->getIterableValueType();
         return $this->isMutualObjectSubtypes($firstArrayItemType, $secondArrayItemType);
     }
     private function isMutualObjectSubtypes(Type $firstArrayItemType, Type $secondArrayItemType) : bool
@@ -174,7 +159,7 @@ final class TypeComparator
     private function normalizeConstantBooleanType(Type $type) : Type
     {
         return TypeTraverser::map($type, static function (Type $type, callable $callable) : Type {
-            if ($type instanceof ConstantBooleanType) {
+            if ($type->isTrue()->yes() || $type->isFalse()->yes()) {
                 return new BooleanType();
             }
             return $callable($type);

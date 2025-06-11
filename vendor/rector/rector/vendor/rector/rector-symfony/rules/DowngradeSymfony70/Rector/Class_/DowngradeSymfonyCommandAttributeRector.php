@@ -25,9 +25,8 @@ final class DowngradeSymfonyCommandAttributeRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     public function __construct(ReflectionResolver $reflectionResolver)
     {
         $this->reflectionResolver = $reflectionResolver;
@@ -69,7 +68,7 @@ CODE_SAMPLE
         if (!$classReflection instanceof ClassReflection) {
             return null;
         }
-        if (!$classReflection->isSubClassOf('Symfony\\Component\\Console\\Command\\Command')) {
+        if (!$classReflection->is('Symfony\\Component\\Console\\Command\\Command')) {
             return null;
         }
         $resolveNameAndDescription = $this->resolveNameAndDescription($node);

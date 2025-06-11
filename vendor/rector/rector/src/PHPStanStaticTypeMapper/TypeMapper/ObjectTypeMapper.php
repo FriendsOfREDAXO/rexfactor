@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PHPStanStaticTypeMapper\TypeMapper;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Name;
 use PhpParser\Node\Name\FullyQualified;
@@ -59,11 +59,8 @@ final class ObjectTypeMapper implements TypeMapperInterface
         if ($type instanceof SelfObjectType) {
             return new Name('self');
         }
-        if ($type instanceof ShortenedObjectType) {
+        if ($type instanceof ShortenedObjectType || $type instanceof AliasedObjectType) {
             return new FullyQualified($type->getFullyQualifiedName());
-        }
-        if ($type instanceof AliasedObjectType) {
-            return new Name($type->getClassName());
         }
         if ($type instanceof FullyQualifiedObjectType) {
             $className = $type->getClassName();

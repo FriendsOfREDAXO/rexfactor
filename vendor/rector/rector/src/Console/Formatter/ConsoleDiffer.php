@@ -3,20 +3,18 @@
 declare (strict_types=1);
 namespace Rector\Console\Formatter;
 
-use RectorPrefix202411\SebastianBergmann\Diff\Differ;
-use RectorPrefix202411\SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
+use RectorPrefix202506\SebastianBergmann\Diff\Differ;
+use RectorPrefix202506\SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
 final class ConsoleDiffer
 {
     /**
      * @readonly
-     * @var \Rector\Console\Formatter\ColorConsoleDiffFormatter
      */
-    private $colorConsoleDiffFormatter;
+    private \Rector\Console\Formatter\ColorConsoleDiffFormatter $colorConsoleDiffFormatter;
     /**
      * @readonly
-     * @var \SebastianBergmann\Diff\Differ
      */
-    private $differ;
+    private Differ $differ;
     public function __construct(\Rector\Console\Formatter\ColorConsoleDiffFormatter $colorConsoleDiffFormatter)
     {
         $this->colorConsoleDiffFormatter = $colorConsoleDiffFormatter;

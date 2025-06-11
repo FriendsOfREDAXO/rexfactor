@@ -12,7 +12,7 @@ use Rector\Transform\NodeAnalyzer\FuncCallStaticCallToMethodCallAnalyzer;
 use Rector\Transform\ValueObject\FuncCallToMethodCall;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Transform\Rector\FuncCall\FuncCallToMethodCallRector\FuncCallToMethodCallRectorTest
  */
@@ -20,20 +20,19 @@ final class FuncCallToMethodCallRector extends AbstractRector implements Configu
 {
     /**
      * @readonly
-     * @var \Rector\Transform\NodeAnalyzer\FuncCallStaticCallToMethodCallAnalyzer
      */
-    private $funcCallStaticCallToMethodCallAnalyzer;
+    private FuncCallStaticCallToMethodCallAnalyzer $funcCallStaticCallToMethodCallAnalyzer;
     /**
      * @var FuncCallToMethodCall[]
      */
-    private $funcNameToMethodCallNames = [];
+    private array $funcNameToMethodCallNames = [];
     public function __construct(FuncCallStaticCallToMethodCallAnalyzer $funcCallStaticCallToMethodCallAnalyzer)
     {
         $this->funcCallStaticCallToMethodCallAnalyzer = $funcCallStaticCallToMethodCallAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Turns defined function calls to local method calls.', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Turn defined function calls to local method calls', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()

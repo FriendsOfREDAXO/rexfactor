@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Application;
 
-use RectorPrefix202411\Nette\Utils\FileSystem as UtilsFileSystem;
+use RectorPrefix202506\Nette\Utils\FileSystem as UtilsFileSystem;
 use PHPStan\Parser\ParserErrorsException;
 use Rector\Application\Provider\CurrentFileProvider;
 use Rector\Caching\Detector\ChangedFilesDetector;
@@ -21,64 +21,54 @@ use Rector\ValueObject\Error\SystemError;
 use Rector\ValueObject\FileProcessResult;
 use Rector\ValueObject\ProcessResult;
 use Rector\ValueObject\Reporting\FileDiff;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202411\Symplify\EasyParallel\CpuCoreCountProvider;
-use RectorPrefix202411\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
-use RectorPrefix202411\Symplify\EasyParallel\ScheduleFactory;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202506\Symplify\EasyParallel\CpuCoreCountProvider;
+use RectorPrefix202506\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
+use RectorPrefix202506\Symplify\EasyParallel\ScheduleFactory;
 use Throwable;
 final class ApplicationFileProcessor
 {
     /**
      * @readonly
-     * @var \Symfony\Component\Console\Style\SymfonyStyle
      */
-    private $symfonyStyle;
+    private SymfonyStyle $symfonyStyle;
     /**
      * @readonly
-     * @var \Rector\FileSystem\FilesFinder
      */
-    private $filesFinder;
+    private FilesFinder $filesFinder;
     /**
      * @readonly
-     * @var \Rector\Parallel\Application\ParallelFileProcessor
      */
-    private $parallelFileProcessor;
+    private ParallelFileProcessor $parallelFileProcessor;
     /**
      * @readonly
-     * @var \Symplify\EasyParallel\ScheduleFactory
      */
-    private $scheduleFactory;
+    private ScheduleFactory $scheduleFactory;
     /**
      * @readonly
-     * @var \Symplify\EasyParallel\CpuCoreCountProvider
      */
-    private $cpuCoreCountProvider;
+    private CpuCoreCountProvider $cpuCoreCountProvider;
     /**
      * @readonly
-     * @var \Rector\Caching\Detector\ChangedFilesDetector
      */
-    private $changedFilesDetector;
+    private ChangedFilesDetector $changedFilesDetector;
     /**
      * @readonly
-     * @var \Rector\Application\Provider\CurrentFileProvider
      */
-    private $currentFileProvider;
+    private CurrentFileProvider $currentFileProvider;
     /**
      * @readonly
-     * @var \Rector\Application\FileProcessor
      */
-    private $fileProcessor;
+    private \Rector\Application\FileProcessor $fileProcessor;
     /**
      * @readonly
-     * @var \Rector\Util\ArrayParametersMerger
      */
-    private $arrayParametersMerger;
+    private ArrayParametersMerger $arrayParametersMerger;
     /**
      * @readonly
-     * @var \Rector\Reporting\MissConfigurationReporter
      */
-    private $missConfigurationReporter;
+    private MissConfigurationReporter $missConfigurationReporter;
     /**
      * @var string
      */
@@ -86,7 +76,7 @@ final class ApplicationFileProcessor
     /**
      * @var SystemError[]
      */
-    private $systemErrors = [];
+    private array $systemErrors = [];
     public function __construct(SymfonyStyle $symfonyStyle, FilesFinder $filesFinder, ParallelFileProcessor $parallelFileProcessor, ScheduleFactory $scheduleFactory, CpuCoreCountProvider $cpuCoreCountProvider, ChangedFilesDetector $changedFilesDetector, CurrentFileProvider $currentFileProvider, \Rector\Application\FileProcessor $fileProcessor, ArrayParametersMerger $arrayParametersMerger, MissConfigurationReporter $missConfigurationReporter)
     {
         $this->symfonyStyle = $symfonyStyle;
@@ -103,12 +93,12 @@ final class ApplicationFileProcessor
     public function run(Configuration $configuration, InputInterface $input) : ProcessResult
     {
         $filePaths = $this->filesFinder->findFilesInPaths($configuration->getPaths(), $configuration);
-        $this->missConfigurationReporter->reportVendorInPaths($filePaths);
-        $this->missConfigurationReporter->reportStartWithShortOpenTag();
         // no files found
         if ($filePaths === []) {
             return new ProcessResult([], []);
         }
+        $this->missConfigurationReporter->reportVendorInPaths($filePaths);
+        $this->missConfigurationReporter->reportStartWithShortOpenTag();
         $this->configureCustomErrorHandler();
         /**
          * Mimic @see https://github.com/phpstan/phpstan-src/blob/ab154e1da54d42fec751e17a1199b3e07591e85e/src/Command/AnalyseApplication.php#L188C23-L244

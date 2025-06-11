@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Config;
 
-use RectorPrefix202411\Illuminate\Container\Container;
+use RectorPrefix202506\Illuminate\Container\Container;
 use Rector\Caching\Contract\ValueObject\Storage\CacheStorageInterface;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
@@ -13,31 +13,37 @@ use Rector\Contract\DependencyInjection\ResetableInterface;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Contract\Rector\RectorInterface;
 use Rector\DependencyInjection\Laravel\ContainerMemento;
+use Rector\Enum\Config\Defaults;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\Skipper\SkipCriteriaResolver\SkippedClassResolver;
 use Rector\Validation\RectorConfigValidator;
+use Rector\ValueObject\Configuration\LevelOverflow;
 use Rector\ValueObject\PhpVersion;
 use Rector\ValueObject\PolyfillPackage;
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Input\ArrayInput;
-use RectorPrefix202411\Symfony\Component\Console\Output\ConsoleOutput;
-use RectorPrefix202411\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @api
  */
 final class RectorConfig extends Container
 {
     /**
-     * @var array<class-string<ConfigurableRectorInterface>, mixed[]>>
+     * @var array<class-string<ConfigurableRectorInterface>, mixed[]>
      */
-    private $ruleConfigurations = [];
+    private array $ruleConfigurations = [];
     /**
      * @var string[]
      */
-    private $autotagInterfaces = [Command::class, ResetableInterface::class];
+    private array $autotagInterfaces = [Command::class, ResetableInterface::class];
+    private static ?bool $recreated = null;
     public static function configure() : RectorConfigBuilder
     {
+        if (self::$recreated === null) {
+            self::$recreated = \false;
+        } elseif (self::$recreated === \false) {
+            self::$recreated = \true;
+        }
+        SimpleParameterProvider::setParameter(Option::IS_RECTORCONFIG_BUILDER_RECREATED, self::$recreated);
         return new RectorConfigBuilder();
     }
     /**
@@ -65,20 +71,6 @@ final class RectorConfig extends Container
             Assert::fileExists($set);
             $this->import($set);
         }
-        // notify about deprecated sets
-        foreach ($sets as $set) {
-            if (\strpos($set, 'deprecated-level-set') === \false) {
-                continue;
-            }
-            // display only on main command run, skip spamming in workers
-            $commandArguments = $_SERVER['argv'];
-            if (!\in_array('worker', $commandArguments, \true)) {
-                // show warning, to avoid confusion
-                $symfonyStyle = new SymfonyStyle(new ArrayInput([]), new ConsoleOutput());
-                $symfonyStyle->warning("The Symfony/Twig/PHPUnit level sets have been deprecated since Rector 0.19.2 due to heavy performance loads and conflicting overrides. Instead, please use the latest major set.\n\nFor more information, visit https://getrector.com/blog/5-common-mistakes-in-rector-config-and-how-to-avoid-them");
-                break;
-            }
-        }
         // for cache invalidation in case of sets change
         SimpleParameterProvider::addParameter(Option::REGISTERED_RECTOR_SETS, $sets);
     }
@@ -86,7 +78,7 @@ final class RectorConfig extends Container
     {
         SimpleParameterProvider::setParameter(Option::PARALLEL, \false);
     }
-    public function parallel(int $processTimeout = 120, int $maxNumberOfProcess = 16, int $jobSize = 16) : void
+    public function parallel(int $processTimeout = 120, int $maxNumberOfProcess = Defaults::PARALLEL_MAX_NUMBER_OF_PROCESS, int $jobSize = 16) : void
     {
         SimpleParameterProvider::setParameter(Option::PARALLEL, \true);
         SimpleParameterProvider::setParameter(Option::PARALLEL_JOB_TIMEOUT_IN_SECONDS, $processTimeout);
@@ -188,7 +180,11 @@ final class RectorConfig extends Container
     }
     public function import(string $filePath) : void
     {
-        if (\strpos($filePath, '*') !== \false) {
+        /**
+         * Only stop when filePath realpath is false and contains glob patterns
+         * @see https://github.com/rectorphp/rector/issues/9156#issuecomment-2869130541
+         */
+        if (\realpath($filePath) === \false && \strpos($filePath, '*') !== \false) {
             throw new ShouldNotHappenException('Matching file paths by using glob-patterns is no longer supported. Use specific file path instead.');
         }
         Assert::fileExists($filePath);
@@ -355,5 +351,12 @@ final class RectorConfig extends Container
     public function getRectorClasses() : array
     {
         return $this->tags[RectorInterface::class] ?? [];
+    }
+    /**
+     * @param LevelOverflow[] $levelOverflows
+     */
+    public function setOverflowLevels(array $levelOverflows) : void
+    {
+        SimpleParameterProvider::addParameter(Option::LEVEL_OVERFLOWS, $levelOverflows);
     }
 }

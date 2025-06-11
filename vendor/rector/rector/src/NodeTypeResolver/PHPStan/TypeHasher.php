@@ -4,7 +4,6 @@ declare (strict_types=1);
 namespace Rector\NodeTypeResolver\PHPStan;
 
 use PHPStan\Type\ArrayType;
-use PHPStan\Type\ConstantType;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\MixedType;
 use PHPStan\Type\ObjectType;
@@ -27,7 +26,7 @@ final class TypeHasher
             return $type->describe(VerbosityLevel::precise()) . $type->isExplicitMixed();
         }
         if ($type instanceof ArrayType) {
-            return $this->createTypeHash($type->getItemType()) . $this->createTypeHash($type->getKeyType()) . '[]';
+            return $this->createTypeHash($type->getIterableValueType()) . $this->createTypeHash($type->getIterableKeyType()) . '[]';
         }
         if ($type instanceof GenericObjectType) {
             return $type->describe(VerbosityLevel::precise());
@@ -35,7 +34,7 @@ final class TypeHasher
         if ($type instanceof TypeWithClassName) {
             return $this->resolveUniqueTypeWithClassNameHash($type);
         }
-        if ($type instanceof ConstantType) {
+        if ($type->isConstantValue()->yes()) {
             return \get_class($type);
         }
         $type = $this->normalizeObjectType($type);

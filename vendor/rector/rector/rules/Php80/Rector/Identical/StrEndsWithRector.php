@@ -14,7 +14,7 @@ use PhpParser\Node\Expr\BinaryOp\NotIdentical;
 use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\UnaryMinus;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
 use Rector\NodeAnalyzer\BinaryOpAnalyzer;
 use Rector\PhpParser\Node\Value\ValueResolver;
@@ -33,14 +33,12 @@ final class StrEndsWithRector extends AbstractRector implements MinPhpVersionInt
 {
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\BinaryOpAnalyzer
      */
-    private $binaryOpAnalyzer;
+    private BinaryOpAnalyzer $binaryOpAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(BinaryOpAnalyzer $binaryOpAnalyzer, ValueResolver $valueResolver)
     {
         $this->binaryOpAnalyzer = $binaryOpAnalyzer;
@@ -52,7 +50,7 @@ final class StrEndsWithRector extends AbstractRector implements MinPhpVersionInt
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Change helper functions to str_ends_with()', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Change helper functions to `str_ends_with()`', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()
@@ -188,7 +186,7 @@ CODE_SAMPLE
             return \false;
         }
         $funcCall = $substrOffset->expr;
-        if (!$this->nodeNameResolver->isName($funcCall, 'strlen')) {
+        if (!$this->isName($funcCall, 'strlen')) {
             return \false;
         }
         if (!isset($funcCall->getArgs()[0])) {
@@ -204,7 +202,7 @@ CODE_SAMPLE
         if (!$substrOffset instanceof UnaryMinus) {
             return \false;
         }
-        if (!$substrOffset->expr instanceof LNumber) {
+        if (!$substrOffset->expr instanceof Int_) {
             return \false;
         }
         $lNumber = $substrOffset->expr;

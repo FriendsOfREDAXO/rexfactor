@@ -3,27 +3,29 @@
 declare (strict_types=1);
 namespace Rector\Console\Command;
 
-use RectorPrefix202411\Clue\React\NDJson\Decoder;
-use RectorPrefix202411\Clue\React\NDJson\Encoder;
-use RectorPrefix202411\React\EventLoop\StreamSelectLoop;
-use RectorPrefix202411\React\Socket\ConnectionInterface;
-use RectorPrefix202411\React\Socket\TcpConnector;
+use RectorPrefix202506\Clue\React\NDJson\Decoder;
+use RectorPrefix202506\Clue\React\NDJson\Encoder;
+use RectorPrefix202506\React\EventLoop\StreamSelectLoop;
+use RectorPrefix202506\React\Socket\ConnectionInterface;
+use RectorPrefix202506\React\Socket\TcpConnector;
 use Rector\Application\ApplicationFileProcessor;
+use Rector\Autoloading\AdditionalAutoloader;
 use Rector\Configuration\ConfigurationFactory;
+use Rector\Configuration\ConfigurationRuleFilter;
 use Rector\Console\ProcessConfigureDecorator;
 use Rector\Parallel\ValueObject\Bridge;
 use Rector\StaticReflection\DynamicSourceLocatorDecorator;
 use Rector\Util\MemoryLimiter;
 use Rector\ValueObject\Configuration;
 use Rector\ValueObject\Error\SystemError;
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202411\Symplify\EasyParallel\Enum\Action;
-use RectorPrefix202411\Symplify\EasyParallel\Enum\ReactCommand;
-use RectorPrefix202411\Symplify\EasyParallel\Enum\ReactEvent;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symplify\EasyParallel\Enum\Action;
+use RectorPrefix202506\Symplify\EasyParallel\Enum\ReactCommand;
+use RectorPrefix202506\Symplify\EasyParallel\Enum\ReactEvent;
 use Throwable;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * Inspired at: https://github.com/phpstan/phpstan-src/commit/9124c66dcc55a222e21b1717ba5f60771f7dda92
  * https://github.com/phpstan/phpstan-src/blob/c471c7b050e0929daf432288770de673b394a983/src/Command/WorkerCommand.php
@@ -35,34 +37,40 @@ final class WorkerCommand extends Command
 {
     /**
      * @readonly
-     * @var \Rector\StaticReflection\DynamicSourceLocatorDecorator
      */
-    private $dynamicSourceLocatorDecorator;
+    private AdditionalAutoloader $additionalAutoloader;
     /**
      * @readonly
-     * @var \Rector\Application\ApplicationFileProcessor
      */
-    private $applicationFileProcessor;
+    private DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator;
     /**
      * @readonly
-     * @var \Rector\Util\MemoryLimiter
      */
-    private $memoryLimiter;
+    private ApplicationFileProcessor $applicationFileProcessor;
     /**
      * @readonly
-     * @var \Rector\Configuration\ConfigurationFactory
      */
-    private $configurationFactory;
+    private MemoryLimiter $memoryLimiter;
+    /**
+     * @readonly
+     */
+    private ConfigurationFactory $configurationFactory;
+    /**
+     * @readonly
+     */
+    private ConfigurationRuleFilter $configurationRuleFilter;
     /**
      * @var string
      */
     private const RESULT = 'result';
-    public function __construct(DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator, ApplicationFileProcessor $applicationFileProcessor, MemoryLimiter $memoryLimiter, ConfigurationFactory $configurationFactory)
+    public function __construct(AdditionalAutoloader $additionalAutoloader, DynamicSourceLocatorDecorator $dynamicSourceLocatorDecorator, ApplicationFileProcessor $applicationFileProcessor, MemoryLimiter $memoryLimiter, ConfigurationFactory $configurationFactory, ConfigurationRuleFilter $configurationRuleFilter)
     {
+        $this->additionalAutoloader = $additionalAutoloader;
         $this->dynamicSourceLocatorDecorator = $dynamicSourceLocatorDecorator;
         $this->applicationFileProcessor = $applicationFileProcessor;
         $this->memoryLimiter = $memoryLimiter;
         $this->configurationFactory = $configurationFactory;
+        $this->configurationRuleFilter = $configurationRuleFilter;
         parent::__construct();
     }
     protected function configure() : void
@@ -76,6 +84,7 @@ final class WorkerCommand extends Command
     {
         $configuration = $this->configurationFactory->createFromInput($input);
         $this->memoryLimiter->adjust($configuration);
+        $this->configurationRuleFilter->setConfiguration($configuration);
         $streamSelectLoop = new StreamSelectLoop();
         $parallelIdentifier = $configuration->getParallelIdentifier();
         $tcpConnector = new TcpConnector($streamSelectLoop);
@@ -91,6 +100,7 @@ final class WorkerCommand extends Command
     }
     private function runWorker(Encoder $encoder, Decoder $decoder, Configuration $configuration, OutputInterface $output) : void
     {
+        $this->additionalAutoloader->autoloadPaths();
         $this->dynamicSourceLocatorDecorator->addPaths($configuration->getPaths());
         if ($configuration->isDebug()) {
             $preFileCallback = static function (string $filePath) use($output) : void {

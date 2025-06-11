@@ -8,14 +8,14 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Input;
+namespace RectorPrefix202506\Symfony\Component\Console\Input;
 
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202411\Symfony\Component\Console\Completion\Suggestion;
-use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202411\Symfony\Component\Console\Exception\LogicException;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202506\Symfony\Component\Console\Completion\Suggestion;
+use RectorPrefix202506\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\LogicException;
 /**
  * Represents a command line argument.
  *
@@ -26,14 +26,8 @@ class InputArgument
     public const REQUIRED = 1;
     public const OPTIONAL = 2;
     public const IS_ARRAY = 4;
-    /**
-     * @var string
-     */
-    private $name;
-    /**
-     * @var int
-     */
-    private $mode;
+    private string $name;
+    private int $mode;
     /**
      * @var mixed[]|bool|float|int|string|null
      */
@@ -42,10 +36,7 @@ class InputArgument
      * @var mixed[]|\Closure
      */
     private $suggestedValues;
-    /**
-     * @var string
-     */
-    private $description;
+    private string $description;
     /**
      * @param string                                                                        $name            The argument name
      * @param int|null                                                                      $mode            The argument mode: a bit mask of self::REQUIRED, self::OPTIONAL and self::IS_ARRAY

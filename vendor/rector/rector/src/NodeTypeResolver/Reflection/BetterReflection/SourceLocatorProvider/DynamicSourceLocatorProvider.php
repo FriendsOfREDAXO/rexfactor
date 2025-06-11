@@ -17,26 +17,21 @@ final class DynamicSourceLocatorProvider implements ResetableInterface
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\BetterReflection\SourceLocator\FileNodesFetcher
      */
-    private $fileNodesFetcher;
+    private FileNodesFetcher $fileNodesFetcher;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\BetterReflection\SourceLocator\OptimizedDirectorySourceLocatorFactory
      */
-    private $optimizedDirectorySourceLocatorFactory;
+    private OptimizedDirectorySourceLocatorFactory $optimizedDirectorySourceLocatorFactory;
     /**
      * @var string[]
      */
-    private $filePaths = [];
+    private array $filePaths = [];
     /**
      * @var string[]
      */
-    private $directories = [];
-    /**
-     * @var \PHPStan\BetterReflection\SourceLocator\Type\AggregateSourceLocator|null
-     */
-    private $aggregateSourceLocator;
+    private array $directories = [];
+    private ?AggregateSourceLocator $aggregateSourceLocator = null;
     public function __construct(FileNodesFetcher $fileNodesFetcher, OptimizedDirectorySourceLocatorFactory $optimizedDirectorySourceLocatorFactory)
     {
         $this->fileNodesFetcher = $fileNodesFetcher;
@@ -51,14 +46,14 @@ final class DynamicSourceLocatorProvider implements ResetableInterface
      */
     public function addFiles(array $files) : void
     {
-        $this->filePaths = \array_merge($this->filePaths, $files);
+        $this->filePaths = \array_unique(\array_merge($this->filePaths, $files));
     }
     /**
      * @param string[] $directories
      */
     public function addDirectories(array $directories) : void
     {
-        $this->directories = \array_merge($this->directories, $directories);
+        $this->directories = \array_unique(\array_merge($this->directories, $directories));
     }
     public function provide() : SourceLocator
     {
@@ -76,7 +71,7 @@ final class DynamicSourceLocatorProvider implements ResetableInterface
         }
         return $this->aggregateSourceLocator = new AggregateSourceLocator($sourceLocators);
     }
-    public function isPathsEmpty() : bool
+    public function arePathsEmpty() : bool
     {
         return $this->filePaths === [] && $this->directories === [];
     }

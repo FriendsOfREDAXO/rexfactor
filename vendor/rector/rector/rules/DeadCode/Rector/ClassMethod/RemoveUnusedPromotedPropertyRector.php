@@ -8,7 +8,6 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\TraitUse;
-use PHPStan\Analyser\Scope;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
 use PHPStan\Reflection\ClassReflection;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfo;
@@ -19,7 +18,7 @@ use Rector\DeadCode\NodeAnalyzer\PropertyWriteonlyAnalyzer;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\PhpParser\NodeFinder\PropertyFetchFinder;
 use Rector\Privatization\NodeManipulator\VisibilityManipulator;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Rector\ValueObject\MethodName;
 use Rector\ValueObject\PhpVersionFeature;
@@ -30,48 +29,40 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector\RemoveUnusedPromotedPropertyRectorTest
  */
-final class RemoveUnusedPromotedPropertyRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class RemoveUnusedPromotedPropertyRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\NodeFinder\PropertyFetchFinder
      */
-    private $propertyFetchFinder;
+    private PropertyFetchFinder $propertyFetchFinder;
     /**
      * @readonly
-     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
-    private $visibilityManipulator;
+    private VisibilityManipulator $visibilityManipulator;
     /**
      * @readonly
-     * @var \Rector\DeadCode\NodeAnalyzer\PropertyWriteonlyAnalyzer
      */
-    private $propertyWriteonlyAnalyzer;
+    private PropertyWriteonlyAnalyzer $propertyWriteonlyAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover
      */
-    private $phpDocTagRemover;
+    private PhpDocTagRemover $phpDocTagRemover;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     public function __construct(PropertyFetchFinder $propertyFetchFinder, VisibilityManipulator $visibilityManipulator, PropertyWriteonlyAnalyzer $propertyWriteonlyAnalyzer, BetterNodeFinder $betterNodeFinder, ReflectionResolver $reflectionResolver, PhpDocInfoFactory $phpDocInfoFactory, PhpDocTagRemover $phpDocTagRemover, DocBlockUpdater $docBlockUpdater)
     {
         $this->propertyFetchFinder = $propertyFetchFinder;
@@ -126,7 +117,7 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
         $constructClassMethod = $node->getMethod(MethodName::CONSTRUCT);
         if (!$constructClassMethod instanceof ClassMethod) {
@@ -203,6 +194,6 @@ CODE_SAMPLE
                 }
             }
         }
-        return \false;
+        return $this->propertyWriteonlyAnalyzer->hasClassDynamicPropertyNames($class);
     }
 }

@@ -8,28 +8,19 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console;
+namespace RectorPrefix202506\Symfony\Component\Console;
 
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
 /**
  * @author Grégoire Pineau <lyrixx@lyrixx.info>
  */
 class SingleCommandApplication extends Command
 {
-    /**
-     * @var string
-     */
-    private $version = 'UNKNOWN';
-    /**
-     * @var bool
-     */
-    private $autoExit = \true;
-    /**
-     * @var bool
-     */
-    private $running = \false;
+    private string $version = 'UNKNOWN';
+    private bool $autoExit = \true;
+    private bool $running = \false;
     /**
      * @return $this
      */

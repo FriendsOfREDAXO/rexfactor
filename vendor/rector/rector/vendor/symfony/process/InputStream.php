@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Process;
+namespace RectorPrefix202506\Symfony\Component\Process;
 
-use RectorPrefix202411\Symfony\Component\Process\Exception\RuntimeException;
+use RectorPrefix202506\Symfony\Component\Process\Exception\RuntimeException;
 /**
  * Provides a way to continuously write to the input of a Process until the InputStream is closed.
  *
@@ -20,18 +20,9 @@ use RectorPrefix202411\Symfony\Component\Process\Exception\RuntimeException;
  */
 class InputStream implements \IteratorAggregate
 {
-    /**
-     * @var \Closure|null
-     */
-    private $onEmpty;
-    /**
-     * @var mixed[]
-     */
-    private $input = [];
-    /**
-     * @var bool
-     */
-    private $open = \true;
+    private ?\Closure $onEmpty = null;
+    private array $input = [];
+    private bool $open = \true;
     /**
      * Sets a callback that is called when the write buffer becomes empty.
      *

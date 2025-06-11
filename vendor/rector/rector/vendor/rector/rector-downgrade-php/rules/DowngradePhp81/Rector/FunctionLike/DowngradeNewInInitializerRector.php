@@ -42,14 +42,12 @@ final class DowngradeNewInInitializerRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Php72\NodeFactory\AnonymousFunctionFactory
      */
-    private $anonymousFunctionFactory;
+    private AnonymousFunctionFactory $anonymousFunctionFactory;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     public function __construct(AnonymousFunctionFactory $anonymousFunctionFactory, BetterNodeFinder $betterNodeFinder)
     {
         $this->anonymousFunctionFactory = $anonymousFunctionFactory;
@@ -156,13 +154,17 @@ CODE_SAMPLE
             } else {
                 $assign = new AssignCoalesce($param->var, $default);
             }
+            // recheck after
+            if ($isConstructor && $param->type !== null) {
+                $param->type = $this->ensureNullableType($param->type);
+            }
             $stmts[] = new Expression($assign);
             $param->default = $this->nodeFactory->createNull();
         }
         if ($functionLike->stmts === null) {
             return $functionLike;
         }
-        $functionLike->stmts = $functionLike->stmts ?? [];
+        $functionLike->stmts ??= [];
         $functionLike->stmts = \array_merge($stmts, $functionLike->stmts);
         return $functionLike;
     }
@@ -179,23 +181,17 @@ CODE_SAMPLE
             return new NullableType($type);
         }
         if ($type instanceof UnionType) {
-            if (!$this->hasNull($type)) {
-                $type->types[] = new Name('null');
+            foreach ($type->types as $typeChild) {
+                if (!$typeChild instanceof Identifier) {
+                    continue;
+                }
+                if ($typeChild->toLowerString() === 'null') {
+                    return $type;
+                }
             }
+            $type->types[] = new Identifier('null');
             return $type;
         }
         throw new ShouldNotHappenException();
-    }
-    private function hasNull(UnionType $unionType) : bool
-    {
-        foreach ($unionType->types as $type) {
-            if (!$type instanceof Identifier) {
-                continue;
-            }
-            if ($type->toLowerString() === 'null') {
-                return \true;
-            }
-        }
-        return \false;
     }
 }

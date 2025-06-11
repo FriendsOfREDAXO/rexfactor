@@ -4,10 +4,11 @@ declare (strict_types=1);
 namespace Rector\CodeQuality\Rector\ClassMethod;
 
 use PhpParser\Node;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayDimFetch;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Expression;
@@ -27,14 +28,12 @@ final class InlineArrayReturnAssignRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\CodeQuality\NodeAnalyzer\VariableDimFetchAssignResolver
      */
-    private $variableDimFetchAssignResolver;
+    private VariableDimFetchAssignResolver $variableDimFetchAssignResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(VariableDimFetchAssignResolver $variableDimFetchAssignResolver, ValueResolver $valueResolver)
     {
         $this->variableDimFetchAssignResolver = $variableDimFetchAssignResolver;
@@ -150,9 +149,7 @@ CODE_SAMPLE
      */
     private function areAssignExclusiveToDimFetch(array $stmts) : bool
     {
-        \end($stmts);
-        $lastKey = \key($stmts);
-        \reset($stmts);
+        $lastKey = \array_key_last($stmts);
         foreach ($stmts as $key => $stmt) {
             if ($key === $lastKey) {
                 // skip last item
@@ -165,6 +162,10 @@ CODE_SAMPLE
                 return \false;
             }
             $assign = $stmt->expr;
+            // skip new X instance with args to keep complex assign readable
+            if ($assign->expr instanceof New_ && !$assign->expr->isFirstClassCallable() && $assign->expr->getArgs() !== []) {
+                return \false;
+            }
             if (!$assign->var instanceof ArrayDimFetch) {
                 return \false;
             }

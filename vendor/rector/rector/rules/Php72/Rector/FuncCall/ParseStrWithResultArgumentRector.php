@@ -55,9 +55,7 @@ CODE_SAMPLE
         if ($stmtsAware->stmts === null) {
             return null;
         }
-        \end($stmtsAware->stmts);
-        $totalKeys = \key($stmtsAware->stmts);
-        \reset($stmtsAware->stmts);
+        $totalKeys = \array_key_last($stmtsAware->stmts);
         for ($key = $jumpToKey; $key < $totalKeys; ++$key) {
             if (!isset($stmtsAware->stmts[$key], $stmtsAware->stmts[$key + 1])) {
                 break;
@@ -66,10 +64,8 @@ CODE_SAMPLE
             if ($this->shouldSkip($stmt)) {
                 continue;
             }
-            /**
-             * @var Expression $stmt
-             * @var FuncCall $expr
-             */
+            /** @var Expression $stmt */
+            /** @var FuncCall $expr */
             $expr = $stmt->expr;
             $resultVariable = new Variable('result');
             $expr->args[1] = new Arg($resultVariable);

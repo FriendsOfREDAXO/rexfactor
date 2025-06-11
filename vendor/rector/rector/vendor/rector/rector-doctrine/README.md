@@ -20,7 +20,8 @@ To add a set to your config, use `->withPreparedSets` method, and pick one of co
 use Rector\Config\RectorConfig;
 
 return RectorConfig::configure()
-    ->withPreparedSets(doctrineCodeQuality: true);
+    ->withPreparedSets(doctrineCodeQuality: true)
+    ->withComposerBased(doctrine: true);
 ```
 
 If you're on PHP 7.x, you can use withSets() instead, for `doctrineCodeQuality` set, so you can define:
@@ -34,7 +35,8 @@ return RectorConfig::configure()
         DoctrineSetList::DOCTRINE_CODE_QUALITY,
     ]);
 ```
-See [documentation](https://getrector.com/documentation)
+
+See [documentation](https://getrector.com/documentation) for more.
 
 <br>
 

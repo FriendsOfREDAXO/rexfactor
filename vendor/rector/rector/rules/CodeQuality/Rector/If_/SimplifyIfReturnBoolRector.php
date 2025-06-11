@@ -28,24 +28,20 @@ final class SimplifyIfReturnBoolRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\Comment\CommentsMerger
      */
-    private $commentsMerger;
+    private CommentsMerger $commentsMerger;
     /**
      * @readonly
-     * @var \Rector\CodeQuality\NodeManipulator\ExprBoolCaster
      */
-    private $exprBoolCaster;
+    private ExprBoolCaster $exprBoolCaster;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Printer\BetterStandardPrinter
      */
-    private $betterStandardPrinter;
+    private BetterStandardPrinter $betterStandardPrinter;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(CommentsMerger $commentsMerger, ExprBoolCaster $exprBoolCaster, BetterStandardPrinter $betterStandardPrinter, ValueResolver $valueResolver)
     {
         $this->commentsMerger = $commentsMerger;

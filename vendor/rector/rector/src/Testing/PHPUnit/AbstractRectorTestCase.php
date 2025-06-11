@@ -3,10 +3,10 @@
 declare (strict_types=1);
 namespace Rector\Testing\PHPUnit;
 
-use RectorPrefix202411\Illuminate\Container\RewindableGenerator;
+use RectorPrefix202506\Illuminate\Container\RewindableGenerator;
 use Iterator;
-use RectorPrefix202411\Nette\Utils\FileSystem;
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\FileSystem;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PHPUnit\Framework\ExpectationFailedException;
 use Rector\Application\ApplicationFileProcessor;
 use Rector\Autoloading\AdditionalAutoloader;
@@ -32,22 +32,13 @@ use Rector\Util\Reflection\PrivatesAccessor;
  */
 abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLazyTestCase implements RectorTestInterface
 {
-    /**
-     * @var \Rector\NodeTypeResolver\Reflection\BetterReflection\SourceLocatorProvider\DynamicSourceLocatorProvider
-     */
-    private $dynamicSourceLocatorProvider;
-    /**
-     * @var \Rector\Application\ApplicationFileProcessor
-     */
-    private $applicationFileProcessor;
-    /**
-     * @var string|null
-     */
-    private $inputFilePath;
+    private DynamicSourceLocatorProvider $dynamicSourceLocatorProvider;
+    private ApplicationFileProcessor $applicationFileProcessor;
+    private ?string $inputFilePath = null;
     /**
      * @var array<string, true>
      */
-    private static $cacheByRuleAndConfig = [];
+    private static array $cacheByRuleAndConfig = [];
     /**
      * Restore default parameters
      */
@@ -64,7 +55,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
     }
     protected function setUp() : void
     {
-        $this->includePreloadFilesAndScoperAutoload();
+        parent::setUp();
         $configFile = $this->provideConfigFilePath();
         // cleanup all registered rectors, so you can use only the new ones
         $rectorConfig = self::getContainer();
@@ -111,11 +102,7 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
     {
         return FixtureFileFinder::yieldDirectory($directory, $suffix);
     }
-    protected function isWindows() : bool
-    {
-        return \strncasecmp(\PHP_OS, 'WIN', 3) === 0;
-    }
-    protected function doTestFile(string $fixtureFilePath) : void
+    protected function doTestFile(string $fixtureFilePath, bool $includeFixtureDirectoryAsSource = \false) : void
     {
         // prepare input file contents and expected file output contents
         $fixtureFileContents = FileSystem::read($fixtureFilePath);
@@ -135,7 +122,16 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
         }
         // write temp file
         FileSystem::write($inputFilePath, $inputFileContents, null);
-        $this->doTestFileMatchesExpectedContent($inputFilePath, $inputFileContents, $expectedFileContents, $fixtureFilePath);
+        $this->doTestFileMatchesExpectedContent($inputFilePath, $inputFileContents, $expectedFileContents, $fixtureFilePath, $includeFixtureDirectoryAsSource);
+    }
+    protected function doTestFileExpectingWarningAboutRuleApplied(string $fixtureFilePath, string $expectedRuleApplied) : void
+    {
+        \ob_start();
+        $this->doTestFile($fixtureFilePath);
+        $content = \ob_get_clean();
+        $fixtureName = \basename($fixtureFilePath);
+        $testClass = static::class;
+        $this->assertSame(\PHP_EOL . 'WARNING: On fixture file "' . $fixtureName . '" for test "' . $testClass . '"' . \PHP_EOL . 'File not changed but some Rector rules applied:' . \PHP_EOL . ' * ' . $expectedRuleApplied . \PHP_EOL, $content);
     }
     private function forgetRectorsRules() : void
     {
@@ -156,35 +152,24 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
             return $afterResolvingCallbacks;
         });
     }
-    private function includePreloadFilesAndScoperAutoload() : void
-    {
-        if (\file_exists(__DIR__ . '/../../../preload.php')) {
-            if (\file_exists(__DIR__ . '/../../../vendor')) {
-                require_once __DIR__ . '/../../../preload.php';
-                // test case in rector split package
-            } elseif (\file_exists(__DIR__ . '/../../../../../../vendor')) {
-                require_once __DIR__ . '/../../../preload-split-package.php';
-            }
-        }
-        if (\file_exists(__DIR__ . '/../../../vendor/scoper-autoload.php')) {
-            require_once __DIR__ . '/../../../vendor/scoper-autoload.php';
-        }
-    }
-    private function doTestFileMatchesExpectedContent(string $originalFilePath, string $inputFileContents, string $expectedFileContents, string $fixtureFilePath) : void
+    private function doTestFileMatchesExpectedContent(string $originalFilePath, string $inputFileContents, string $expectedFileContents, string $fixtureFilePath, bool $includeFixtureDirectoryAsSource) : void
     {
         SimpleParameterProvider::setParameter(Option::SOURCE, [$originalFilePath]);
         // the file is now changed (if any rule matches)
-        $rectorTestResult = $this->processFilePath($originalFilePath);
+        $rectorTestResult = $this->processFilePath($originalFilePath, $includeFixtureDirectoryAsSource);
         $changedContents = $rectorTestResult->getChangedContents();
         $fixtureFilename = \basename($fixtureFilePath);
         $failureMessage = \sprintf('Failed on fixture file "%s"', $fixtureFilename);
+        $numAppliedRectorClasses = \count($rectorTestResult->getAppliedRectorClasses());
         // give more context about used rules in case of set testing
-        if (\count($rectorTestResult->getAppliedRectorClasses()) > 1) {
-            $failureMessage .= \PHP_EOL . \PHP_EOL;
-            $failureMessage .= 'Applied Rector rules:' . \PHP_EOL;
+        $appliedRulesList = '';
+        if ($numAppliedRectorClasses > 0) {
             foreach ($rectorTestResult->getAppliedRectorClasses() as $appliedRectorClass) {
-                $failureMessage .= ' * ' . $appliedRectorClass . \PHP_EOL;
+                $appliedRulesList .= ' * ' . $appliedRectorClass . \PHP_EOL;
             }
+        }
+        if ($numAppliedRectorClasses > 1) {
+            $failureMessage .= \PHP_EOL . \PHP_EOL . 'Applied Rector rules:' . \PHP_EOL . $appliedRulesList;
         }
         try {
             $this->assertSame($expectedFileContents, $changedContents, $failureMessage);
@@ -193,10 +178,19 @@ abstract class AbstractRectorTestCase extends \Rector\Testing\PHPUnit\AbstractLa
             // if not exact match, check the regex version (useful for generated hashes/uuids in the code)
             $this->assertStringMatchesFormat($expectedFileContents, $changedContents, $failureMessage);
         }
+        if ($inputFileContents === $expectedFileContents && $numAppliedRectorClasses > 0) {
+            $failureMessage = \PHP_EOL . \sprintf('WARNING: On fixture file "%s" for test "%s"', $fixtureFilename, static::class) . \PHP_EOL . 'File not changed but some Rector rules applied:' . \PHP_EOL . $appliedRulesList;
+            echo $failureMessage;
+        }
     }
-    private function processFilePath(string $filePath) : RectorTestResult
+    private function processFilePath(string $filePath, bool $includeFixtureDirectoryAsSource) : RectorTestResult
     {
-        $this->dynamicSourceLocatorProvider->setFilePath($filePath);
+        if ($includeFixtureDirectoryAsSource) {
+            $fixtureDirectory = \dirname($filePath);
+            $this->dynamicSourceLocatorProvider->addDirectories([$fixtureDirectory]);
+        } else {
+            $this->dynamicSourceLocatorProvider->setFilePath($filePath);
+        }
         /** @var ConfigurationFactory $configurationFactory */
         $configurationFactory = $this->make(ConfigurationFactory::class);
         $configuration = $configurationFactory->createForTests([$filePath]);

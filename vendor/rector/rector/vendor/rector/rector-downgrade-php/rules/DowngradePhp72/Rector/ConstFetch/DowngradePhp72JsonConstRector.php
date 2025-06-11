@@ -23,14 +23,12 @@ final class DowngradePhp72JsonConstRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\DowngradePhp72\NodeManipulator\JsonConstCleaner
      */
-    private $jsonConstCleaner;
+    private JsonConstCleaner $jsonConstCleaner;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\DefineFuncCallAnalyzer
      */
-    private $defineFuncCallAnalyzer;
+    private DefineFuncCallAnalyzer $defineFuncCallAnalyzer;
     /**
      * @var string
      */
@@ -63,12 +61,12 @@ CODE_SAMPLE
     }
     /**
      * @param ConstFetch|BitwiseOr|If_ $node
-     * @return \PhpParser\Node\Expr|\PhpParser\Node\Stmt\If_|null|int
      */
-    public function refactor(Node $node)
+    public function refactor(Node $node) : ?\PhpParser\Node\Expr
     {
         if ($node instanceof If_) {
-            return $this->refactorIf($node);
+            $this->markConstantKnownInInnerStmts($node);
+            return null;
         }
         // skip as known
         if ((bool) $node->getAttribute(self::PHP72_JSON_CONSTANT_IS_KNOWN)) {
@@ -76,15 +74,14 @@ CODE_SAMPLE
         }
         return $this->jsonConstCleaner->clean($node, [JsonConstant::INVALID_UTF8_IGNORE, JsonConstant::INVALID_UTF8_SUBSTITUTE]);
     }
-    private function refactorIf(If_ $if) : ?If_
+    private function markConstantKnownInInnerStmts(If_ $if) : void
     {
         if (!$this->defineFuncCallAnalyzer->isDefinedWithConstants($if->cond, [JsonConstant::INVALID_UTF8_IGNORE, JsonConstant::INVALID_UTF8_SUBSTITUTE])) {
-            return null;
+            return;
         }
         $this->traverseNodesWithCallable($if, static function (Node $node) {
             $node->setAttribute(self::PHP72_JSON_CONSTANT_IS_KNOWN, \true);
             return null;
         });
-        return $if;
     }
 }

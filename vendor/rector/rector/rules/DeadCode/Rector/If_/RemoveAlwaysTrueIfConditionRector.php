@@ -16,9 +16,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Else_;
 use PhpParser\Node\Stmt\If_;
-use PhpParser\NodeTraverser;
-use PHPStan\Type\ArrayType;
-use PHPStan\Type\Constant\ConstantBooleanType;
+use PhpParser\NodeVisitor;
 use PHPStan\Type\IntersectionType;
 use Rector\DeadCode\NodeAnalyzer\SafeLeftTypeBooleanAndOrAnalyzer;
 use Rector\NodeAnalyzer\ExprAnalyzer;
@@ -33,19 +31,16 @@ final class RemoveAlwaysTrueIfConditionRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\ExprAnalyzer
      */
-    private $exprAnalyzer;
+    private ExprAnalyzer $exprAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\DeadCode\NodeAnalyzer\SafeLeftTypeBooleanAndOrAnalyzer
      */
-    private $safeLeftTypeBooleanAndOrAnalyzer;
+    private SafeLeftTypeBooleanAndOrAnalyzer $safeLeftTypeBooleanAndOrAnalyzer;
     public function __construct(ExprAnalyzer $exprAnalyzer, BetterNodeFinder $betterNodeFinder, SafeLeftTypeBooleanAndOrAnalyzer $safeLeftTypeBooleanAndOrAnalyzer)
     {
         $this->exprAnalyzer = $exprAnalyzer;
@@ -103,11 +98,8 @@ CODE_SAMPLE
         if ($node->elseifs !== []) {
             return null;
         }
-        $conditionStaticType = $this->getType($node->cond);
-        if (!$conditionStaticType instanceof ConstantBooleanType) {
-            return null;
-        }
-        if (!$conditionStaticType->getValue()) {
+        $conditionStaticType = $this->nodeTypeResolver->getNativeType($node->cond);
+        if (!$conditionStaticType->isTrue()->yes()) {
             return null;
         }
         if ($this->shouldSkipExpr($node->cond)) {
@@ -121,7 +113,7 @@ CODE_SAMPLE
             return null;
         }
         if ($node->stmts === []) {
-            return NodeTraverser::REMOVE_NODE;
+            return NodeVisitor::REMOVE_NODE;
         }
         return $node->stmts;
     }
@@ -133,10 +125,10 @@ CODE_SAMPLE
             if ($this->exprAnalyzer->isNonTypedFromParam($variable)) {
                 return \true;
             }
-            $type = $this->getType($variable);
+            $type = $this->nodeTypeResolver->getNativeType($variable);
             if ($type instanceof IntersectionType) {
                 foreach ($type->getTypes() as $subType) {
-                    if ($subType instanceof ArrayType) {
+                    if ($subType->isArray()->yes()) {
                         return \true;
                     }
                 }
@@ -155,10 +147,7 @@ CODE_SAMPLE
         }
         $booleanAnd = $if->cond;
         $leftType = $this->getType($booleanAnd->left);
-        if (!$leftType instanceof ConstantBooleanType) {
-            return null;
-        }
-        if (!$leftType->getValue()) {
+        if (!$leftType->isTrue()->yes()) {
             return null;
         }
         if (!$this->safeLeftTypeBooleanAndOrAnalyzer->isSafe($booleanAnd)) {

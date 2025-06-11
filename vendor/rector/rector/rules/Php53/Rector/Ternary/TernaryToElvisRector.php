@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace Rector\Php53\Rector\Ternary;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Ternary;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Rector\AbstractRector;
@@ -18,7 +19,7 @@ final class TernaryToElvisRector extends AbstractRector implements MinPhpVersion
 {
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Use ?: instead of ?, where useful', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Use `?:` instead of `?`, where useful', [new CodeSample(<<<'CODE_SAMPLE'
 function elvis()
 {
     $value = $a ? $a : false;
@@ -48,11 +49,35 @@ CODE_SAMPLE
             return null;
         }
         $node->setAttribute(AttributeKey::ORIGINAL_NODE, null);
+        /** @var Expr $nodeIf */
+        $nodeIf = $node->if;
+        if ($node->else instanceof Ternary && $this->isParenthesized($nodeIf, $node->else)) {
+            $node->else->setAttribute(AttributeKey::WRAPPED_IN_PARENTHESES, \true);
+        }
         $node->if = null;
         return $node;
     }
     public function provideMinPhpVersion() : int
     {
         return PhpVersionFeature::ELVIS_OPERATOR;
+    }
+    private function isParenthesized(Expr $ifExpr, Expr $elseExpr) : bool
+    {
+        $tokens = $this->file->getOldTokens();
+        $ifExprTokenEnd = $ifExpr->getEndTokenPos();
+        $elseExprTokenStart = $elseExpr->getStartTokenPos();
+        if ($ifExprTokenEnd < 0 || $elseExprTokenStart < 0 || $elseExprTokenStart <= $ifExprTokenEnd) {
+            return \false;
+        }
+        while (isset($tokens[$ifExprTokenEnd])) {
+            ++$ifExprTokenEnd;
+            if ($elseExprTokenStart === $ifExprTokenEnd) {
+                break;
+            }
+            if ((string) $tokens[$ifExprTokenEnd] === '(') {
+                return \true;
+            }
+        }
+        return \false;
     }
 }

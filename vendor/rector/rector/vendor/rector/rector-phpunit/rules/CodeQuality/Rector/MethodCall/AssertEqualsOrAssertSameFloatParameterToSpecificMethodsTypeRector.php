@@ -8,7 +8,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Name;
-use PhpParser\Node\Scalar\DNumber;
+use PhpParser\Node\Scalar\Float_;
 use Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer;
 use Rector\PHPUnit\NodeFactory\AssertCallFactory;
 use Rector\Rector\AbstractRector;
@@ -23,14 +23,12 @@ final class AssertEqualsOrAssertSameFloatParameterToSpecificMethodsTypeRector ex
 {
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeFactory\AssertCallFactory
      */
-    private $assertCallFactory;
+    private AssertCallFactory $assertCallFactory;
     /**
      * @readonly
-     * @var \Rector\PHPUnit\NodeAnalyzer\TestsNodeAnalyzer
      */
-    private $testsNodeAnalyzer;
+    private TestsNodeAnalyzer $testsNodeAnalyzer;
     public function __construct(AssertCallFactory $assertCallFactory, TestsNodeAnalyzer $testsNodeAnalyzer)
     {
         $this->assertCallFactory = $assertCallFactory;
@@ -42,16 +40,12 @@ final class AssertEqualsOrAssertSameFloatParameterToSpecificMethodsTypeRector ex
             // code before
             <<<'CODE_SAMPLE'
 $this->assertSame(10.20, $value);
-$this->assertEquals(10.20, $value);
 $this->assertEquals(10.200, $value);
-$this->assertSame(10, $value);
 CODE_SAMPLE
 ,
             <<<'CODE_SAMPLE'
 $this->assertEqualsWithDelta(10.20, $value, PHP_FLOAT_EPSILON);
-$this->assertEqualsWithDelta(10.20, $value, PHP_FLOAT_EPSILON);
 $this->assertEqualsWithDelta(10.200, $value, PHP_FLOAT_EPSILON);
-$this->assertSame(10, $value);
 CODE_SAMPLE
 
         )]);
@@ -76,13 +70,17 @@ CODE_SAMPLE
         }
         $args = $node->getArgs();
         $firstValue = $args[0]->value;
-        if (!$firstValue instanceof DNumber) {
+        if (!$firstValue instanceof Float_) {
             return null;
         }
+        $customMessageArg = $args[2] ?? null;
         $newMethodCall = $this->assertCallFactory->createCallWithName($node, 'assertEqualsWithDelta');
         $newMethodCall->args[0] = $args[0];
         $newMethodCall->args[1] = $args[1];
         $newMethodCall->args[2] = new Arg(new ConstFetch(new Name('PHP_FLOAT_EPSILON')));
+        if ($customMessageArg instanceof Arg) {
+            $newMethodCall->args[] = $customMessageArg;
+        }
         return $newMethodCall;
     }
     public function provideMinPhpVersion() : int

@@ -64,10 +64,6 @@ final class AttributeKey
     /**
      * @var string
      */
-    public const IS_UNREACHABLE = 'isUnreachable';
-    /**
-     * @var string
-     */
     public const PHP_DOC_INFO = 'php_doc_info';
     /**
      * @var string
@@ -77,10 +73,6 @@ final class AttributeKey
      * @var string
      */
     public const DO_NOT_CHANGE = 'do_not_change';
-    /**
-     * @var string
-     */
-    public const FUNC_ARGS_TRAILING_COMMA = 'trailing_comma';
     /**
      * Helps with infinite loop detection
      * @var string
@@ -213,6 +205,10 @@ final class AttributeKey
     /**
      * @var string
      */
+    public const IS_RIGHT_AND = 'is_right_and';
+    /**
+     * @var string
+     */
     public const IS_CLASS_EXTENDS = 'is_class_extends';
     /**
      * @var string
@@ -234,4 +230,8 @@ final class AttributeKey
      * @var string
      */
     public const ATTRIBUTE_COMMENT = 'attribute_comment';
+    /**
+     * @var string
+     */
+    public const IS_FIRST_LEVEL_STATEMENT = 'first_level_stmt';
 }

@@ -12,22 +12,20 @@ final class PhpVersionedFilter
 {
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     /**
      * @readonly
-     * @var \Rector\Php\PolyfillPackagesProvider
      */
-    private $polyfillPackagesProvider;
+    private PolyfillPackagesProvider $polyfillPackagesProvider;
     public function __construct(PhpVersionProvider $phpVersionProvider, PolyfillPackagesProvider $polyfillPackagesProvider)
     {
         $this->phpVersionProvider = $phpVersionProvider;
         $this->polyfillPackagesProvider = $polyfillPackagesProvider;
     }
     /**
-     * @param array<RectorInterface> $rectors
-     * @return array<RectorInterface>
+     * @param list<RectorInterface> $rectors
+     * @return list<RectorInterface>
      */
     public function filter(array $rectors) : array
     {

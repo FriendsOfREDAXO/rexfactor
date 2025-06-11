@@ -21,24 +21,20 @@ final class PromotedPropertyCandidateResolver
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Comparing\NodeComparator
      */
-    private $nodeComparator;
+    private NodeComparator $nodeComparator;
     /**
      * @readonly
-     * @var \Rector\NodeAnalyzer\PropertyFetchAnalyzer
      */
-    private $propertyFetchAnalyzer;
+    private PropertyFetchAnalyzer $propertyFetchAnalyzer;
     public function __construct(NodeNameResolver $nodeNameResolver, BetterNodeFinder $betterNodeFinder, NodeComparator $nodeComparator, PropertyFetchAnalyzer $propertyFetchAnalyzer)
     {
         $this->nodeNameResolver = $nodeNameResolver;
@@ -154,7 +150,7 @@ final class PromotedPropertyCandidateResolver
     private function shouldSkipParam(Param $matchedParam, Variable $assignedVariable, array $firstParamAsVariable) : bool
     {
         // already promoted
-        if ($matchedParam->flags !== 0) {
+        if ($matchedParam->isPromoted()) {
             return \true;
         }
         return $this->isParamUsedBeforeAssign($assignedVariable, $firstParamAsVariable);

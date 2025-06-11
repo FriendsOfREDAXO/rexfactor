@@ -8,13 +8,13 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Messenger;
+namespace RectorPrefix202506\Symfony\Component\Console\Messenger;
 
-use RectorPrefix202411\Symfony\Component\Console\Application;
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Exception\RunCommandFailedException;
-use RectorPrefix202411\Symfony\Component\Console\Input\StringInput;
-use RectorPrefix202411\Symfony\Component\Console\Output\BufferedOutput;
+use RectorPrefix202506\Symfony\Component\Console\Application;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Exception\RunCommandFailedException;
+use RectorPrefix202506\Symfony\Component\Console\Input\StringInput;
+use RectorPrefix202506\Symfony\Component\Console\Output\BufferedOutput;
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  */
@@ -22,9 +22,8 @@ final class RunCommandMessageHandler
 {
     /**
      * @readonly
-     * @var \Symfony\Component\Console\Application
      */
-    private $application;
+    private Application $application;
     public function __construct(Application $application)
     {
         $this->application = $application;

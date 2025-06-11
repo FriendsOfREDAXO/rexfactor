@@ -1,18 +1,15 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202411\OndraM\CiDetector\Ci;
+namespace RectorPrefix202506\OndraM\CiDetector\Ci;
 
-use RectorPrefix202411\OndraM\CiDetector\Env;
+use RectorPrefix202506\OndraM\CiDetector\Env;
 /**
  * Unified adapter to retrieve environment variables from current continuous integration server
  */
 abstract class AbstractCi implements CiInterface
 {
-    /**
-     * @var \OndraM\CiDetector\Env
-     */
-    protected $env;
+    protected Env $env;
     public function __construct(Env $env)
     {
         $this->env = $env;

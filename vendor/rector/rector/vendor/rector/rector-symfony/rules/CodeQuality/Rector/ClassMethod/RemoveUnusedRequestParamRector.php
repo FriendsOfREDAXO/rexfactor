@@ -7,13 +7,13 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
-use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\ObjectType;
 use Rector\DeadCode\NodeAnalyzer\IsClassMethodUsedAnalyzer;
 use Rector\FamilyTree\NodeAnalyzer\ClassChildAnalyzer;
 use Rector\PhpParser\Node\BetterNodeFinder;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Rector\Symfony\TypeAnalyzer\ControllerAnalyzer;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -21,33 +21,28 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Symfony\Tests\CodeQuality\Rector\ClassMethod\RemoveUnusedRequestParamRector\RemoveUnusedRequestParamRectorTest
  */
-final class RemoveUnusedRequestParamRector extends AbstractScopeAwareRector
+final class RemoveUnusedRequestParamRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\TypeAnalyzer\ControllerAnalyzer
      */
-    private $controllerAnalyzer;
+    private ControllerAnalyzer $controllerAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\FamilyTree\NodeAnalyzer\ClassChildAnalyzer
      */
-    private $classChildAnalyzer;
+    private ClassChildAnalyzer $classChildAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\DeadCode\NodeAnalyzer\IsClassMethodUsedAnalyzer
      */
-    private $isClassMethodUsedAnalyzer;
+    private IsClassMethodUsedAnalyzer $isClassMethodUsedAnalyzer;
     public function __construct(ControllerAnalyzer $controllerAnalyzer, ReflectionResolver $reflectionResolver, ClassChildAnalyzer $classChildAnalyzer, BetterNodeFinder $betterNodeFinder, IsClassMethodUsedAnalyzer $isClassMethodUsedAnalyzer)
     {
         $this->controllerAnalyzer = $controllerAnalyzer;
@@ -94,7 +89,7 @@ CODE_SAMPLE
     /**
      * @param Class_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
         if (!$this->controllerAnalyzer->isInsideController($node)) {
             return null;
@@ -129,6 +124,7 @@ CODE_SAMPLE
                 if ($requestVariable instanceof Variable) {
                     continue 2;
                 }
+                $scope = ScopeFetcher::fetch($node);
                 if ($this->isClassMethodUsedAnalyzer->isClassMethodUsed($node, $classMethod, $scope)) {
                     continue 2;
                 }

@@ -3,12 +3,12 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\NodeAnalyzer;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\GroupUse;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\Node\Stmt\UseUse;
+use PhpParser\Node\UseItem;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\Naming\Naming\UseImportsResolver;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -18,14 +18,12 @@ final class UseImportNameMatcher
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\UseImportsResolver
      */
-    private $useImportsResolver;
+    private UseImportsResolver $useImportsResolver;
     /**
      * @var string
      *
@@ -49,6 +47,7 @@ final class UseImportNameMatcher
     }
     /**
      * @param array<Use_|GroupUse> $uses
+     * @return non-empty-string|null
      */
     public function matchNameWithUses(string $tag, array $uses) : ?string
     {
@@ -63,11 +62,14 @@ final class UseImportNameMatcher
         }
         return null;
     }
-    private function resolveName(string $prefix, string $tag, UseUse $useUse) : string
+    /**
+     * @return non-empty-string
+     */
+    private function resolveName(string $prefix, string $tag, UseItem $useItem) : string
     {
         // useuse can be renamed on the fly, so just in case, use the original one
-        $originalUseUseNode = $useUse->getAttribute(AttributeKey::ORIGINAL_NODE);
-        if (!$originalUseUseNode instanceof UseUse) {
+        $originalUseUseNode = $useItem->getAttribute(AttributeKey::ORIGINAL_NODE);
+        if (!$originalUseUseNode instanceof UseItem) {
             throw new ShouldNotHappenException();
         }
         if (!$originalUseUseNode->alias instanceof Identifier) {
@@ -84,11 +86,11 @@ final class UseImportNameMatcher
         }
         return $prefix . $originalUseUseNode->name . '\\' . $unaliasedShortClass;
     }
-    private function isUseMatchingName(string $tag, UseUse $useUse) : bool
+    private function isUseMatchingName(string $tag, UseItem $useItem) : bool
     {
         // useuse can be renamed on the fly, so just in case, use the original one
-        $originalUseUseNode = $useUse->getAttribute(AttributeKey::ORIGINAL_NODE);
-        if (!$originalUseUseNode instanceof UseUse) {
+        $originalUseUseNode = $useItem->getAttribute(AttributeKey::ORIGINAL_NODE);
+        if (!$originalUseUseNode instanceof UseItem) {
             return \false;
         }
         $shortName = $originalUseUseNode->alias instanceof Identifier ? $originalUseUseNode->alias->name : $originalUseUseNode->name->getLast();

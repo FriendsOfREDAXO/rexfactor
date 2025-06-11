@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Symfony\Helper;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
@@ -18,14 +18,12 @@ final class TemplateGuesser
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\BundleClassResolver
      */
-    private $bundleClassResolver;
+    private BundleClassResolver $bundleClassResolver;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @var string
      * @see https://regex101.com/r/yZAUAC/1

@@ -13,20 +13,11 @@ abstract class AbstractValuesAwareNode implements PhpDocTagValueNode
     /**
      * @var ArrayItemNode[]
      */
-    public $values = [];
-    /**
-     * @var string|null
-     */
-    protected $originalContent;
-    /**
-     * @var string|null
-     */
-    protected $silentKey;
+    public array $values = [];
+    protected ?string $originalContent = null;
+    protected ?string $silentKey = null;
     use NodeAttributes;
-    /**
-     * @var bool
-     */
-    protected $hasChanged = \false;
+    protected bool $hasChanged = \false;
     /**
      * @param ArrayItemNode[] $values Must be public so node traverser can go through them
      */
@@ -97,15 +88,17 @@ abstract class AbstractValuesAwareNode implements PhpDocTagValueNode
     {
         $this->hasChanged = \true;
     }
+    public function getOriginalContent() : ?string
+    {
+        return $this->originalContent;
+    }
     /**
      * @param mixed[] $values
      */
     protected function printValuesContent(array $values) : string
     {
         $itemContents = '';
-        \end($values);
-        $lastItemKey = \key($values);
-        \reset($values);
+        $lastItemKey = \array_key_last($values);
         foreach ($values as $key => $value) {
             if (\is_int($key)) {
                 $itemContents .= $this->stringifyValue($value);

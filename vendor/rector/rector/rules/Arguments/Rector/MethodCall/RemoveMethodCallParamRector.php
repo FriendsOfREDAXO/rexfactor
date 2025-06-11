@@ -11,7 +11,7 @@ use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Arguments\Rector\MethodCall\RemoveMethodCallParamRector\RemoveMethodCallParamRectorTest
  */
@@ -20,7 +20,7 @@ final class RemoveMethodCallParamRector extends AbstractRector implements Config
     /**
      * @var RemoveMethodCallParam[]
      */
-    private $removeMethodCallParams = [];
+    private array $removeMethodCallParams = [];
     public function getRuleDefinition() : RuleDefinition
     {
         return new RuleDefinition('Remove parameter of method call', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'

@@ -8,7 +8,7 @@ use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\Cast\Unset_;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Stmt\Expression;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use Rector\Rector\AbstractRector;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
@@ -25,7 +25,7 @@ final class UnsetCastRector extends AbstractRector implements MinPhpVersionInter
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Removes (unset) cast', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Remove `(unset)` cast', [new CodeSample(<<<'CODE_SAMPLE'
 $different = (unset) $value;
 
 $value = (unset) $value;
@@ -57,7 +57,7 @@ CODE_SAMPLE
             if (!$node->expr instanceof Unset_) {
                 return null;
             }
-            return NodeTraverser::REMOVE_NODE;
+            return NodeVisitor::REMOVE_NODE;
         }
         return $this->nodeFactory->createNull();
     }

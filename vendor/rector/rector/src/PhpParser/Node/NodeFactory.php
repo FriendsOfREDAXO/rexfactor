@@ -8,11 +8,12 @@ use PhpParser\Builder\Param as ParamBuilder;
 use PhpParser\Builder\Property as PropertyBuilder;
 use PhpParser\BuilderFactory;
 use PhpParser\BuilderHelpers;
+use PhpParser\Modifiers;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
 use PhpParser\Node\Expr\BinaryOp\BooleanOr;
@@ -34,7 +35,6 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Param;
 use PhpParser\Node\Scalar;
 use PhpParser\Node\Scalar\String_;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use PHPStan\Type\Type;
@@ -44,10 +44,12 @@ use Rector\Exception\NotImplementedYetException;
 use Rector\Exception\ShouldNotHappenException;
 use Rector\NodeDecorator\PropertyTypeDecorator;
 use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\Php\PhpVersionProvider;
 use Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\PostRector\ValueObject\PropertyMetadata;
 use Rector\StaticTypeMapper\StaticTypeMapper;
+use Rector\ValueObject\PhpVersionFeature;
 /**
  * @see \Rector\Tests\PhpParser\Node\NodeFactoryTest
  */
@@ -55,40 +57,40 @@ final class NodeFactory
 {
     /**
      * @readonly
-     * @var \PhpParser\BuilderFactory
      */
-    private $builderFactory;
+    private BuilderFactory $builderFactory;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\NodeDecorator\PropertyTypeDecorator
      */
-    private $propertyTypeDecorator;
+    private PropertyTypeDecorator $propertyTypeDecorator;
     /**
      * @readonly
-     * @var \Rector\PhpDocParser\NodeTraverser\SimpleCallableNodeTraverser
      */
-    private $simpleCallableNodeTraverser;
+    private SimpleCallableNodeTraverser $simpleCallableNodeTraverser;
+    /**
+     * @readonly
+     */
+    private PhpVersionProvider $phpVersionProvider;
     /**
      * @var string
      */
     private const THIS = 'this';
-    public function __construct(BuilderFactory $builderFactory, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, PropertyTypeDecorator $propertyTypeDecorator, SimpleCallableNodeTraverser $simpleCallableNodeTraverser)
+    public function __construct(BuilderFactory $builderFactory, PhpDocInfoFactory $phpDocInfoFactory, StaticTypeMapper $staticTypeMapper, PropertyTypeDecorator $propertyTypeDecorator, SimpleCallableNodeTraverser $simpleCallableNodeTraverser, PhpVersionProvider $phpVersionProvider)
     {
         $this->builderFactory = $builderFactory;
         $this->phpDocInfoFactory = $phpDocInfoFactory;
         $this->staticTypeMapper = $staticTypeMapper;
         $this->propertyTypeDecorator = $propertyTypeDecorator;
         $this->simpleCallableNodeTraverser = $simpleCallableNodeTraverser;
+        $this->phpVersionProvider = $phpVersionProvider;
     }
     /**
      * @param string|ObjectReference::* $className
@@ -131,6 +133,11 @@ final class NodeFactory
      */
     public function createArgs(array $values) : array
     {
+        foreach ($values as $key => $value) {
+            if ($value instanceof ArrayItem) {
+                $values[$key] = $value->value;
+            }
+        }
         return $this->builderFactory->args($values);
     }
     /**
@@ -274,7 +281,11 @@ final class NodeFactory
         }
         $param = $paramBuilder->getNode();
         $propertyFlags = $propertyMetadata->getFlags();
-        $param->flags = $propertyFlags !== 0 ? $propertyFlags : Class_::MODIFIER_PRIVATE;
+        $param->flags = $propertyFlags !== 0 ? $propertyFlags : Modifiers::PRIVATE;
+        // make readonly by default
+        if ($this->phpVersionProvider->isAtLeastPhpVersion(PhpVersionFeature::READONLY_PROPERTY)) {
+            $param->flags |= Modifiers::READONLY;
+        }
         return $param;
     }
     public function createFalse() : ConstFetch

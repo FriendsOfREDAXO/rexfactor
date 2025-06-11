@@ -4,10 +4,11 @@ declare (strict_types=1);
 namespace Rector\Naming\Rector\Class_;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassLike;
-use PhpParser\Node\Stmt\Interface_;
 use PhpParser\Node\Stmt\Property;
+use PHPStan\Type\ObjectType;
+use Rector\Enum\ClassName;
 use Rector\Naming\ExpectedNameResolver\MatchPropertyTypeExpectedNameResolver;
 use Rector\Naming\PropertyRenamer\MatchTypePropertyRenamer;
 use Rector\Naming\PropertyRenamer\PropertyPromotionRenamer;
@@ -23,28 +24,21 @@ final class RenamePropertyToMatchTypeRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Naming\PropertyRenamer\MatchTypePropertyRenamer
      */
-    private $matchTypePropertyRenamer;
+    private MatchTypePropertyRenamer $matchTypePropertyRenamer;
     /**
      * @readonly
-     * @var \Rector\Naming\ValueObjectFactory\PropertyRenameFactory
      */
-    private $propertyRenameFactory;
+    private PropertyRenameFactory $propertyRenameFactory;
     /**
      * @readonly
-     * @var \Rector\Naming\ExpectedNameResolver\MatchPropertyTypeExpectedNameResolver
      */
-    private $matchPropertyTypeExpectedNameResolver;
+    private MatchPropertyTypeExpectedNameResolver $matchPropertyTypeExpectedNameResolver;
     /**
      * @readonly
-     * @var \Rector\Naming\PropertyRenamer\PropertyPromotionRenamer
      */
-    private $propertyPromotionRenamer;
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private PropertyPromotionRenamer $propertyPromotionRenamer;
+    private bool $hasChanged = \false;
     public function __construct(MatchTypePropertyRenamer $matchTypePropertyRenamer, PropertyRenameFactory $propertyRenameFactory, MatchPropertyTypeExpectedNameResolver $matchPropertyTypeExpectedNameResolver, PropertyPromotionRenamer $propertyPromotionRenamer)
     {
         $this->matchTypePropertyRenamer = $matchTypePropertyRenamer;
@@ -89,10 +83,10 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [Class_::class, Interface_::class];
+        return [Class_::class];
     }
     /**
-     * @param Class_|Interface_ $node
+     * @param Class_ $node
      */
     public function refactor(Node $node) : ?Node
     {
@@ -107,15 +101,25 @@ CODE_SAMPLE
         }
         return null;
     }
-    private function refactorClassProperties(ClassLike $classLike) : void
+    private function refactorClassProperties(Class_ $class) : void
     {
-        foreach ($classLike->getProperties() as $property) {
-            $expectedPropertyName = $this->matchPropertyTypeExpectedNameResolver->resolve($property, $classLike);
+        foreach ($class->getProperties() as $property) {
+            // skip public properties, as they can be used in external code
+            if ($property->isPublic()) {
+                continue;
+            }
+            if (!$class->isFinal() && $property->isProtected()) {
+                continue;
+            }
+            $expectedPropertyName = $this->matchPropertyTypeExpectedNameResolver->resolve($property, $class);
             if ($expectedPropertyName === null) {
                 continue;
             }
-            $propertyRename = $this->propertyRenameFactory->createFromExpectedName($classLike, $property, $expectedPropertyName);
+            $propertyRename = $this->propertyRenameFactory->createFromExpectedName($class, $property, $expectedPropertyName);
             if (!$propertyRename instanceof PropertyRename) {
+                continue;
+            }
+            if ($this->skipDateTimeOrMockObjectPropertyType($property)) {
                 continue;
             }
             $renameProperty = $this->matchTypePropertyRenamer->rename($propertyRename);
@@ -124,5 +128,19 @@ CODE_SAMPLE
             }
             $this->hasChanged = \true;
         }
+    }
+    /**
+     * Such properties can have "xMock" names that are not compatible with "MockObject" suffix
+     * They should be kept and handled by another naming rule that deals with mocks
+     */
+    private function skipDateTimeOrMockObjectPropertyType(Property $property) : bool
+    {
+        if (!$property->type instanceof Name) {
+            return \false;
+        }
+        if ($this->isObjectType($property->type, new ObjectType(ClassName::MOCK_OBJECT))) {
+            return \true;
+        }
+        return $this->isObjectType($property->type, new ObjectType(ClassName::DATE_TIME_INTERFACE));
     }
 }

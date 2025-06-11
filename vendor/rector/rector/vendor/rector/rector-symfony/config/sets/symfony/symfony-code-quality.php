@@ -1,12 +1,16 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202411;
+namespace RectorPrefix202506;
 
 use Rector\Config\RectorConfig;
+use Rector\Symfony\CodeQuality\Rector\AttributeGroup\SingleConditionSecurityAttributeToIsGrantedRector;
+use Rector\Symfony\CodeQuality\Rector\BinaryOp\RequestIsMainRector;
 use Rector\Symfony\CodeQuality\Rector\BinaryOp\ResponseStatusCodeRector;
 use Rector\Symfony\CodeQuality\Rector\Class_\EventListenerToEventSubscriberRector;
+use Rector\Symfony\CodeQuality\Rector\Class_\InlineClassRoutePrefixRector;
 use Rector\Symfony\CodeQuality\Rector\Class_\LoadValidatorMetadataToAnnotationRector;
+use Rector\Symfony\CodeQuality\Rector\Class_\SplitAndSecurityAttributeToIsGrantedRector;
 use Rector\Symfony\CodeQuality\Rector\ClassMethod\ActionSuffixRemoverRector;
 use Rector\Symfony\CodeQuality\Rector\ClassMethod\ParamTypeFromRouteRequiredRegexRector;
 use Rector\Symfony\CodeQuality\Rector\ClassMethod\RemoveUnusedRequestParamRector;
@@ -26,7 +30,14 @@ return static function (RectorConfig $rectorConfig) : void {
         ParamTypeFromRouteRequiredRegexRector::class,
         ActionSuffixRemoverRector::class,
         LoadValidatorMetadataToAnnotationRector::class,
+        // request method
+        RequestIsMainRector::class,
         // tests
         AssertSameResponseCodeWithDebugContentsRector::class,
+        // routing
+        InlineClassRoutePrefixRector::class,
+        // narrow attributes
+        SingleConditionSecurityAttributeToIsGrantedRector::class,
+        SplitAndSecurityAttributeToIsGrantedRector::class,
     ]);
 };

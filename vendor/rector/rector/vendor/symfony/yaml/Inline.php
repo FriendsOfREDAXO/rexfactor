@@ -8,11 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Yaml;
+namespace RectorPrefix202506\Symfony\Component\Yaml;
 
-use RectorPrefix202411\Symfony\Component\Yaml\Exception\DumpException;
-use RectorPrefix202411\Symfony\Component\Yaml\Exception\ParseException;
-use RectorPrefix202411\Symfony\Component\Yaml\Tag\TaggedValue;
+use RectorPrefix202506\Symfony\Component\Yaml\Exception\DumpException;
+use RectorPrefix202506\Symfony\Component\Yaml\Exception\ParseException;
+use RectorPrefix202506\Symfony\Component\Yaml\Tag\TaggedValue;
 /**
  * Inline implements a YAML parser/dumper for the YAML inline syntax.
  *
@@ -23,30 +23,12 @@ use RectorPrefix202411\Symfony\Component\Yaml\Tag\TaggedValue;
 class Inline
 {
     public const REGEX_QUOTED_STRING = '(?:"([^"\\\\]*+(?:\\\\.[^"\\\\]*+)*+)"|\'([^\']*+(?:\'\'[^\']*+)*+)\')';
-    /**
-     * @var int
-     */
-    public static $parsedLineNumber = -1;
-    /**
-     * @var string|null
-     */
-    public static $parsedFilename;
-    /**
-     * @var bool
-     */
-    private static $exceptionOnInvalidType = \false;
-    /**
-     * @var bool
-     */
-    private static $objectSupport = \false;
-    /**
-     * @var bool
-     */
-    private static $objectForMap = \false;
-    /**
-     * @var bool
-     */
-    private static $constantSupport = \false;
+    public static int $parsedLineNumber = -1;
+    public static ?string $parsedFilename = null;
+    private static bool $exceptionOnInvalidType = \false;
+    private static bool $objectSupport = \false;
+    private static bool $objectForMap = \false;
+    private static bool $constantSupport = \false;
     public static function initialize(int $flags, ?int $parsedLineNumber = null, ?string $parsedFilename = null) : void
     {
         self::$exceptionOnInvalidType = (bool) (Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE & $flags);
@@ -105,7 +87,7 @@ class Inline
      *
      * @throws DumpException When trying to dump PHP resource
      */
-    public static function dump($value, int $flags = 0) : string
+    public static function dump($value, int $flags = 0, bool $rootLevel = \false) : string
     {
         switch (\true) {
             case \is_resource($value):
@@ -143,7 +125,7 @@ class Inline
             case \is_array($value):
                 return self::dumpArray($value, $flags);
             case null === $value:
-                return self::dumpNull($flags);
+                return self::dumpNull($flags, $rootLevel);
             case \true === $value:
                 return 'true';
             case \false === $value:
@@ -177,6 +159,7 @@ class Inline
             case self::isBinaryString($value):
                 return '!!binary ' . \base64_encode($value);
             case Escaper::requiresDoubleQuoting($value):
+            case Yaml::DUMP_FORCE_DOUBLE_QUOTES_ON_VALUES & $flags:
                 return Escaper::escapeWithDoubleQuotes($value);
             case Escaper::requiresSingleQuoting($value):
                 $singleQuoted = Escaper::escapeWithSingleQuotes($value);
@@ -238,18 +221,22 @@ class Inline
     private static function dumpHashArray($value, int $flags) : string
     {
         $output = [];
+        $keyFlags = $flags & ~Yaml::DUMP_FORCE_DOUBLE_QUOTES_ON_VALUES;
         foreach ($value as $key => $val) {
             if (\is_int($key) && Yaml::DUMP_NUMERIC_KEY_AS_STRING & $flags) {
                 $key = (string) $key;
             }
-            $output[] = \sprintf('%s: %s', self::dump($key, $flags), self::dump($val, $flags));
+            $output[] = \sprintf('%s: %s', self::dump($key, $keyFlags), self::dump($val, $flags));
         }
         return \sprintf('{ %s }', \implode(', ', $output));
     }
-    private static function dumpNull(int $flags) : string
+    private static function dumpNull(int $flags, bool $rootLevel = \false) : string
     {
         if (Yaml::DUMP_NULL_AS_TILDE & $flags) {
             return '~';
+        }
+        if (Yaml::DUMP_NULL_AS_EMPTY & $flags && !$rootLevel) {
+            return '';
         }
         return 'null';
     }
@@ -528,7 +515,7 @@ class Inline
                 $value = \substr($scalar, 1);
             }
             // an unquoted *
-            if (\false === $value || '' === $value) {
+            if ('' === $value) {
                 throw new ParseException('A reference must contain at least one character.', self::$parsedLineNumber + 1, $value, self::$parsedFilename);
             }
             if (!\array_key_exists($value, $references)) {
@@ -549,7 +536,7 @@ class Inline
             case '!' === $scalar[0]:
                 switch (\true) {
                     case \strncmp($scalar, '!!str ', \strlen('!!str ')) === 0:
-                        $s = (string) \substr($scalar, 6);
+                        $s = \substr($scalar, 6);
                         if (\in_array($s[0] ?? '', ['"', "'"], \true)) {
                             $isQuotedString = \true;
                             $s = self::parseQuotedScalar($s);

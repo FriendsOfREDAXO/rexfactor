@@ -5,21 +5,21 @@
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 declare (strict_types=1);
-namespace RectorPrefix202411\Nette\Utils;
+namespace RectorPrefix202506\Nette\Utils;
 
-use RectorPrefix202411\Nette;
+use RectorPrefix202506\Nette;
 /**
  * PHP reflection helpers.
  */
 final class Reflection
 {
     use Nette\StaticClass;
-    /** @deprecated use Nette\Utils\Validator::isBuiltinType() */
+    /** @deprecated use Nette\Utils\Validators::isBuiltinType() */
     public static function isBuiltinType(string $type) : bool
     {
         return Validators::isBuiltinType($type);
     }
-    /** @deprecated use Nette\Utils\Validator::isClassKeyword() */
+    /** @deprecated use Nette\Utils\Validators::isClassKeyword() */
     public static function isClassKeyword(string $name) : bool
     {
         return Validators::isClassKeyword($name);

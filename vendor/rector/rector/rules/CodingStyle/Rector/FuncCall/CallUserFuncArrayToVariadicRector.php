@@ -24,14 +24,12 @@ final class CallUserFuncArrayToVariadicRector extends AbstractRector implements 
 {
     /**
      * @readonly
-     * @var \Rector\CodingStyle\NodeFactory\ArrayCallableToMethodCallFactory
      */
-    private $arrayCallableToMethodCallFactory;
+    private ArrayCallableToMethodCallFactory $arrayCallableToMethodCallFactory;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(ArrayCallableToMethodCallFactory $arrayCallableToMethodCallFactory, ValueResolver $valueResolver)
     {
         $this->arrayCallableToMethodCallFactory = $arrayCallableToMethodCallFactory;
@@ -39,7 +37,7 @@ final class CallUserFuncArrayToVariadicRector extends AbstractRector implements 
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Replace call_user_func_array() with variadic', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Replace `call_user_func_array()` with variadic', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()

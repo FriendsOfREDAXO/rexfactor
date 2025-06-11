@@ -4,18 +4,19 @@ declare (strict_types=1);
 namespace PhpParser\Node\Stmt;
 
 use PhpParser\Node;
+use PhpParser\Node\PropertyItem;
 abstract class ClassLike extends Node\Stmt
 {
     /** @var Node\Identifier|null Name */
-    public $name;
+    public ?Node\Identifier $name;
     /** @var Node\Stmt[] Statements */
-    public $stmts;
+    public array $stmts;
     /** @var Node\AttributeGroup[] PHP attribute groups */
-    public $attrGroups;
+    public array $attrGroups;
     /** @var Node\Name|null Namespaced name (if using NameResolver) */
-    public $namespacedName;
+    public ?Node\Name $namespacedName;
     /**
-     * @return TraitUse[]
+     * @return list<TraitUse>
      */
     public function getTraitUses() : array
     {
@@ -28,7 +29,7 @@ abstract class ClassLike extends Node\Stmt
         return $traitUses;
     }
     /**
-     * @return ClassConst[]
+     * @return list<ClassConst>
      */
     public function getConstants() : array
     {
@@ -41,7 +42,7 @@ abstract class ClassLike extends Node\Stmt
         return $constants;
     }
     /**
-     * @return Property[]
+     * @return list<Property>
      */
     public function getProperties() : array
     {
@@ -60,12 +61,12 @@ abstract class ClassLike extends Node\Stmt
      *
      * @return Property|null Property node or null if the property does not exist
      */
-    public function getProperty(string $name)
+    public function getProperty(string $name) : ?\PhpParser\Node\Stmt\Property
     {
         foreach ($this->stmts as $stmt) {
             if ($stmt instanceof \PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
-                    if ($prop instanceof \PhpParser\Node\Stmt\PropertyProperty && $name === $prop->name->toString()) {
+                    if ($prop instanceof PropertyItem && $name === $prop->name->toString()) {
                         return $stmt;
                     }
                 }
@@ -76,7 +77,7 @@ abstract class ClassLike extends Node\Stmt
     /**
      * Gets all methods defined directly in this class/interface/trait
      *
-     * @return ClassMethod[]
+     * @return list<ClassMethod>
      */
     public function getMethods() : array
     {
@@ -95,7 +96,7 @@ abstract class ClassLike extends Node\Stmt
      *
      * @return ClassMethod|null Method node or null if the method does not exist
      */
-    public function getMethod(string $name)
+    public function getMethod(string $name) : ?\PhpParser\Node\Stmt\ClassMethod
     {
         $lowerName = \strtolower($name);
         foreach ($this->stmts as $stmt) {

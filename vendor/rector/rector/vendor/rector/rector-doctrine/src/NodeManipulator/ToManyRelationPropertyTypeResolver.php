@@ -6,54 +6,56 @@ namespace Rector\Doctrine\NodeManipulator;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Property;
+use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 use Rector\BetterPhpDocParser\PhpDoc\ArrayItemNode;
 use Rector\BetterPhpDocParser\PhpDoc\DoctrineAnnotationTagValueNode;
 use Rector\BetterPhpDocParser\PhpDoc\StringNode;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\Doctrine\CodeQuality\Enum\CollectionMapping;
-use Rector\Doctrine\CodeQuality\Enum\DoctrineClass;
 use Rector\Doctrine\CodeQuality\Enum\EntityMappingKey;
 use Rector\Doctrine\CodeQuality\Enum\OdmMappingKey;
+use Rector\Doctrine\Enum\DoctrineClass;
 use Rector\Doctrine\NodeAnalyzer\AttributeFinder;
 use Rector\Doctrine\PhpDoc\ShortClassExpander;
 use Rector\Doctrine\TypeAnalyzer\CollectionTypeFactory;
+use Rector\Doctrine\TypeAnalyzer\CollectionTypeResolver;
 use Rector\PhpParser\Node\Value\ValueResolver;
 use Rector\StaticTypeMapper\ValueObject\Type\FullyQualifiedObjectType;
 final class ToManyRelationPropertyTypeResolver
 {
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\Doctrine\PhpDoc\ShortClassExpander
      */
-    private $shortClassExpander;
+    private ShortClassExpander $shortClassExpander;
     /**
      * @readonly
-     * @var \Rector\Doctrine\NodeAnalyzer\AttributeFinder
      */
-    private $attributeFinder;
+    private AttributeFinder $attributeFinder;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @readonly
-     * @var \Rector\Doctrine\TypeAnalyzer\CollectionTypeFactory
      */
-    private $collectionTypeFactory;
-    public function __construct(PhpDocInfoFactory $phpDocInfoFactory, ShortClassExpander $shortClassExpander, AttributeFinder $attributeFinder, ValueResolver $valueResolver, CollectionTypeFactory $collectionTypeFactory)
+    private CollectionTypeFactory $collectionTypeFactory;
+    /**
+     * @readonly
+     */
+    private CollectionTypeResolver $collectionTypeResolver;
+    public function __construct(PhpDocInfoFactory $phpDocInfoFactory, ShortClassExpander $shortClassExpander, AttributeFinder $attributeFinder, ValueResolver $valueResolver, CollectionTypeFactory $collectionTypeFactory, CollectionTypeResolver $collectionTypeResolver)
     {
         $this->phpDocInfoFactory = $phpDocInfoFactory;
         $this->shortClassExpander = $shortClassExpander;
         $this->attributeFinder = $attributeFinder;
         $this->valueResolver = $valueResolver;
         $this->collectionTypeFactory = $collectionTypeFactory;
+        $this->collectionTypeResolver = $collectionTypeResolver;
     }
     public function resolve(Property $property) : ?Type
     {
@@ -72,7 +74,8 @@ final class ToManyRelationPropertyTypeResolver
     {
         $targetEntityArrayItemNode = $doctrineAnnotationTagValueNode->getValue(EntityMappingKey::TARGET_ENTITY) ?: $doctrineAnnotationTagValueNode->getValue(OdmMappingKey::TARGET_DOCUMENT);
         if (!$targetEntityArrayItemNode instanceof ArrayItemNode) {
-            return null;
+            // most likely mapped superclass
+            return new ObjectType(DoctrineClass::COLLECTION);
         }
         $targetEntityClass = $targetEntityArrayItemNode->value;
         if ($targetEntityClass instanceof StringNode) {
@@ -97,6 +100,6 @@ final class ToManyRelationPropertyTypeResolver
         }
         $entityFullyQualifiedClass = $this->shortClassExpander->resolveFqnTargetEntity($targetEntity, $property);
         $fullyQualifiedObjectType = new FullyQualifiedObjectType($entityFullyQualifiedClass);
-        return $this->collectionTypeFactory->createType($fullyQualifiedObjectType);
+        return $this->collectionTypeFactory->createType($fullyQualifiedObjectType, $this->collectionTypeResolver->hasIndexBy($property), $property);
     }
 }

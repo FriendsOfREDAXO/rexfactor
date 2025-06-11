@@ -7,18 +7,17 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Property;
 use Rector\Exception\ShouldNotHappenException;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class EntityMapping
 {
     /**
      * @readonly
-     * @var string
      */
-    private $className;
+    private string $className;
     /**
      * @var array<string, mixed>
      */
-    private $entityMapping;
+    private array $entityMapping;
     /**
      * @param array<string, mixed> $propertyMapping
      */

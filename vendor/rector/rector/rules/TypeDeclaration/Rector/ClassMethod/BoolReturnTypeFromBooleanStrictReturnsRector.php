@@ -5,22 +5,9 @@ namespace Rector\TypeDeclaration\Rector\ClassMethod;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
-use PhpParser\Node\Expr\BinaryOp\BooleanOr;
-use PhpParser\Node\Expr\BinaryOp\Equal;
-use PhpParser\Node\Expr\BinaryOp\Greater;
-use PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
-use PhpParser\Node\Expr\BinaryOp\Identical;
-use PhpParser\Node\Expr\BinaryOp\NotEqual;
-use PhpParser\Node\Expr\BinaryOp\NotIdentical;
-use PhpParser\Node\Expr\BinaryOp\Smaller;
-use PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
-use PhpParser\Node\Expr\BooleanNot;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
-use PhpParser\Node\Expr\Empty_;
 use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\Isset_;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -28,10 +15,11 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Return_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\BooleanType;
+use Rector\NodeAnalyzer\ExprAnalyzer;
 use Rector\PhpParser\Node\BetterNodeFinder;
 use Rector\PhpParser\Node\Value\ValueResolver;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
@@ -41,40 +29,40 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\BoolReturnTypeFromBooleanStrictReturnsRector\BoolReturnTypeFromBooleanStrictReturnsRectorTest
  */
-final class BoolReturnTypeFromBooleanStrictReturnsRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class BoolReturnTypeFromBooleanStrictReturnsRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\NodeAnalyzer\ReturnAnalyzer
      */
-    private $returnAnalyzer;
-    public function __construct(ReflectionProvider $reflectionProvider, ValueResolver $valueResolver, BetterNodeFinder $betterNodeFinder, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnAnalyzer $returnAnalyzer)
+    private ReturnAnalyzer $returnAnalyzer;
+    /**
+     * @readonly
+     */
+    private ExprAnalyzer $exprAnalyzer;
+    public function __construct(ReflectionProvider $reflectionProvider, ValueResolver $valueResolver, BetterNodeFinder $betterNodeFinder, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnAnalyzer $returnAnalyzer, ExprAnalyzer $exprAnalyzer)
     {
         $this->reflectionProvider = $reflectionProvider;
         $this->valueResolver = $valueResolver;
         $this->betterNodeFinder = $betterNodeFinder;
         $this->classMethodReturnTypeOverrideGuard = $classMethodReturnTypeOverrideGuard;
         $this->returnAnalyzer = $returnAnalyzer;
+        $this->exprAnalyzer = $exprAnalyzer;
     }
     public function getRuleDefinition() : RuleDefinition
     {
@@ -108,8 +96,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod|Function_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         if ($this->shouldSkip($node, $scope)) {
             return null;
         }
@@ -152,7 +141,7 @@ CODE_SAMPLE
             if (!$return->expr instanceof Expr) {
                 return \false;
             }
-            if ($this->isBooleanOp($return->expr)) {
+            if ($this->exprAnalyzer->isBoolExpr($return->expr)) {
                 continue;
             }
             if ($return->expr instanceof FuncCall && $this->isNativeBooleanReturnTypeFuncCall($return->expr)) {
@@ -176,50 +165,12 @@ CODE_SAMPLE
         if (!$functionReflection->isBuiltin()) {
             return \false;
         }
-        foreach ($functionReflection->getVariants() as $parametersAcceptorWithPhpDoc) {
-            return $parametersAcceptorWithPhpDoc->getNativeReturnType() instanceof BooleanType;
+        foreach ($functionReflection->getVariants() as $variant) {
+            if (!$variant->getNativeReturnType()->isBoolean()->yes()) {
+                return \false;
+            }
         }
-        return \false;
-    }
-    private function isBooleanOp(Expr $expr) : bool
-    {
-        if ($expr instanceof Smaller) {
-            return \true;
-        }
-        if ($expr instanceof SmallerOrEqual) {
-            return \true;
-        }
-        if ($expr instanceof Greater) {
-            return \true;
-        }
-        if ($expr instanceof GreaterOrEqual) {
-            return \true;
-        }
-        if ($expr instanceof BooleanOr) {
-            return \true;
-        }
-        if ($expr instanceof BooleanAnd) {
-            return \true;
-        }
-        if ($expr instanceof Identical) {
-            return \true;
-        }
-        if ($expr instanceof NotIdentical) {
-            return \true;
-        }
-        if ($expr instanceof Equal) {
-            return \true;
-        }
-        if ($expr instanceof NotEqual) {
-            return \true;
-        }
-        if ($expr instanceof Empty_) {
-            return \true;
-        }
-        if ($expr instanceof Isset_) {
-            return \true;
-        }
-        return $expr instanceof BooleanNot;
+        return \true;
     }
     /**
      * @param Return_[] $returns

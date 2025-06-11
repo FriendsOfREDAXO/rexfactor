@@ -12,7 +12,7 @@ use Rector\BetterPhpDocParser\PhpDoc\StringNode;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpAttribute\Contract\AnnotationToAttributeMapperInterface;
 use Rector\PhpAttribute\Enum\DocTagNodeState;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\PhpAttribute\AnnotationToAttributeMapper\AnnotationToAttributeMapperTest
  */
@@ -22,7 +22,7 @@ final class AnnotationToAttributeMapper
      * @var AnnotationToAttributeMapperInterface[]
      * @readonly
      */
-    private $annotationToAttributeMappers;
+    private array $annotationToAttributeMappers;
     /**
      * @param AnnotationToAttributeMapperInterface[] $annotationToAttributeMappers
      */

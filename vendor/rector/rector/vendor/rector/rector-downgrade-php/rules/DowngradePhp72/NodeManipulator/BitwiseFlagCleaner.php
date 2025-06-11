@@ -13,14 +13,13 @@ final class BitwiseFlagCleaner
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     public function __construct(NodeNameResolver $nodeNameResolver)
     {
         $this->nodeNameResolver = $nodeNameResolver;
     }
-    public function cleanFuncCall(FuncCall $funcCall, BitwiseOr $bitwiseOr, string $flag, Expr $expr = null) : void
+    public function cleanFuncCall(FuncCall $funcCall, BitwiseOr $bitwiseOr, string $flag, ?Expr $expr = null) : void
     {
         if ($bitwiseOr->left instanceof BitwiseOr) {
             /** @var BitwiseOr $leftLeft */

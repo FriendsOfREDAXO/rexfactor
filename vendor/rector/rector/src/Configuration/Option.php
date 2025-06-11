@@ -81,6 +81,10 @@ final class Option
      */
     public const CLEAR_CACHE = 'clear-cache';
     /**
+     * @var string
+     */
+    public const ONLY = 'only';
+    /**
      * @internal Use @see \Rector\Config\RectorConfig::parallel() instead
      * @var string
      */
@@ -111,7 +115,7 @@ final class Option
      */
     public const CACHE_DIR = 'cache_dir';
     /**
-     * Cache backend. Most of the time we cache in files, but in ephemeral environment (e.g. CI), a faster `MemoryCacheStorage` can be usefull.
+     * Cache backend. Most of the time we cache in files, but in ephemeral environment (e.g. CI), a faster `MemoryCacheStorage` can be useful.
      * @internal Use RectorConfig::cacheClass() instead
      *
      * @var class-string<CacheStorageInterface>
@@ -201,6 +205,11 @@ final class Option
      */
     public const REGISTERED_RECTOR_SETS = 'registered_rector_sets';
     /**
+     * @internal For verify RectorConfigBuilder instance recreated
+     * @var string
+     */
+    public const IS_RECTORCONFIG_BUILDER_RECREATED = 'is_rectorconfig_builder_recreated';
+    /**
      * @internal For verify skipped rules exists in registered rules
      * @var string
      */
@@ -222,4 +231,31 @@ final class Option
      * @var string
      */
     public const EDITOR_URL = 'editor_url';
+    /**
+     * @internal To report composer based loaded sets
+     * @see \Rector\Configuration\RectorConfigBuilder::withComposerBased()
+     * @var string
+     */
+    public const COMPOSER_BASED_SETS = 'composer_based_sets';
+    /**
+     * @internal To filter files by specific suffix
+     */
+    public const ONLY_SUFFIX = 'only-suffix';
+    /**
+     * @internal To report overflow levels in ->with*Level() methods
+     */
+    public const LEVEL_OVERFLOWS = 'level_overflows';
+    /**
+     * @internal To avoid registering rules via ->withRules(), that are already loaded in sets,
+     * and keep rector.php clean
+     */
+    public const ROOT_STANDALONE_REGISTERED_RULES = 'root_standalone_registered_rules';
+    /**
+     * @internal The other half of ROOT_STANDALONE_REGISTERED_RULES to compare
+     */
+    public const SET_REGISTERED_RULES = 'set_registered_rules';
+    /**
+     * @internal to allow process file without extension if explicitly registered
+     */
+    public const FILES_WITHOUT_EXTENSION = 'files_without_extension';
 }

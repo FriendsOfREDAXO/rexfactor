@@ -1,9 +1,9 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202411\Composer\Pcre\PHPStan;
+namespace RectorPrefix202506\Composer\Pcre\PHPStan;
 
-use RectorPrefix202411\Composer\Pcre\Preg;
+use RectorPrefix202506\Composer\Pcre\Preg;
 use PhpParser\Node\Expr\StaticCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Analyser\SpecifiedTypes;
@@ -72,6 +72,20 @@ final class PregMatchTypeSpecifyingExtension implements StaticMethodTypeSpecifyi
             $overwrite = \true;
             $context = $context->negate();
         }
-        return $this->typeSpecifier->create($matchesArg->value, $matchedType, $context, $overwrite, $scope, $node);
+        // @phpstan-ignore function.alreadyNarrowedType
+        if (\method_exists('PHPStan\\Analyser\\SpecifiedTypes', 'setRootExpr')) {
+            $typeSpecifier = $this->typeSpecifier->create($matchesArg->value, $matchedType, $context, $scope)->setRootExpr($node);
+            return $overwrite ? $typeSpecifier->setAlwaysOverwriteTypes() : $typeSpecifier;
+        }
+        // @phpstan-ignore arguments.count
+        return $this->typeSpecifier->create(
+            $matchesArg->value,
+            $matchedType,
+            $context,
+            // @phpstan-ignore argument.type
+            $overwrite,
+            $scope,
+            $node
+        );
     }
 }

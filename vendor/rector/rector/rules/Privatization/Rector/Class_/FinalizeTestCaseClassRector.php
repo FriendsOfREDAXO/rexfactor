@@ -6,7 +6,7 @@ namespace Rector\Privatization\Rector\Class_;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 use PHPStan\Reflection\ReflectionProvider;
-use Rector\NodeTypeResolver\Node\AttributeKey;
+use Rector\Php81\NodeManipulator\AttributeGroupNewLiner;
 use Rector\Privatization\NodeManipulator\VisibilityManipulator;
 use Rector\Rector\AbstractRector;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
@@ -18,22 +18,25 @@ final class FinalizeTestCaseClassRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\Privatization\NodeManipulator\VisibilityManipulator
      */
-    private $visibilityManipulator;
-    public function __construct(ReflectionProvider $reflectionProvider, VisibilityManipulator $visibilityManipulator)
+    private VisibilityManipulator $visibilityManipulator;
+    /**
+     * @readonly
+     */
+    private AttributeGroupNewLiner $attributeGroupNewLiner;
+    public function __construct(ReflectionProvider $reflectionProvider, VisibilityManipulator $visibilityManipulator, AttributeGroupNewLiner $attributeGroupNewLiner)
     {
         $this->reflectionProvider = $reflectionProvider;
         $this->visibilityManipulator = $visibilityManipulator;
+        $this->attributeGroupNewLiner = $attributeGroupNewLiner;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('PHPUnit test case will be finalized', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Make PHPUnit test case final', [new CodeSample(<<<'CODE_SAMPLE'
 use PHPUnit\Framework\TestCase;
 
 class SomeClass extends TestCase
@@ -76,11 +79,11 @@ CODE_SAMPLE
             return null;
         }
         $classReflection = $this->reflectionProvider->getClass($className);
-        if (!$classReflection->isSubclassOf('PHPUnit\\Framework\\TestCase')) {
+        if (!$classReflection->is('PHPUnit\\Framework\\TestCase')) {
             return null;
         }
         if ($node->attrGroups !== []) {
-            $node->setAttribute(AttributeKey::ORIGINAL_NODE, null);
+            $this->attributeGroupNewLiner->newLine($this->file, $node);
         }
         $this->visibilityManipulator->makeFinal($node);
         return $node;

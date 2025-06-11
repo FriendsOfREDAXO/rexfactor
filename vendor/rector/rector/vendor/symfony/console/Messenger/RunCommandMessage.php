@@ -8,9 +8,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Messenger;
+namespace RectorPrefix202506\Symfony\Component\Console\Messenger;
 
-use RectorPrefix202411\Symfony\Component\Console\Exception\RunCommandFailedException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\RunCommandFailedException;
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  */
@@ -18,19 +18,18 @@ class RunCommandMessage
 {
     /**
      * @readonly
-     * @var string
      */
-    public $input;
+    public string $input;
     /**
      * @var bool
      * @readonly
      */
-    public $throwOnFailure = \true;
+    public bool $throwOnFailure = \true;
     /**
      * @var bool
      * @readonly
      */
-    public $catchExceptions = \false;
+    public bool $catchExceptions = \false;
     /**
      * @param bool $throwOnFailure  If the command has a non-zero exit code, throw {@see RunCommandFailedException}
      * @param bool $catchExceptions @see Application::setCatchExceptions()

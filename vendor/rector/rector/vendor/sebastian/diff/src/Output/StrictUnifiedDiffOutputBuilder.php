@@ -9,7 +9,7 @@ declare (strict_types=1);
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\SebastianBergmann\Diff\Output;
+namespace RectorPrefix202506\SebastianBergmann\Diff\Output;
 
 use function array_merge;
 use function array_splice;
@@ -25,8 +25,8 @@ use function min;
 use function sprintf;
 use function stream_get_contents;
 use function substr;
-use RectorPrefix202411\SebastianBergmann\Diff\ConfigurationException;
-use RectorPrefix202411\SebastianBergmann\Diff\Differ;
+use RectorPrefix202506\SebastianBergmann\Diff\ConfigurationException;
+use RectorPrefix202506\SebastianBergmann\Diff\Differ;
 /**
  * Strict Unified diff output builder.
  *
@@ -34,10 +34,7 @@ use RectorPrefix202411\SebastianBergmann\Diff\Differ;
  */
 final class StrictUnifiedDiffOutputBuilder implements DiffOutputBuilderInterface
 {
-    /**
-     * @var mixed[]
-     */
-    private static $default = [
+    private static array $default = [
         'collapseRanges' => \true,
         // ranges of length one are rendered with the trailing `,1`
         'commonLineThreshold' => 6,
@@ -49,28 +46,17 @@ final class StrictUnifiedDiffOutputBuilder implements DiffOutputBuilderInterface
         'toFile' => null,
         'toFileDate' => null,
     ];
+    private bool $changed;
+    private bool $collapseRanges;
     /**
-     * @var bool
+     * @var positive-int
      */
-    private $changed;
+    private int $commonLineThreshold;
+    private string $header;
     /**
-     * @var bool
+     * @var positive-int
      */
-    private $collapseRanges;
-    /**
-     * @psalm-var positive-int
-     * @var int
-     */
-    private $commonLineThreshold;
-    /**
-     * @var string
-     */
-    private $header;
-    /**
-     * @psalm-var positive-int
-     * @var int
-     */
-    private $contextLines;
+    private int $contextLines;
     public function __construct(array $options = [])
     {
         $options = array_merge(self::$default, $options);

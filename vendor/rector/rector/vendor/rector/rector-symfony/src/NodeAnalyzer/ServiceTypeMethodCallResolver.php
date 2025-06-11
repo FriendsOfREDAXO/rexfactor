@@ -16,14 +16,12 @@ final class ServiceTypeMethodCallResolver
 {
     /**
      * @readonly
-     * @var \Rector\Symfony\DataProvider\ServiceMapProvider
      */
-    private $serviceMapProvider;
+    private ServiceMapProvider $serviceMapProvider;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     public function __construct(ServiceMapProvider $serviceMapProvider, NodeNameResolver $nodeNameResolver)
     {
         $this->serviceMapProvider = $serviceMapProvider;
@@ -34,7 +32,8 @@ final class ServiceTypeMethodCallResolver
         if (!isset($methodCall->args[0])) {
             return new MixedType();
         }
-        $argument = $methodCall->getArgs()[0]->value;
+        $firstArg = $methodCall->getArgs()[0];
+        $argument = $firstArg->value;
         $serviceMap = $this->serviceMapProvider->provide();
         if ($argument instanceof String_) {
             return $serviceMap->getServiceType($argument->value);

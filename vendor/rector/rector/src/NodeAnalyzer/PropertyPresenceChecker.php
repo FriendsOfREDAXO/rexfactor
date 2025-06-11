@@ -10,11 +10,11 @@ use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\Php\PhpPropertyReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\Type;
-use PHPStan\Type\TypeWithClassName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\Php80\NodeAnalyzer\PromotedPropertyResolver;
 use Rector\PhpParser\AstResolver;
 use Rector\PostRector\ValueObject\PropertyMetadata;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 /**
  * Can be local property, parent property etc.
  */
@@ -22,24 +22,20 @@ final class PropertyPresenceChecker
 {
     /**
      * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PromotedPropertyResolver
      */
-    private $promotedPropertyResolver;
+    private PromotedPropertyResolver $promotedPropertyResolver;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\PhpParser\AstResolver
      */
-    private $astResolver;
+    private AstResolver $astResolver;
     public function __construct(PromotedPropertyResolver $promotedPropertyResolver, NodeNameResolver $nodeNameResolver, ReflectionProvider $reflectionProvider, AstResolver $astResolver)
     {
         $this->promotedPropertyResolver = $promotedPropertyResolver;
@@ -106,14 +102,14 @@ final class PropertyPresenceChecker
         if (!$propertyMetadata->getType() instanceof Type) {
             return null;
         }
-        if (!$propertyMetadata->getType() instanceof TypeWithClassName) {
+        if (ClassNameFromObjectTypeResolver::resolve($propertyMetadata->getType()) === null) {
             return null;
         }
-        if (!$phpPropertyReflection->getWritableType() instanceof TypeWithClassName) {
+        if (ClassNameFromObjectTypeResolver::resolve($phpPropertyReflection->getWritableType()) === null) {
             return null;
         }
-        $propertyObjectTypeWithClassName = $propertyMetadata->getType();
-        if (!$propertyObjectTypeWithClassName->equals($phpPropertyReflection->getWritableType())) {
+        $type = $propertyMetadata->getType();
+        if (!$type->equals($phpPropertyReflection->getWritableType())) {
             return null;
         }
         return $this->astResolver->resolvePropertyFromPropertyReflection($phpPropertyReflection);

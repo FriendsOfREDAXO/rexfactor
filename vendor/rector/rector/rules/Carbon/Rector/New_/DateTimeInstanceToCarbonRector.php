@@ -21,16 +21,15 @@ final class DateTimeInstanceToCarbonRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Carbon\NodeFactory\CarbonCallFactory
      */
-    private $carbonCallFactory;
+    private CarbonCallFactory $carbonCallFactory;
     public function __construct(CarbonCallFactory $carbonCallFactory)
     {
         $this->carbonCallFactory = $carbonCallFactory;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Convert new DateTime() to Carbon::*()', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Convert `new DateTime()` to `Carbon::*()`', [new CodeSample(<<<'CODE_SAMPLE'
 $date = new \DateTime('today');
 CODE_SAMPLE
 , <<<'CODE_SAMPLE'

@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Process;
+namespace RectorPrefix202506\Symfony\Component\Process;
 
 /**
  * Generic executable finder.
@@ -19,10 +19,7 @@ namespace RectorPrefix202411\Symfony\Component\Process;
 class ExecutableFinder
 {
     private const CMD_BUILTINS = ['assoc', 'break', 'call', 'cd', 'chdir', 'cls', 'color', 'copy', 'date', 'del', 'dir', 'echo', 'endlocal', 'erase', 'exit', 'for', 'ftype', 'goto', 'help', 'if', 'label', 'md', 'mkdir', 'mklink', 'move', 'path', 'pause', 'popd', 'prompt', 'pushd', 'rd', 'rem', 'ren', 'rename', 'rmdir', 'set', 'setlocal', 'shift', 'start', 'time', 'title', 'type', 'ver', 'vol'];
-    /**
-     * @var mixed[]
-     */
-    private $suffixes = [];
+    private array $suffixes = [];
     /**
      * Replaces default suffixes of executable.
      *

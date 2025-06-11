@@ -3,13 +3,14 @@
 declare (strict_types=1);
 namespace Rector\Privatization\NodeManipulator;
 
+use PhpParser\Modifiers;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
 use Rector\ValueObject\Visibility;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Privatization\NodeManipulator\VisibilityManipulatorTest
  */
@@ -39,7 +40,7 @@ final class VisibilityManipulator
         if (!$node->isStatic()) {
             return;
         }
-        $node->flags -= Class_::MODIFIER_STATIC;
+        $node->flags -= Modifiers::STATIC;
     }
     /**
      * @api
@@ -50,7 +51,7 @@ final class VisibilityManipulator
         if (!$node->isAbstract()) {
             return;
         }
-        $node->flags -= Class_::MODIFIER_ABSTRACT;
+        $node->flags -= Modifiers::ABSTRACT;
     }
     /**
      * @api
@@ -69,7 +70,7 @@ final class VisibilityManipulator
         if (!$node->isFinal()) {
             return;
         }
-        $node->flags -= Class_::MODIFIER_FINAL;
+        $node->flags -= Modifiers::FINAL;
     }
     /**
      * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\ClassConst $node
@@ -80,7 +81,7 @@ final class VisibilityManipulator
         $this->replaceVisibilityFlag($node, $visibility);
     }
     /**
-     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\ClassConst $node
+     * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\ClassConst|\PhpParser\Node\Param $node
      */
     public function makePublic($node) : void
     {
@@ -107,7 +108,7 @@ final class VisibilityManipulator
      */
     public function removeFinal($node) : void
     {
-        $node->flags -= Class_::MODIFIER_FINAL;
+        $node->flags -= Modifiers::FINAL;
     }
     /**
      * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Param $node
@@ -129,11 +130,19 @@ final class VisibilityManipulator
      */
     public function removeReadonly($node) : void
     {
-        $this->removeVisibilityFlag($node, Visibility::READONLY);
+        $isConstructorPromotionBefore = $node instanceof Param && $node->isPromoted();
+        $node->flags &= ~Modifiers::READONLY;
+        $isConstructorPromotionAfter = $node instanceof Param && $node->isPromoted();
+        if ($node instanceof Param && $isConstructorPromotionBefore && !$isConstructorPromotionAfter) {
+            $this->makePublic($node);
+        }
+        if ($node instanceof Property) {
+            $this->publicize($node);
+        }
     }
     /**
-     * @param \PhpParser\Node\Stmt\ClassConst|\PhpParser\Node\Stmt\ClassMethod $node
-     * @return \PhpParser\Node\Stmt\ClassConst|\PhpParser\Node\Stmt\ClassMethod|null
+     * @param \PhpParser\Node\Stmt\ClassConst|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property $node
+     * @return \PhpParser\Node\Stmt\ClassConst|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|null
      */
     public function publicize($node)
     {
@@ -163,14 +172,14 @@ final class VisibilityManipulator
             return;
         }
         if ($node->isPublic()) {
-            $node->flags |= Class_::MODIFIER_PUBLIC;
-            $node->flags -= Class_::MODIFIER_PUBLIC;
+            $node->flags |= Modifiers::PUBLIC;
+            $node->flags -= Modifiers::PUBLIC;
         }
         if ($node->isProtected()) {
-            $node->flags -= Class_::MODIFIER_PROTECTED;
+            $node->flags -= Modifiers::PROTECTED;
         }
         if ($node->isPrivate()) {
-            $node->flags -= Class_::MODIFIER_PRIVATE;
+            $node->flags -= Modifiers::PRIVATE;
         }
     }
     /**
@@ -180,13 +189,6 @@ final class VisibilityManipulator
     private function addVisibilityFlag($node, int $visibility) : void
     {
         $node->flags |= $visibility;
-    }
-    /**
-     * @param \PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\ClassConst|\PhpParser\Node\Param $node
-     */
-    private function removeVisibilityFlag($node, int $visibility) : void
-    {
-        $node->flags &= ~$visibility;
     }
     /**
      * @param \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Property|\PhpParser\Node\Stmt\ClassConst|\PhpParser\Node\Param $node

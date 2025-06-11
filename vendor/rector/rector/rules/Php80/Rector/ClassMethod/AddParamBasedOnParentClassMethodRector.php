@@ -33,29 +33,24 @@ final class AddParamBasedOnParentClassMethodRector extends AbstractRector implem
 {
     /**
      * @readonly
-     * @var \Rector\VendorLocker\ParentClassMethodTypeOverrideGuard
      */
-    private $parentClassMethodTypeOverrideGuard;
+    private ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\PhpParser\AstResolver
      */
-    private $astResolver;
+    private AstResolver $astResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Printer\BetterStandardPrinter
      */
-    private $betterStandardPrinter;
+    private BetterStandardPrinter $betterStandardPrinter;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     public function __construct(ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard, AstResolver $astResolver, BetterStandardPrinter $betterStandardPrinter, BetterNodeFinder $betterNodeFinder, ReflectionResolver $reflectionResolver)
     {
         $this->parentClassMethodTypeOverrideGuard = $parentClassMethodTypeOverrideGuard;
@@ -112,7 +107,7 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
-        if ($this->nodeNameResolver->isName($node, MethodName::CONSTRUCT)) {
+        if ($this->isName($node, MethodName::CONSTRUCT)) {
             return null;
         }
         $parentMethodReflection = $this->parentClassMethodTypeOverrideGuard->getParentClassMethod($node);
@@ -123,7 +118,7 @@ CODE_SAMPLE
             return null;
         }
         $currentClassReflection = $this->reflectionResolver->resolveClassReflection($node);
-        $isPDO = $currentClassReflection instanceof ClassReflection && $currentClassReflection->isSubclassOf('PDO');
+        $isPDO = $currentClassReflection instanceof ClassReflection && $currentClassReflection->is('PDO');
         // It relies on phpstorm stubs that define 2 kind of query method for both php 7.4 and php 8.0
         // @see https://github.com/JetBrains/phpstorm-stubs/blob/e2e898a29929d2f520fe95bdb2109d8fa895ba4a/PDO/PDO.php#L1096-L1126
         if ($isPDO && $parentMethodReflection->getName() === 'query') {
@@ -179,7 +174,7 @@ CODE_SAMPLE
         $originalParams = $node->params;
         foreach ($parentClassMethodParams as $key => $parentClassMethodParam) {
             if (isset($currentClassMethodParams[$key])) {
-                $currentParamName = $this->nodeNameResolver->getName($currentClassMethodParams[$key]);
+                $currentParamName = $this->getName($currentClassMethodParams[$key]);
                 $collectParamNamesNextKey = $this->collectParamNamesNextKey($parentClassMethod, $key);
                 if (\in_array($currentParamName, $collectParamNamesNextKey, \true)) {
                     $node->params = $originalParams;
@@ -201,7 +196,7 @@ CODE_SAMPLE
             if ($paramDefault instanceof Expr) {
                 $paramDefault = $this->nodeFactory->createReprintedNode($paramDefault);
             }
-            $paramName = $this->nodeNameResolver->getName($parentClassMethodParam);
+            $paramName = $this->getName($parentClassMethodParam);
             $paramType = $this->resolveParamType($parentClassMethodParam);
             $node->params[$key] = new Param(new Variable($paramName), $paramDefault, $paramType, $parentClassMethodParam->byRef, $parentClassMethodParam->variadic, [], $parentClassMethodParam->flags);
             if ($parentClassMethodParam->attrGroups !== []) {
@@ -216,7 +211,7 @@ CODE_SAMPLE
      */
     private function resolveParamType(Param $param)
     {
-        if ($param->type === null) {
+        if (!$param->type instanceof Node) {
             return null;
         }
         return $this->nodeFactory->createReprintedNode($param->type);
@@ -229,7 +224,7 @@ CODE_SAMPLE
         $paramNames = [];
         foreach ($classMethod->params as $paramKey => $param) {
             if ($paramKey > $key) {
-                $paramNames[] = $this->nodeNameResolver->getName($param);
+                $paramNames[] = $this->getName($param);
             }
         }
         return $paramNames;

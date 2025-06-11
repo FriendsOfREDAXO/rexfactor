@@ -5,6 +5,7 @@ namespace Rector\TypeDeclaration\Rector\While_;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\NotIdentical;
 use PhpParser\Node\Expr\Instanceof_;
 use PhpParser\Node\Name\FullyQualified;
@@ -24,14 +25,12 @@ final class WhileNullableToInstanceofRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeAnalyzer\NullableTypeAnalyzer
      */
-    private $nullableTypeAnalyzer;
+    private NullableTypeAnalyzer $nullableTypeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(NullableTypeAnalyzer $nullableTypeAnalyzer, ValueResolver $valueResolver)
     {
         $this->nullableTypeAnalyzer = $nullableTypeAnalyzer;
@@ -75,6 +74,9 @@ CODE_SAMPLE
      */
     public function refactor(Node $node) : ?Node
     {
+        if ($node->cond instanceof Assign) {
+            return null;
+        }
         if ($node->cond instanceof NotIdentical) {
             return $this->refactorNotIdentical($node, $node->cond);
         }

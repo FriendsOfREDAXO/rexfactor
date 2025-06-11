@@ -28,19 +28,16 @@ final class AddReturnTypeDeclarationBasedOnParentClassMethodRector extends Abstr
 {
     /**
      * @readonly
-     * @var \Rector\VendorLocker\ParentClassMethodTypeOverrideGuard
      */
-    private $parentClassMethodTypeOverrideGuard;
+    private ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     public function __construct(ParentClassMethodTypeOverrideGuard $parentClassMethodTypeOverrideGuard, PhpVersionProvider $phpVersionProvider, StaticTypeMapper $staticTypeMapper)
     {
         $this->parentClassMethodTypeOverrideGuard = $parentClassMethodTypeOverrideGuard;
@@ -97,7 +94,7 @@ CODE_SAMPLE
     {
         $hasChanged = \false;
         foreach ($node->getMethods() as $classMethod) {
-            if ($this->isName($classMethod, MethodName::CONSTRUCT)) {
+            if ($this->isNames($classMethod, [MethodName::CONSTRUCT, MethodName::DESCTRUCT])) {
                 continue;
             }
             $parentClassMethodReturnType = $this->getReturnTypeRecursive($classMethod);
@@ -141,7 +138,7 @@ CODE_SAMPLE
     private function processClassMethodReturnType(Class_ $class, ClassMethod $classMethod, Type $parentType) : ?ClassMethod
     {
         if ($parentType instanceof MixedType) {
-            $className = (string) $this->nodeNameResolver->getName($class);
+            $className = (string) $this->getName($class);
             $currentObjectType = new ObjectType($className);
             if (!$parentType->equals($currentObjectType) && $classMethod->returnType instanceof Node) {
                 return null;

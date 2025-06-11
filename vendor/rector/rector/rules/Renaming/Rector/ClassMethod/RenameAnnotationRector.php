@@ -18,7 +18,7 @@ use Rector\Renaming\Contract\RenameAnnotationInterface;
 use Rector\Renaming\ValueObject\RenameAnnotationByType;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\ClassMethod\RenameAnnotationRector\RenameAnnotationRectorTest
  */
@@ -26,23 +26,20 @@ final class RenameAnnotationRector extends AbstractRector implements Configurabl
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\PhpDoc\NodeAnalyzer\DocBlockTagReplacer
      */
-    private $docBlockTagReplacer;
+    private DocBlockTagReplacer $docBlockTagReplacer;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @var RenameAnnotationInterface[]
      */
-    private $renameAnnotations = [];
+    private array $renameAnnotations = [];
     public function __construct(DocBlockTagReplacer $docBlockTagReplacer, DocBlockUpdater $docBlockUpdater, PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->docBlockTagReplacer = $docBlockTagReplacer;

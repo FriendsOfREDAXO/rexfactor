@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\Php73\Rector\FuncCall;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Scalar\String_;
 use Rector\NodeTypeResolver\Node\AttributeKey;
@@ -68,19 +68,34 @@ CODE_SAMPLE
         if (StringUtils::isMatch($node->value, self::THREE_BACKSLASH_FOR_ESCAPE_NEXT_REGEX)) {
             return null;
         }
-        $stringValue = $node->value;
+        if ($node->getAttribute(AttributeKey::RAW_VALUE) !== null) {
+            $stringValue = \substr($node->getAttribute(AttributeKey::RAW_VALUE), 1, -1);
+        } else {
+            $stringValue = $node->value;
+        }
         if (StringUtils::isMatch($stringValue, self::LEFT_HAND_UNESCAPED_DASH_REGEX)) {
             $node->value = Strings::replace($stringValue, self::LEFT_HAND_UNESCAPED_DASH_REGEX, '$1\\-');
+            $this->setRawValue($node);
             // helped needed to skip re-escaping regular expression
             $node->setAttribute(AttributeKey::IS_REGULAR_PATTERN, \true);
             return $node;
         }
         if (StringUtils::isMatch($stringValue, self::RIGHT_HAND_UNESCAPED_DASH_REGEX)) {
             $node->value = Strings::replace($stringValue, self::RIGHT_HAND_UNESCAPED_DASH_REGEX, '\\-$1]');
+            $this->setRawValue($node);
             // helped needed to skip re-escaping regular expression
             $node->setAttribute(AttributeKey::IS_REGULAR_PATTERN, \true);
             return $node;
         }
         return null;
+    }
+    private function setRawValue(String_ $string) : void
+    {
+        $rawValue = $string->getAttribute(AttributeKey::RAW_VALUE);
+        if ($rawValue === null) {
+            return;
+        }
+        $rawValue = \strncmp($rawValue, '"', \strlen('"')) === 0 ? '"' . $string->value . '"' : "'" . $string->value . "'";
+        $string->setAttribute(AttributeKey::RAW_VALUE, $rawValue);
     }
 }

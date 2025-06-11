@@ -8,23 +8,23 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Yaml\Command;
+namespace RectorPrefix202506\Symfony\Component\Yaml\Command;
 
-use RectorPrefix202411\Symfony\Component\Console\Attribute\AsCommand;
-use RectorPrefix202411\Symfony\Component\Console\CI\GithubActionReporter;
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionInput;
-use RectorPrefix202411\Symfony\Component\Console\Completion\CompletionSuggestions;
-use RectorPrefix202411\Symfony\Component\Console\Exception\InvalidArgumentException;
-use RectorPrefix202411\Symfony\Component\Console\Exception\RuntimeException;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputArgument;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputOption;
-use RectorPrefix202411\Symfony\Component\Console\Output\OutputInterface;
-use RectorPrefix202411\Symfony\Component\Console\Style\SymfonyStyle;
-use RectorPrefix202411\Symfony\Component\Yaml\Exception\ParseException;
-use RectorPrefix202411\Symfony\Component\Yaml\Parser;
-use RectorPrefix202411\Symfony\Component\Yaml\Yaml;
+use RectorPrefix202506\Symfony\Component\Console\Attribute\AsCommand;
+use RectorPrefix202506\Symfony\Component\Console\CI\GithubActionReporter;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionInput;
+use RectorPrefix202506\Symfony\Component\Console\Completion\CompletionSuggestions;
+use RectorPrefix202506\Symfony\Component\Console\Exception\InvalidArgumentException;
+use RectorPrefix202506\Symfony\Component\Console\Exception\RuntimeException;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputArgument;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputOption;
+use RectorPrefix202506\Symfony\Component\Console\Output\OutputInterface;
+use RectorPrefix202506\Symfony\Component\Console\Style\SymfonyStyle;
+use RectorPrefix202506\Symfony\Component\Yaml\Exception\ParseException;
+use RectorPrefix202506\Symfony\Component\Yaml\Parser;
+use RectorPrefix202506\Symfony\Component\Yaml\Yaml;
 /**
  * Validates YAML files syntax and outputs encountered errors.
  *
@@ -33,26 +33,11 @@ use RectorPrefix202411\Symfony\Component\Yaml\Yaml;
  */
 class LintCommand extends Command
 {
-    /**
-     * @var \Symfony\Component\Yaml\Parser
-     */
-    private $parser;
-    /**
-     * @var string|null
-     */
-    private $format;
-    /**
-     * @var bool
-     */
-    private $displayCorrectFiles;
-    /**
-     * @var \Closure|null
-     */
-    private $directoryIteratorProvider;
-    /**
-     * @var \Closure|null
-     */
-    private $isReadableProvider;
+    private Parser $parser;
+    private ?string $format = null;
+    private bool $displayCorrectFiles;
+    private ?\Closure $directoryIteratorProvider;
+    private ?\Closure $isReadableProvider;
     public function __construct(?string $name = null, ?callable $directoryIteratorProvider = null, ?callable $isReadableProvider = null)
     {
         parent::__construct($name);
@@ -76,6 +61,9 @@ You can also validate the syntax of a file:
 Or of a whole directory:
 
   <info>php %command.full_name% dirname</info>
+
+The <info>--format</info> option specifies the format of the command output:
+
   <info>php %command.full_name% dirname --format=json</info>
 
 You can also exclude one or more specific files:
@@ -207,13 +195,11 @@ EOF
     }
     private function getParser() : Parser
     {
-        return $this->parser = $this->parser ?? new Parser();
+        return $this->parser ??= new Parser();
     }
     private function getDirectoryIterator(string $directory) : iterable
     {
-        $default = function ($directory) {
-            return new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS), \RecursiveIteratorIterator::LEAVES_ONLY);
-        };
+        $default = fn($directory) => new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS), \RecursiveIteratorIterator::LEAVES_ONLY);
         if (null !== $this->directoryIteratorProvider) {
             return ($this->directoryIteratorProvider)($directory, $default);
         }
@@ -233,6 +219,7 @@ EOF
             $suggestions->suggestValues($this->getAvailableFormatOptions());
         }
     }
+    /** @return string[] */
     private function getAvailableFormatOptions() : array
     {
         return ['txt', 'json', 'github'];

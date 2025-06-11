@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\TypeDeclaration\Rector\Class_;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Identifier;
@@ -24,6 +24,7 @@ use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\Mapper\ScalarStringToTypeMapper;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 use Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector;
+use Rector\TypeDeclaration\TypeInferer\AssignToPropertyTypeInferer;
 use Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\AllAssignNodePropertyTypeInferer;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
@@ -36,48 +37,36 @@ final class TypedPropertyFromJMSSerializerAttributeTypeRector extends AbstractRe
 {
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\PropertyTypeInferer\AllAssignNodePropertyTypeInferer
      */
-    private $allAssignNodePropertyTypeInferer;
+    private AllAssignNodePropertyTypeInferer $allAssignNodePropertyTypeInferer;
     /**
      * @readonly
-     * @var \Rector\Php74\Guard\MakePropertyTypedGuard
      */
-    private $makePropertyTypedGuard;
+    private MakePropertyTypedGuard $makePropertyTypedGuard;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer
      */
-    private $phpAttributeAnalyzer;
+    private PhpAttributeAnalyzer $phpAttributeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\Mapper\ScalarStringToTypeMapper
      */
-    private $scalarStringToTypeMapper;
+    private ScalarStringToTypeMapper $scalarStringToTypeMapper;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\AlreadyAssignDetector\ConstructorAssignDetector
      */
-    private $constructorAssignDetector;
-    /**
-     * @var string
-     */
-    private const JMS_TYPE = 'JMS\\Serializer\\Annotation\\Type';
+    private ConstructorAssignDetector $constructorAssignDetector;
     public function __construct(AllAssignNodePropertyTypeInferer $allAssignNodePropertyTypeInferer, MakePropertyTypedGuard $makePropertyTypedGuard, ReflectionResolver $reflectionResolver, ValueResolver $valueResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, ScalarStringToTypeMapper $scalarStringToTypeMapper, StaticTypeMapper $staticTypeMapper, ConstructorAssignDetector $constructorAssignDetector)
     {
         $this->allAssignNodePropertyTypeInferer = $allAssignNodePropertyTypeInferer;
@@ -132,7 +121,7 @@ CODE_SAMPLE
             if ($property->type instanceof Node) {
                 continue;
             }
-            if (!$this->phpAttributeAnalyzer->hasPhpAttribute($property, self::JMS_TYPE)) {
+            if (!$this->phpAttributeAnalyzer->hasPhpAttribute($property, AssignToPropertyTypeInferer::JMS_TYPE)) {
                 continue;
             }
             if (!$classReflection instanceof ClassReflection) {
@@ -155,7 +144,7 @@ CODE_SAMPLE
             $typeValue = null;
             foreach ($property->attrGroups as $attrGroup) {
                 foreach ($attrGroup->attrs as $attr) {
-                    if ($attr->name->toString() === self::JMS_TYPE) {
+                    if ($attr->name->toString() === AssignToPropertyTypeInferer::JMS_TYPE) {
                         $typeValue = $this->valueResolver->getValue($attr->args[0]->value);
                         break;
                     }

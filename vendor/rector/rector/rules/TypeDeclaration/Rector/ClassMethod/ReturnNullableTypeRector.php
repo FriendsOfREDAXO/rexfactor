@@ -7,11 +7,11 @@ use PhpParser\Node;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use PHPStan\Analyser\Scope;
 use PHPStan\Type\UnionType;
+use Rector\PHPStan\ScopeFetcher;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\Rector\AbstractRector;
 use Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer;
 use Rector\ValueObject\PhpVersionFeature;
 use Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard;
@@ -21,23 +21,20 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\TypeDeclaration\Rector\ClassMethod\ReturnNullableTypeRector\ReturnNullableTypeRectorTest
  */
-final class ReturnNullableTypeRector extends AbstractScopeAwareRector implements MinPhpVersionInterface
+final class ReturnNullableTypeRector extends AbstractRector implements MinPhpVersionInterface
 {
     /**
      * @readonly
-     * @var \Rector\PHPStanStaticTypeMapper\TypeMapper\UnionTypeMapper
      */
-    private $unionTypeMapper;
+    private UnionTypeMapper $unionTypeMapper;
     /**
      * @readonly
-     * @var \Rector\VendorLocker\NodeVendorLocker\ClassMethodReturnTypeOverrideGuard
      */
-    private $classMethodReturnTypeOverrideGuard;
+    private ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard;
     /**
      * @readonly
-     * @var \Rector\TypeDeclaration\TypeInferer\ReturnTypeInferer
      */
-    private $returnTypeInferer;
+    private ReturnTypeInferer $returnTypeInferer;
     public function __construct(UnionTypeMapper $unionTypeMapper, ClassMethodReturnTypeOverrideGuard $classMethodReturnTypeOverrideGuard, ReturnTypeInferer $returnTypeInferer)
     {
         $this->unionTypeMapper = $unionTypeMapper;
@@ -88,8 +85,9 @@ CODE_SAMPLE
     /**
      * @param ClassMethod|Function_ $node
      */
-    public function refactorWithScope(Node $node, Scope $scope) : ?Node
+    public function refactor(Node $node) : ?Node
     {
+        $scope = ScopeFetcher::fetch($node);
         // empty body, nothing to resolve
         if ($node->stmts === null || $node->stmts === []) {
             return null;

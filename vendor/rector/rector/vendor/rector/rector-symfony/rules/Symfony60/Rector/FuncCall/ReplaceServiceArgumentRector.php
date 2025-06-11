@@ -13,7 +13,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Symfony\ValueObject\ReplaceServiceArgument;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Symfony\Tests\Symfony60\Rector\FuncCall\ReplaceServiceArgumentRector\ReplaceServiceArgumentRectorTest
  */
@@ -21,13 +21,12 @@ final class ReplaceServiceArgumentRector extends AbstractRector implements Confi
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     /**
      * @var ReplaceServiceArgument[]
      */
-    private $replaceServiceArguments = [];
+    private array $replaceServiceArguments = [];
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;

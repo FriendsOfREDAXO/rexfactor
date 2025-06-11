@@ -21,16 +21,15 @@ final class SwitchTrueToIfRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(ValueResolver $valueResolver)
     {
         $this->valueResolver = $valueResolver;
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Change switch (true) to if statements', [new CodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Change `switch (true)` to `if` statements', [new CodeSample(<<<'CODE_SAMPLE'
 class SomeClass
 {
     public function run()

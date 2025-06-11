@@ -1,10 +1,10 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202411\OndraM\CiDetector;
+namespace RectorPrefix202506\OndraM\CiDetector;
 
-use RectorPrefix202411\OndraM\CiDetector\Ci\CiInterface;
-use RectorPrefix202411\OndraM\CiDetector\Exception\CiNotDetectedException;
+use RectorPrefix202506\OndraM\CiDetector\Ci\CiInterface;
+use RectorPrefix202506\OndraM\CiDetector\Exception\CiNotDetectedException;
 /**
  * Unified way to get environment variables from current continuous integration server
  */
@@ -30,10 +30,7 @@ class CiDetector implements CiDetectorInterface
      * @deprecated Will be removed in next major version
      */
     public const CI_WERCKER = 'Wercker';
-    /**
-     * @var \OndraM\CiDetector\Env
-     */
-    private $environment;
+    private Env $environment;
     public final function __construct()
     {
         $this->environment = new Env();

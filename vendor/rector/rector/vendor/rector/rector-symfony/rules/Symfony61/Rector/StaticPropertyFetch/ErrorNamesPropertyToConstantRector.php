@@ -20,9 +20,8 @@ final class ErrorNamesPropertyToConstantRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     public function __construct(ReflectionResolver $reflectionResolver)
     {
         $this->reflectionResolver = $reflectionResolver;
@@ -65,10 +64,10 @@ CODE_SAMPLE
         if (!$classReflection instanceof ClassReflection) {
             return null;
         }
-        if (!$classReflection->isSubclassOf('Symfony\\Component\\Validator\\Constraint')) {
+        if (!$classReflection->is('Symfony\\Component\\Validator\\Constraint')) {
             return null;
         }
-        if (!$this->nodeNameResolver->isName($node->name, 'errorNames')) {
+        if (!$this->isName($node->name, 'errorNames')) {
             return null;
         }
         $parentClass = $classReflection->getParentClass();

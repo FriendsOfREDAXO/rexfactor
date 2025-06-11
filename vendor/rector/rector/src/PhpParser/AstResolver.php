@@ -9,6 +9,7 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Name;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
@@ -19,20 +20,19 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Interface_;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Trait_;
-use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\FunctionReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\Php\PhpFunctionReflection;
 use PHPStan\Reflection\Php\PhpPropertyReflection;
 use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Type\TypeWithClassName;
 use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\NodeTypeResolver\NodeScopeAndMetadataDecorator;
 use Rector\NodeTypeResolver\NodeTypeResolver;
-use Rector\PhpDocParser\PhpParser\SmartPhpParser;
 use Rector\PhpParser\Node\BetterNodeFinder;
+use Rector\PhpParser\Parser\RectorParser;
 use Rector\Reflection\MethodReflectionResolver;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 use Rector\ValueObject\MethodName;
 use Throwable;
 /**
@@ -43,49 +43,42 @@ final class AstResolver
 {
     /**
      * @readonly
-     * @var \Rector\PhpDocParser\PhpParser\SmartPhpParser
      */
-    private $smartPhpParser;
+    private RectorParser $rectorParser;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeScopeAndMetadataDecorator
      */
-    private $nodeScopeAndMetadataDecorator;
+    private NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \PHPStan\Reflection\ReflectionProvider
      */
-    private $reflectionProvider;
+    private ReflectionProvider $reflectionProvider;
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     /**
      * @readonly
-     * @var \Rector\Reflection\MethodReflectionResolver
      */
-    private $methodReflectionResolver;
+    private MethodReflectionResolver $methodReflectionResolver;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     /**
      * Parsing files is very heavy performance, so this will help to leverage it
      * The value can be also null, when no statements could be parsed from the file.
      *
      * @var array<string, Stmt[]|null>
      */
-    private $parsedFileNodes = [];
-    public function __construct(SmartPhpParser $smartPhpParser, NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator, NodeNameResolver $nodeNameResolver, ReflectionProvider $reflectionProvider, NodeTypeResolver $nodeTypeResolver, MethodReflectionResolver $methodReflectionResolver, BetterNodeFinder $betterNodeFinder)
+    private array $parsedFileNodes = [];
+    public function __construct(RectorParser $rectorParser, NodeScopeAndMetadataDecorator $nodeScopeAndMetadataDecorator, NodeNameResolver $nodeNameResolver, ReflectionProvider $reflectionProvider, NodeTypeResolver $nodeTypeResolver, MethodReflectionResolver $methodReflectionResolver, BetterNodeFinder $betterNodeFinder)
     {
-        $this->smartPhpParser = $smartPhpParser;
+        $this->rectorParser = $rectorParser;
         $this->nodeScopeAndMetadataDecorator = $nodeScopeAndMetadataDecorator;
         $this->nodeNameResolver = $nodeNameResolver;
         $this->reflectionProvider = $reflectionProvider;
@@ -134,10 +127,10 @@ final class AstResolver
      * @param \PhpParser\Node\Expr\FuncCall|\PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\MethodCall $call
      * @return \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|null
      */
-    public function resolveClassMethodOrFunctionFromCall($call, Scope $scope)
+    public function resolveClassMethodOrFunctionFromCall($call)
     {
         if ($call instanceof FuncCall) {
-            return $this->resolveFunctionFromFuncCall($call, $scope);
+            return $this->resolveFunctionFromFuncCall($call);
         }
         return $this->resolveClassMethodFromCall($call);
     }
@@ -179,14 +172,15 @@ final class AstResolver
     public function resolveClassMethodFromCall($call) : ?ClassMethod
     {
         $callerStaticType = $call instanceof MethodCall || $call instanceof NullsafeMethodCall ? $this->nodeTypeResolver->getType($call->var) : $this->nodeTypeResolver->getType($call->class);
-        if (!$callerStaticType instanceof TypeWithClassName) {
+        $className = ClassNameFromObjectTypeResolver::resolve($callerStaticType);
+        if ($className === null) {
             return null;
         }
         $methodName = $this->nodeNameResolver->getName($call->name);
         if ($methodName === null) {
             return null;
         }
-        return $this->resolveClassMethod($callerStaticType->getClassName(), $methodName);
+        return $this->resolveClassMethod($className, $methodName);
     }
     /**
      * @return \PhpParser\Node\Stmt\Trait_|\PhpParser\Node\Stmt\Class_|\PhpParser\Node\Stmt\Interface_|\PhpParser\Node\Stmt\Enum_|null
@@ -281,7 +275,7 @@ final class AstResolver
             return $this->parsedFileNodes[$fileName];
         }
         try {
-            $stmts = $this->smartPhpParser->parseFile($fileName);
+            $stmts = $this->rectorParser->parseFile($fileName);
         } catch (Throwable $throwable) {
             /**
              * phpstan.phar contains jetbrains/phpstorm-stubs which the code is not downgraded
@@ -329,7 +323,7 @@ final class AstResolver
                 return \false;
             }
             foreach ($constructClassMethod->getParams() as $param) {
-                if ($param->flags === 0) {
+                if (!$param->isPromoted()) {
                     continue;
                 }
                 if ($this->nodeNameResolver->isName($param, $desiredPropertyName)) {
@@ -341,15 +335,16 @@ final class AstResolver
         });
         return $paramNode;
     }
-    private function resolveFunctionFromFuncCall(FuncCall $funcCall, Scope $scope) : ?Function_
+    private function resolveFunctionFromFuncCall(FuncCall $funcCall) : ?Function_
     {
         if ($funcCall->name instanceof Expr) {
             return null;
         }
-        if (!$this->reflectionProvider->hasFunction($funcCall->name, $scope)) {
+        $functionName = new Name((string) $this->nodeNameResolver->getName($funcCall));
+        if (!$this->reflectionProvider->hasFunction($functionName, null)) {
             return null;
         }
-        $functionReflection = $this->reflectionProvider->getFunction($funcCall->name, $scope);
+        $functionReflection = $this->reflectionProvider->getFunction($functionName, null);
         return $this->resolveFunctionFromFunctionReflection($functionReflection);
     }
 }

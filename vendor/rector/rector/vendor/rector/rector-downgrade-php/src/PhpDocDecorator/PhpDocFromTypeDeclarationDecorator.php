@@ -3,12 +3,15 @@
 declare (strict_types=1);
 namespace Rector\PhpDocDecorator;
 
+use PhpParser\Node;
 use PhpParser\Node\ComplexType;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Param;
+use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ReturnTagValueNode;
@@ -25,6 +28,7 @@ use Rector\NodeNameResolver\NodeNameResolver;
 use Rector\Php\PhpVersionProvider;
 use Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer;
 use Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory;
+use Rector\PhpParser\AstResolver;
 use Rector\PHPStanStaticTypeMapper\Enum\TypeKind;
 use Rector\Reflection\ReflectionResolver;
 use Rector\StaticTypeMapper\StaticTypeMapper;
@@ -38,49 +42,45 @@ final class PhpDocFromTypeDeclarationDecorator
 {
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTypeChanger
      */
-    private $phpDocTypeChanger;
+    private PhpDocTypeChanger $phpDocTypeChanger;
     /**
      * @readonly
-     * @var \Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory
      */
-    private $phpAttributeGroupFactory;
+    private PhpAttributeGroupFactory $phpAttributeGroupFactory;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\Php80\NodeAnalyzer\PhpAttributeAnalyzer
      */
-    private $phpAttributeAnalyzer;
+    private PhpAttributeAnalyzer $phpAttributeAnalyzer;
     /**
      * @readonly
-     * @var \Rector\Php\PhpVersionProvider
      */
-    private $phpVersionProvider;
+    private PhpVersionProvider $phpVersionProvider;
+    /**
+     * @readonly
+     */
+    private AstResolver $astResolver;
     /**
      * @var ClassMethodWillChangeReturnType[]
      */
-    private $classMethodWillChangeReturnTypes = [];
-    public function __construct(StaticTypeMapper $staticTypeMapper, PhpDocInfoFactory $phpDocInfoFactory, NodeNameResolver $nodeNameResolver, PhpDocTypeChanger $phpDocTypeChanger, PhpAttributeGroupFactory $phpAttributeGroupFactory, ReflectionResolver $reflectionResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, PhpVersionProvider $phpVersionProvider)
+    private array $classMethodWillChangeReturnTypes = [];
+    public function __construct(StaticTypeMapper $staticTypeMapper, PhpDocInfoFactory $phpDocInfoFactory, NodeNameResolver $nodeNameResolver, PhpDocTypeChanger $phpDocTypeChanger, PhpAttributeGroupFactory $phpAttributeGroupFactory, ReflectionResolver $reflectionResolver, PhpAttributeAnalyzer $phpAttributeAnalyzer, PhpVersionProvider $phpVersionProvider, AstResolver $astResolver)
     {
         $this->staticTypeMapper = $staticTypeMapper;
         $this->phpDocInfoFactory = $phpDocInfoFactory;
@@ -90,6 +90,7 @@ final class PhpDocFromTypeDeclarationDecorator
         $this->reflectionResolver = $reflectionResolver;
         $this->phpAttributeAnalyzer = $phpAttributeAnalyzer;
         $this->phpVersionProvider = $phpVersionProvider;
+        $this->astResolver = $astResolver;
         $this->classMethodWillChangeReturnTypes = [
             // @todo how to make list complete? is the method list needed or can we use just class names?
             new ClassMethodWillChangeReturnType('ArrayAccess', 'offsetGet'),
@@ -101,7 +102,7 @@ final class PhpDocFromTypeDeclarationDecorator
      */
     public function decorateReturn($functionLike) : void
     {
-        if ($functionLike->returnType === null) {
+        if (!$functionLike->returnType instanceof Node) {
             return;
         }
         $phpDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($functionLike);
@@ -121,6 +122,22 @@ final class PhpDocFromTypeDeclarationDecorator
         if (!$classReflection instanceof ClassReflection || !$classReflection->isInterface() && !$classReflection->isClass()) {
             return;
         }
+        $ancestors = \array_filter($classReflection->getAncestors(), static fn(ClassReflection $ancestor): bool => $classReflection->getName() !== $ancestor->getName());
+        foreach ($ancestors as $ancestor) {
+            $classLike = $this->astResolver->resolveClassFromClassReflection($ancestor);
+            if (!$classLike instanceof ClassLike) {
+                continue;
+            }
+            $classMethod = $classLike->getMethod($functionLike->name->toString());
+            if (!$classMethod instanceof ClassMethod) {
+                continue;
+            }
+            $returnType = $classMethod->returnType;
+            if ($returnType instanceof Node && $returnType instanceof FullyQualified) {
+                $functionLike->returnType = new FullyQualified($returnType->toString());
+                break;
+            }
+        }
         if (!$this->isRequireReturnTypeWillChange($classReflection, $functionLike)) {
             return;
         }
@@ -132,7 +149,7 @@ final class PhpDocFromTypeDeclarationDecorator
      */
     public function decorateParam(Param $param, $functionLike, array $requiredTypes) : void
     {
-        if ($param->type === null) {
+        if (!$param->type instanceof Node) {
             return;
         }
         $type = $this->staticTypeMapper->mapPhpParserNodePHPStanType($param->type);
@@ -150,7 +167,7 @@ final class PhpDocFromTypeDeclarationDecorator
      */
     public function decorateParamWithSpecificType(Param $param, $functionLike, Type $requireType) : bool
     {
-        if ($param->type === null) {
+        if (!$param->type instanceof Node) {
             return \false;
         }
         if (!$this->isTypeMatch($param->type, $requireType)) {
@@ -170,7 +187,7 @@ final class PhpDocFromTypeDeclarationDecorator
      */
     public function decorateReturnWithSpecificType($functionLike, Type $requireType) : bool
     {
-        if ($functionLike->returnType === null) {
+        if (!$functionLike->returnType instanceof Node) {
             return \false;
         }
         if (!$this->isTypeMatch($functionLike->returnType, $requireType)) {
@@ -191,7 +208,7 @@ final class PhpDocFromTypeDeclarationDecorator
             if ($classMethodWillChangeReturnType->getMethodName() !== $methodName) {
                 continue;
             }
-            if (!$classReflection->isSubclassOf($classMethodWillChangeReturnType->getClassName())) {
+            if (!$classReflection->is($classMethodWillChangeReturnType->getClassName())) {
                 continue;
             }
             if ($this->phpAttributeAnalyzer->hasPhpAttribute($classMethod, 'ReturnTypeWillChange')) {

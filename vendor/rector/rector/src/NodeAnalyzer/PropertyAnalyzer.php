@@ -4,20 +4,17 @@ declare (strict_types=1);
 namespace Rector\NodeAnalyzer;
 
 use PhpParser\Node\Stmt\Property;
-use PHPStan\Type\CallableType;
-use PHPStan\Type\NullType;
 use PHPStan\Type\Type;
-use PHPStan\Type\TypeWithClassName;
 use PHPStan\Type\UnionType;
 use Rector\NodeTypeResolver\NodeTypeResolver;
+use Rector\StaticTypeMapper\Resolver\ClassNameFromObjectTypeResolver;
 use Rector\StaticTypeMapper\ValueObject\Type\NonExistingObjectType;
 final class PropertyAnalyzer
 {
     /**
      * @readonly
-     * @var \Rector\NodeTypeResolver\NodeTypeResolver
      */
-    private $nodeTypeResolver;
+    private NodeTypeResolver $nodeTypeResolver;
     public function __construct(NodeTypeResolver $nodeTypeResolver)
     {
         $this->nodeTypeResolver = $nodeTypeResolver;
@@ -25,7 +22,7 @@ final class PropertyAnalyzer
     public function hasForbiddenType(Property $property) : bool
     {
         $propertyType = $this->nodeTypeResolver->getType($property);
-        if ($propertyType instanceof NullType) {
+        if ($propertyType->isNull()->yes()) {
             return \true;
         }
         if ($this->isForbiddenType($propertyType)) {
@@ -42,7 +39,7 @@ final class PropertyAnalyzer
         }
         return \false;
     }
-    private function isForbiddenType(Type $type) : bool
+    public function isForbiddenType(Type $type) : bool
     {
         if ($type instanceof NonExistingObjectType) {
             return \true;
@@ -51,9 +48,9 @@ final class PropertyAnalyzer
     }
     private function isCallableType(Type $type) : bool
     {
-        if ($type instanceof TypeWithClassName && $type->getClassName() === 'Closure') {
+        if (ClassNameFromObjectTypeResolver::resolve($type) === 'Closure') {
             return \false;
         }
-        return $type instanceof CallableType;
+        return $type->isCallable()->yes();
     }
 }

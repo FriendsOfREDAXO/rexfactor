@@ -28,23 +28,16 @@ final class RemoveTypedPropertyNonMockDocblockRector extends AbstractRector impl
 {
     /**
      * @readonly
-     * @var \Rector\DeadCode\PhpDoc\TagRemover\VarTagRemover
      */
-    private $varTagRemover;
+    private VarTagRemover $varTagRemover;
     /**
      * @readonly
-     * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
-    private $staticTypeMapper;
+    private StaticTypeMapper $staticTypeMapper;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
-    /**
-     * @var string
-     */
-    private const MOCK_OBJECT_CLASS = 'PHPUnit\\Framework\\MockObject\\MockObject';
+    private PhpDocInfoFactory $phpDocInfoFactory;
     public function __construct(VarTagRemover $varTagRemover, StaticTypeMapper $staticTypeMapper, PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->varTagRemover = $varTagRemover;
@@ -100,7 +93,7 @@ CODE_SAMPLE
             if (!$property->type instanceof FullyQualified) {
                 continue;
             }
-            if ($this->isObjectType($property->type, new ObjectType(self::MOCK_OBJECT_CLASS))) {
+            if ($this->isObjectType($property->type, new ObjectType(ClassName::MOCK_OBJECT))) {
                 continue;
             }
             $propertyDocInfo = $this->phpDocInfoFactory->createFromNodeOrEmpty($property);
@@ -135,7 +128,7 @@ CODE_SAMPLE
             return \false;
         }
         foreach ($varTagType->getTypes() as $unionedType) {
-            if ($unionedType->isSuperTypeOf(new ObjectType(self::MOCK_OBJECT_CLASS))->yes()) {
+            if ($unionedType->isSuperTypeOf(new ObjectType(ClassName::MOCK_OBJECT))->yes()) {
                 return \true;
             }
         }

@@ -12,14 +12,12 @@ final class RectorTestResult
 {
     /**
      * @readonly
-     * @var string
      */
-    private $changedContents;
+    private string $changedContents;
     /**
      * @readonly
-     * @var \Rector\ValueObject\ProcessResult
      */
-    private $processResult;
+    private ProcessResult $processResult;
     public function __construct(string $changedContents, ProcessResult $processResult)
     {
         $this->changedContents = $changedContents;
@@ -35,7 +33,7 @@ final class RectorTestResult
     public function getAppliedRectorClasses() : array
     {
         $rectorClasses = [];
-        foreach ($this->processResult->getFileDiffs() as $fileDiff) {
+        foreach ($this->processResult->getFileDiffs(\false) as $fileDiff) {
             $rectorClasses = \array_merge($rectorClasses, $fileDiff->getRectorClasses());
         }
         \sort($rectorClasses);

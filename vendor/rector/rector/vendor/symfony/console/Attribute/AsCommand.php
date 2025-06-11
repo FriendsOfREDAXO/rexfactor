@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Attribute;
+namespace RectorPrefix202506\Symfony\Component\Console\Attribute;
 
 /**
  * Service tag to autoconfigure commands.
@@ -16,14 +16,8 @@ namespace RectorPrefix202411\Symfony\Component\Console\Attribute;
 #[\Attribute(\Attribute::TARGET_CLASS)]
 class AsCommand
 {
-    /**
-     * @var string
-     */
-    public $name;
-    /**
-     * @var string|null
-     */
-    public $description;
+    public string $name;
+    public ?string $description = null;
     public function __construct(string $name, ?string $description = null, array $aliases = [], bool $hidden = \false)
     {
         $this->name = $name;

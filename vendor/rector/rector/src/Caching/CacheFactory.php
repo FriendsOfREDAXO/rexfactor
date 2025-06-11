@@ -7,14 +7,13 @@ use Rector\Caching\ValueObject\Storage\FileCacheStorage;
 use Rector\Caching\ValueObject\Storage\MemoryCacheStorage;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
-use RectorPrefix202411\Symfony\Component\Filesystem\Filesystem;
+use RectorPrefix202506\Symfony\Component\Filesystem\Filesystem;
 final class CacheFactory
 {
     /**
      * @readonly
-     * @var \Symfony\Component\Filesystem\Filesystem
      */
-    private $fileSystem;
+    private Filesystem $fileSystem;
     public function __construct(Filesystem $fileSystem)
     {
         $this->fileSystem = $fileSystem;

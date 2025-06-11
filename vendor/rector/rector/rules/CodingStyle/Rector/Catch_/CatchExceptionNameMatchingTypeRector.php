@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\CodingStyle\Rector\Catch_;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\Closure;
@@ -15,7 +15,7 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\TryCatch;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PHPStan\Analyser\Scope;
 use PHPStan\Type\ObjectType;
 use Rector\Naming\Naming\PropertyNaming;
@@ -31,9 +31,8 @@ final class CatchExceptionNameMatchingTypeRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\PropertyNaming
      */
-    private $propertyNaming;
+    private PropertyNaming $propertyNaming;
     /**
      * @var string
      * @see https://regex101.com/r/xmfMAX/1
@@ -143,7 +142,7 @@ CODE_SAMPLE
             if (!$node instanceof Variable) {
                 return null;
             }
-            if (!$this->nodeNameResolver->isName($node, $oldVariableName)) {
+            if (!$this->isName($node, $oldVariableName)) {
                 return null;
             }
             $node->name = $newVariableName;
@@ -162,12 +161,12 @@ CODE_SAMPLE
         $nonAssignedVariables = [];
         $this->traverseNodesWithCallable($nextNode, function (Node $node) use($oldVariableName, &$nonAssignedVariables) : ?int {
             if ($node instanceof Assign && $node->var instanceof Variable) {
-                return NodeTraverser::STOP_TRAVERSAL;
+                return NodeVisitor::STOP_TRAVERSAL;
             }
             if (!$node instanceof Variable) {
                 return null;
             }
-            if (!$this->nodeNameResolver->isName($node, $oldVariableName)) {
+            if (!$this->isName($node, $oldVariableName)) {
                 return null;
             }
             $nonAssignedVariables[] = $node;

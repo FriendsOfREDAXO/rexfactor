@@ -15,7 +15,7 @@ use Rector\Rector\AbstractRector;
 use Rector\Renaming\ValueObject\RenameProperty;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Renaming\Rector\PropertyFetch\RenamePropertyRector\RenamePropertyRectorTest
  */
@@ -24,14 +24,11 @@ final class RenamePropertyRector extends AbstractRector implements ConfigurableR
     /**
      * @var RenameProperty[]
      */
-    private $renamedProperties = [];
-    /**
-     * @var bool
-     */
-    private $hasChanged = \false;
+    private array $renamedProperties = [];
+    private bool $hasChanged = \false;
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Replaces defined old properties by new ones.', [new ConfiguredCodeSample('$someObject->someOldProperty;', '$someObject->someNewProperty;', [new RenameProperty('SomeClass', 'someOldProperty', 'someNewProperty')])]);
+        return new RuleDefinition('Replace defined old properties by new ones', [new ConfiguredCodeSample('$someObject->someOldProperty;', '$someObject->someNewProperty;', [new RenameProperty('SomeClass', 'someOldProperty', 'someNewProperty')])]);
     }
     /**
      * @return array<class-string<Node>>
@@ -67,7 +64,7 @@ final class RenamePropertyRector extends AbstractRector implements ConfigurableR
     }
     private function renameProperty(ClassLike $classLike, RenameProperty $renameProperty) : void
     {
-        $classLikeName = (string) $this->nodeNameResolver->getName($classLike);
+        $classLikeName = (string) $this->getName($classLike);
         $renamePropertyObjectType = $renameProperty->getObjectType();
         $className = $renamePropertyObjectType->getClassName();
         $classLikeNameObjectType = new ObjectType($classLikeName);

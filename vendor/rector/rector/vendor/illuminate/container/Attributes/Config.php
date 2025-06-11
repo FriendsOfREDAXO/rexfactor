@@ -1,17 +1,14 @@
 <?php
 
-namespace RectorPrefix202411\Illuminate\Container\Attributes;
+namespace RectorPrefix202506\Illuminate\Container\Attributes;
 
 use Attribute;
-use RectorPrefix202411\Illuminate\Contracts\Container\Container;
-use RectorPrefix202411\Illuminate\Contracts\Container\ContextualAttribute;
+use RectorPrefix202506\Illuminate\Contracts\Container\Container;
+use RectorPrefix202506\Illuminate\Contracts\Container\ContextualAttribute;
 #[Attribute(Attribute::TARGET_PARAMETER)]
 class Config implements ContextualAttribute
 {
-    /**
-     * @var string
-     */
-    public $key;
+    public string $key;
     /**
      * @var mixed
      */

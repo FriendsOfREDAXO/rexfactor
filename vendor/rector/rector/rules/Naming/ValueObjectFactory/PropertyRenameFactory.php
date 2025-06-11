@@ -3,28 +3,27 @@
 declare (strict_types=1);
 namespace Rector\Naming\ValueObjectFactory;
 
-use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Property;
 use Rector\Naming\ValueObject\PropertyRename;
 use Rector\NodeNameResolver\NodeNameResolver;
-use RectorPrefix202411\Webmozart\Assert\InvalidArgumentException;
+use RectorPrefix202506\Webmozart\Assert\InvalidArgumentException;
 final class PropertyRenameFactory
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     public function __construct(NodeNameResolver $nodeNameResolver)
     {
         $this->nodeNameResolver = $nodeNameResolver;
     }
-    public function createFromExpectedName(ClassLike $classLike, Property $property, string $expectedName) : ?PropertyRename
+    public function createFromExpectedName(Class_ $class, Property $property, string $expectedName) : ?PropertyRename
     {
         $currentName = $this->nodeNameResolver->getName($property);
-        $className = (string) $this->nodeNameResolver->getName($classLike);
+        $className = (string) $this->nodeNameResolver->getName($class);
         try {
-            return new PropertyRename($property, $expectedName, $currentName, $classLike, $className, $property->props[0]);
+            return new PropertyRename($property, $expectedName, $currentName, $class, $className, $property->props[0]);
         } catch (InvalidArgumentException $exception) {
         }
         return null;

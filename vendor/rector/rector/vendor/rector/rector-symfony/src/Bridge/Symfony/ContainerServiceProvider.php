@@ -6,14 +6,11 @@ namespace Rector\Symfony\Bridge\Symfony;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
 use Rector\Exception\ShouldNotHappenException;
-use RectorPrefix202411\Symfony\Component\DependencyInjection\Container;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Symfony\Component\DependencyInjection\Container;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class ContainerServiceProvider
 {
-    /**
-     * @var object|null
-     */
-    private $container;
+    private ?object $container = null;
     public function provideByName(string $serviceName) : object
     {
         /** @var Container $symfonyContainer */

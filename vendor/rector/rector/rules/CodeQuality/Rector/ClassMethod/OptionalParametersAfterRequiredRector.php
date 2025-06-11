@@ -18,35 +18,32 @@ use Rector\CodingStyle\Reflection\VendorLocationDetector;
 use Rector\NodeTypeResolver\PHPStan\ParametersAcceptorSelectorVariantsWrapper;
 use Rector\Php80\NodeResolver\ArgumentSorter;
 use Rector\Php80\NodeResolver\RequireOptionalParamResolver;
-use Rector\Rector\AbstractScopeAwareRector;
+use Rector\PHPStan\ScopeFetcher;
+use Rector\Rector\AbstractRector;
 use Rector\Reflection\ReflectionResolver;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\CodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
 /**
  * @see \Rector\Tests\CodeQuality\Rector\ClassMethod\OptionalParametersAfterRequiredRector\OptionalParametersAfterRequiredRectorTest
  */
-final class OptionalParametersAfterRequiredRector extends AbstractScopeAwareRector
+final class OptionalParametersAfterRequiredRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\Php80\NodeResolver\RequireOptionalParamResolver
      */
-    private $requireOptionalParamResolver;
+    private RequireOptionalParamResolver $requireOptionalParamResolver;
     /**
      * @readonly
-     * @var \Rector\Php80\NodeResolver\ArgumentSorter
      */
-    private $argumentSorter;
+    private ArgumentSorter $argumentSorter;
     /**
      * @readonly
-     * @var \Rector\Reflection\ReflectionResolver
      */
-    private $reflectionResolver;
+    private ReflectionResolver $reflectionResolver;
     /**
      * @readonly
-     * @var \Rector\CodingStyle\Reflection\VendorLocationDetector
      */
-    private $vendorLocationDetector;
+    private VendorLocationDetector $vendorLocationDetector;
     /**
      * @var string
      */
@@ -89,8 +86,9 @@ CODE_SAMPLE
      * @param ClassMethod|Function_|New_|MethodCall|StaticCall|FuncCall $node
      * @return \PhpParser\Node\Stmt\ClassMethod|\PhpParser\Node\Stmt\Function_|null|\PhpParser\Node\Expr\New_|\PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall|\PhpParser\Node\Expr\FuncCall
      */
-    public function refactorWithScope(Node $node, Scope $scope)
+    public function refactor(Node $node)
     {
+        $scope = ScopeFetcher::fetch($node);
         if ($node instanceof ClassMethod || $node instanceof Function_) {
             return $this->refactorClassMethodOrFunction($node, $scope);
         }
@@ -114,7 +112,7 @@ CODE_SAMPLE
         if ($node instanceof ClassMethod) {
             $reflection = $this->reflectionResolver->resolveMethodReflectionFromClassMethod($node, $scope);
         } else {
-            $reflection = $this->reflectionResolver->resolveFunctionReflectionFromFunction($node, $scope);
+            $reflection = $this->reflectionResolver->resolveFunctionReflectionFromFunction($node);
         }
         if (!$reflection instanceof MethodReflection && !$reflection instanceof FunctionReflection) {
             return null;

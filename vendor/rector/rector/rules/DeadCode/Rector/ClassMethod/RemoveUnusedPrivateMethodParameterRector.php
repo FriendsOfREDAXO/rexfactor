@@ -5,11 +5,12 @@ namespace Rector\DeadCode\Rector\ClassMethod;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
+use PHPStan\Type\ObjectType;
 use Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory;
 use Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover;
 use Rector\Comments\NodeDocBlock\DocBlockUpdater;
@@ -26,34 +27,28 @@ final class RemoveUnusedPrivateMethodParameterRector extends AbstractRector
 {
     /**
      * @readonly
-     * @var \Rector\DeadCode\NodeManipulator\VariadicFunctionLikeDetector
      */
-    private $variadicFunctionLikeDetector;
+    private VariadicFunctionLikeDetector $variadicFunctionLikeDetector;
     /**
      * @readonly
-     * @var \Rector\DeadCode\NodeCollector\UnusedParameterResolver
      */
-    private $unusedParameterResolver;
+    private UnusedParameterResolver $unusedParameterResolver;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover
      */
-    private $phpDocTagRemover;
+    private PhpDocTagRemover $phpDocTagRemover;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\BetterNodeFinder
      */
-    private $betterNodeFinder;
+    private BetterNodeFinder $betterNodeFinder;
     public function __construct(VariadicFunctionLikeDetector $variadicFunctionLikeDetector, UnusedParameterResolver $unusedParameterResolver, PhpDocTagRemover $phpDocTagRemover, DocBlockUpdater $docBlockUpdater, PhpDocInfoFactory $phpDocInfoFactory, BetterNodeFinder $betterNodeFinder)
     {
         $this->variadicFunctionLikeDetector = $variadicFunctionLikeDetector;
@@ -133,11 +128,12 @@ CODE_SAMPLE
         if ($classMethods === []) {
             return;
         }
-        $methodName = $this->nodeNameResolver->getName($classMethod);
+        $methodName = $this->getName($classMethod);
         $keysArg = \array_keys($unusedParameters);
+        $classObjectType = new ObjectType((string) $this->getName($class));
         foreach ($classMethods as $classMethod) {
-            /** @var MethodCall[] $callers */
-            $callers = $this->resolveCallers($classMethod, $methodName);
+            /** @var MethodCall[]|StaticCall[] $callers */
+            $callers = $this->resolveCallers($classMethod, $methodName, $classObjectType);
             if ($callers === []) {
                 continue;
             }
@@ -148,40 +144,39 @@ CODE_SAMPLE
     }
     /**
      * @param int[] $keysArg
+     * @param \PhpParser\Node\Expr\MethodCall|\PhpParser\Node\Expr\StaticCall $call
      */
-    private function cleanupArgs(MethodCall $methodCall, array $keysArg) : void
+    private function cleanupArgs($call, array $keysArg) : void
     {
-        if ($methodCall->isFirstClassCallable()) {
+        if ($call->isFirstClassCallable()) {
             return;
         }
-        $args = $methodCall->getArgs();
+        $args = $call->getArgs();
         foreach (\array_keys($args) as $key) {
             if (\in_array($key, $keysArg, \true)) {
                 unset($args[$key]);
             }
         }
         // reset arg keys
-        $methodCall->args = \array_values($args);
+        $call->args = \array_values($args);
     }
     /**
-     * @return MethodCall[]
+     * @return MethodCall[]|StaticCall[]
      */
-    private function resolveCallers(ClassMethod $classMethod, string $methodName) : array
+    private function resolveCallers(ClassMethod $classMethod, string $methodName, ObjectType $classObjectType) : array
     {
-        return $this->betterNodeFinder->find($classMethod, function (Node $subNode) use($methodName) : bool {
-            if (!$subNode instanceof MethodCall) {
+        return $this->betterNodeFinder->find($classMethod, function (Node $subNode) use($methodName, $classObjectType) : bool {
+            if (!$subNode instanceof MethodCall && !$subNode instanceof StaticCall) {
                 return \false;
             }
             if ($subNode->isFirstClassCallable()) {
                 return \false;
             }
-            if (!$subNode->var instanceof Variable) {
+            $nodeToCheck = $subNode instanceof MethodCall ? $subNode->var : $subNode->class;
+            if (!$this->isObjectType($nodeToCheck, $classObjectType)) {
                 return \false;
             }
-            if (!$this->nodeNameResolver->isName($subNode->var, 'this')) {
-                return \false;
-            }
-            return $this->nodeNameResolver->isName($subNode->name, $methodName);
+            return $this->isName($subNode->name, $methodName);
         });
     }
     private function shouldSkipClassMethod(ClassMethod $classMethod) : bool

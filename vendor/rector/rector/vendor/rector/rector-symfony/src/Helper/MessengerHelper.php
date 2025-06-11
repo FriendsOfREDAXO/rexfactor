@@ -16,26 +16,24 @@ final class MessengerHelper
 {
     /**
      * @readonly
-     * @var \Rector\PhpAttribute\NodeFactory\PhpAttributeGroupFactory
      */
-    private $phpAttributeGroupFactory;
+    private PhpAttributeGroupFactory $phpAttributeGroupFactory;
     /**
      * @readonly
-     * @var \Rector\PhpAttribute\AttributeArrayNameInliner
      */
-    private $attributeArrayNameInliner;
+    private AttributeArrayNameInliner $attributeArrayNameInliner;
     /**
      * @readonly
-     * @var \Rector\Symfony\DataProvider\ServiceMapProvider
      */
-    private $serviceMapProvider;
+    private ServiceMapProvider $serviceMapProvider;
     public const MESSAGE_HANDLER_INTERFACE = 'Symfony\\Component\\Messenger\\Handler\\MessageHandlerInterface';
     public const MESSAGE_SUBSCRIBER_INTERFACE = 'Symfony\\Component\\Messenger\\Handler\\MessageSubscriberInterface';
     public const AS_MESSAGE_HANDLER_ATTRIBUTE = 'Symfony\\Component\\Messenger\\Attribute\\AsMessageHandler';
+    private string $messengerTagName = 'messenger.message_handler';
     /**
-     * @var string
+     * @var ServiceDefinition[]
      */
-    private $messengerTagName = 'messenger.message_handler';
+    private array $handlersFromServices = [];
     public function __construct(PhpAttributeGroupFactory $phpAttributeGroupFactory, AttributeArrayNameInliner $attributeArrayNameInliner, ServiceMapProvider $serviceMapProvider)
     {
         $this->phpAttributeGroupFactory = $phpAttributeGroupFactory;
@@ -64,8 +62,12 @@ final class MessengerHelper
      */
     public function getHandlersFromServices() : array
     {
+        if ($this->handlersFromServices !== []) {
+            return $this->handlersFromServices;
+        }
         $serviceMap = $this->serviceMapProvider->provide();
-        return $serviceMap->getServicesByTag($this->messengerTagName);
+        $this->handlersFromServices = $serviceMap->getServicesByTag($this->messengerTagName);
+        return $this->handlersFromServices;
     }
     /**
      * @param array<string, mixed> $options

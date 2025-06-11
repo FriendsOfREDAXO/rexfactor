@@ -30,7 +30,7 @@ use Rector\ValueObject\PhpVersion;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
  * @see \Rector\Tests\Php80\Rector\Property\NestedAnnotationToAttributeRector\NestedAnnotationToAttributeRectorTest
  */
@@ -38,38 +38,32 @@ final class NestedAnnotationToAttributeRector extends AbstractRector implements 
 {
     /**
      * @readonly
-     * @var \Rector\Naming\Naming\UseImportsResolver
      */
-    private $useImportsResolver;
+    private UseImportsResolver $useImportsResolver;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocManipulator\PhpDocTagRemover
      */
-    private $phpDocTagRemover;
+    private PhpDocTagRemover $phpDocTagRemover;
     /**
      * @readonly
-     * @var \Rector\Php80\NodeFactory\NestedAttrGroupsFactory
      */
-    private $nestedAttrGroupsFactory;
+    private NestedAttrGroupsFactory $nestedAttrGroupsFactory;
     /**
      * @readonly
-     * @var \Rector\PostRector\Collector\UseNodesToAddCollector
      */
-    private $useNodesToAddCollector;
+    private UseNodesToAddCollector $useNodesToAddCollector;
     /**
      * @readonly
-     * @var \Rector\Comments\NodeDocBlock\DocBlockUpdater
      */
-    private $docBlockUpdater;
+    private DocBlockUpdater $docBlockUpdater;
     /**
      * @readonly
-     * @var \Rector\BetterPhpDocParser\PhpDocInfo\PhpDocInfoFactory
      */
-    private $phpDocInfoFactory;
+    private PhpDocInfoFactory $phpDocInfoFactory;
     /**
      * @var NestedAnnotationToAttribute[]
      */
-    private $nestedAnnotationsToAttributes = [];
+    private array $nestedAnnotationsToAttributes = [];
     public function __construct(UseImportsResolver $useImportsResolver, PhpDocTagRemover $phpDocTagRemover, NestedAttrGroupsFactory $nestedAttrGroupsFactory, UseNodesToAddCollector $useNodesToAddCollector, DocBlockUpdater $docBlockUpdater, PhpDocInfoFactory $phpDocInfoFactory)
     {
         $this->useImportsResolver = $useImportsResolver;
@@ -81,7 +75,7 @@ final class NestedAnnotationToAttributeRector extends AbstractRector implements 
     }
     public function getRuleDefinition() : RuleDefinition
     {
-        return new RuleDefinition('Changed nested annotations to attributes', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
+        return new RuleDefinition('Change nested annotations to attributes', [new ConfiguredCodeSample(<<<'CODE_SAMPLE'
 use Doctrine\ORM\Mapping as ORM;
 
 class SomeEntity

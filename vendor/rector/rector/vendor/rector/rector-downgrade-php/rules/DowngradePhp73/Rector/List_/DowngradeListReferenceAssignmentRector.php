@@ -5,14 +5,14 @@ namespace Rector\DowngradePhp73\Rector\List_;
 
 use PhpParser\BuilderHelpers;
 use PhpParser\Node;
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayDimFetch;
-use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\AssignRef;
 use PhpParser\Node\Expr\List_;
 use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Expression;
 use Rector\Rector\AbstractRector;
@@ -233,7 +233,7 @@ CODE_SAMPLE
         if ($arrayItem->key instanceof String_) {
             return $arrayItem->key->value;
         }
-        if ($arrayItem->key instanceof LNumber) {
+        if ($arrayItem->key instanceof Int_) {
             return $arrayItem->key->value;
         }
         return $position;
@@ -256,7 +256,7 @@ CODE_SAMPLE
         return new Expression($assignRef);
     }
     /**
-     * @param array<ArrayItem|null> $arrayItems
+     * @param array<(ArrayItem | null)> $arrayItems
      * @return ArrayItem[]
      */
     private function getItemsByRef(array $arrayItems, int $condition) : array

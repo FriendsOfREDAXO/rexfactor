@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\Output;
+namespace RectorPrefix202506\Symfony\Component\Console\Output;
 
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatter;
-use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatterInterface;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatter;
+use RectorPrefix202506\Symfony\Component\Console\Formatter\OutputFormatterInterface;
 /**
  * Base class for output classes.
  *
@@ -27,14 +27,8 @@ use RectorPrefix202411\Symfony\Component\Console\Formatter\OutputFormatterInterf
  */
 abstract class Output implements OutputInterface
 {
-    /**
-     * @var int
-     */
-    private $verbosity;
-    /**
-     * @var \Symfony\Component\Console\Formatter\OutputFormatterInterface
-     */
-    private $formatter;
+    private int $verbosity;
+    private OutputFormatterInterface $formatter;
     /**
      * @param int|null                      $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
      * @param bool                          $decorated Whether to decorate messages

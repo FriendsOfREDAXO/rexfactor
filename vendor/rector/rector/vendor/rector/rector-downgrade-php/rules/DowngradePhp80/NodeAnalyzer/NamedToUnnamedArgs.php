@@ -18,14 +18,12 @@ final class NamedToUnnamedArgs
 {
     /**
      * @readonly
-     * @var \Rector\NodeNameResolver\NodeNameResolver
      */
-    private $nodeNameResolver;
+    private NodeNameResolver $nodeNameResolver;
     /**
      * @readonly
-     * @var \Rector\DowngradePhp80\Reflection\DefaultParameterValueResolver
      */
-    private $defaultParameterValueResolver;
+    private DefaultParameterValueResolver $defaultParameterValueResolver;
     public function __construct(NodeNameResolver $nodeNameResolver, DefaultParameterValueResolver $defaultParameterValueResolver)
     {
         $this->nodeNameResolver = $nodeNameResolver;
@@ -52,7 +50,7 @@ final class NamedToUnnamedArgs
                 if (!$this->nodeNameResolver->isName($currentArg->name, $parameterReflectionName)) {
                     continue;
                 }
-                $unnamedArgs[$paramPosition] = new Arg($currentArg->value, $currentArg->byRef, $currentArg->unpack, $currentArg->getAttributes(), null);
+                $unnamedArgs[$paramPosition] = new Arg($currentArg->value, $currentArg->byRef, $currentArg->unpack, [], null);
             }
         }
         return $unnamedArgs;

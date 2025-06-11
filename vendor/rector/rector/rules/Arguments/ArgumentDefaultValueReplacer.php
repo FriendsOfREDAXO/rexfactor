@@ -20,14 +20,12 @@ final class ArgumentDefaultValueReplacer
 {
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\NodeFactory
      */
-    private $nodeFactory;
+    private NodeFactory $nodeFactory;
     /**
      * @readonly
-     * @var \Rector\PhpParser\Node\Value\ValueResolver
      */
-    private $valueResolver;
+    private ValueResolver $valueResolver;
     public function __construct(NodeFactory $nodeFactory, ValueResolver $valueResolver)
     {
         $this->nodeFactory = $nodeFactory;
@@ -98,13 +96,16 @@ final class ArgumentDefaultValueReplacer
         $argValue = $this->valueResolver->getValue($particularArg->value);
         if (\is_scalar($replaceArgumentDefaultValue->getValueBefore()) && $argValue === $replaceArgumentDefaultValue->getValueBefore()) {
             $expr->args[$position] = $this->normalizeValueToArgument($replaceArgumentDefaultValue->getValueAfter());
-        } elseif (\is_array($replaceArgumentDefaultValue->getValueBefore())) {
+            return $expr;
+        }
+        if (\is_array($replaceArgumentDefaultValue->getValueBefore())) {
             $newArgs = $this->processArrayReplacement($expr->getArgs(), $replaceArgumentDefaultValue);
             if (\is_array($newArgs)) {
                 $expr->args = $newArgs;
+                return $expr;
             }
         }
-        return $expr;
+        return null;
     }
     /**
      * @param mixed $value

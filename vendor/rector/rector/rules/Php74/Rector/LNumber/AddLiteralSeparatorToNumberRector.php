@@ -4,8 +4,8 @@ declare (strict_types=1);
 namespace Rector\Php74\Rector\LNumber;
 
 use PhpParser\Node;
-use PhpParser\Node\Scalar\DNumber;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\Scalar\Float_;
+use PhpParser\Node\Scalar\Int_;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\Rector\AbstractRector;
@@ -14,12 +14,12 @@ use Rector\ValueObject\PhpVersionFeature;
 use Rector\VersionBonding\Contract\MinPhpVersionInterface;
 use Symplify\RuleDocGenerator\ValueObject\CodeSample\ConfiguredCodeSample;
 use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 /**
- * @see \Rector\Tests\Php74\Rector\LNumber\AddLiteralSeparatorToNumberRector\AddLiteralSeparatorToNumberRectorTest
- *
  * Taking the most generic use case to the account: https://wiki.php.net/rfc/numeric_literal_separator#should_it_be_the_role_of_an_ide_to_group_digits
  * The final check should be done manually
+ *
+ * @see \Rector\Tests\Php74\Rector\LNumber\AddLiteralSeparatorToNumberRector\AddLiteralSeparatorToNumberRectorTest
  */
 final class AddLiteralSeparatorToNumberRector extends AbstractRector implements MinPhpVersionInterface, ConfigurableRectorInterface
 {
@@ -36,10 +36,7 @@ final class AddLiteralSeparatorToNumberRector extends AbstractRector implements 
      * @var int
      */
     private const DEFAULT_LIMIT_VALUE = 1000000;
-    /**
-     * @var int
-     */
-    private $limitValue = self::DEFAULT_LIMIT_VALUE;
+    private int $limitValue = self::DEFAULT_LIMIT_VALUE;
     /**
      * @param mixed[] $configuration
      */
@@ -78,10 +75,10 @@ CODE_SAMPLE
      */
     public function getNodeTypes() : array
     {
-        return [LNumber::class, DNumber::class];
+        return [Int_::class, Float_::class];
     }
     /**
-     * @param LNumber|DNumber $node
+     * @param Int_|Float_ $node
      */
     public function refactor(Node $node) : ?Node
     {
@@ -113,7 +110,7 @@ CODE_SAMPLE
         return PhpVersionFeature::LITERAL_SEPARATOR;
     }
     /**
-     * @param \PhpParser\Node\Scalar\LNumber|\PhpParser\Node\Scalar\DNumber $node
+     * @param \PhpParser\Node\Scalar\Int_|\PhpParser\Node\Scalar\Float_ $node
      * @param mixed $rawValue
      */
     private function shouldSkip($node, $rawValue) : bool
@@ -129,7 +126,7 @@ CODE_SAMPLE
             return \true;
         }
         $kind = $node->getAttribute(AttributeKey::KIND);
-        if (\in_array($kind, [LNumber::KIND_BIN, LNumber::KIND_OCT, LNumber::KIND_HEX], \true)) {
+        if (\in_array($kind, [Int_::KIND_BIN, Int_::KIND_OCT, Int_::KIND_HEX], \true)) {
             return \true;
         }
         // e+/e-
@@ -140,6 +137,7 @@ CODE_SAMPLE
         return \strlen($rawValue) <= self::GROUP_SIZE;
     }
     /**
+     * @param int<1, max> $length
      * @return string[]
      */
     private function strSplitNegative(string $string, int $length) : array

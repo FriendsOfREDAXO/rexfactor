@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Console\CommandLoader;
+namespace RectorPrefix202506\Symfony\Component\Console\CommandLoader;
 
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Exception\CommandNotFoundException;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Exception\CommandNotFoundException;
 /**
  * A simple command loader using factories to instantiate commands lazily.
  *
@@ -19,10 +19,7 @@ use RectorPrefix202411\Symfony\Component\Console\Exception\CommandNotFoundExcept
  */
 class FactoryCommandLoader implements CommandLoaderInterface
 {
-    /**
-     * @var mixed[]
-     */
-    private $factories;
+    private array $factories;
     /**
      * @param callable[] $factories Indexed by command names
      */

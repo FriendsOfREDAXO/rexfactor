@@ -3,7 +3,7 @@
 declare (strict_types=1);
 namespace Rector\PhpParser\Printer;
 
-use RectorPrefix202411\Nette\Utils\Strings;
+use RectorPrefix202506\Nette\Utils\Strings;
 use PhpParser\Comment;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -11,26 +11,33 @@ use PhpParser\Node\AttributeGroup;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrowFunction;
+use PhpParser\Node\Expr\Assign;
+use PhpParser\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\CallLike;
-use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Expr\Instanceof_;
+use PhpParser\Node\Expr\Match_;
 use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Yield_;
-use PhpParser\Node\Param;
-use PhpParser\Node\Scalar\DNumber;
-use PhpParser\Node\Scalar\EncapsedStringPart;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\InterpolatedStringPart;
+use PhpParser\Node\Scalar\Float_;
+use PhpParser\Node\Scalar\Int_;
+use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\String_;
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Declare_;
+use PhpParser\Node\Stmt\InlineHTML;
 use PhpParser\Node\Stmt\Nop;
 use PhpParser\PrettyPrinter\Standard;
+use PHPStan\Node\AnonymousClassNode;
 use PHPStan\Node\Expr\AlwaysRememberedExpr;
 use Rector\Configuration\Option;
 use Rector\Configuration\Parameter\SimpleParameterProvider;
+use Rector\NodeAnalyzer\ExprAnalyzer;
 use Rector\NodeTypeResolver\Node\AttributeKey;
 use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
+use Rector\Util\NewLineSplitter;
+use Rector\Util\StringUtils;
 /**
  * @see \Rector\Tests\PhpParser\Printer\BetterStandardPrinterTest
  *
@@ -39,10 +46,9 @@ use Rector\PhpParser\Node\CustomNode\FileWithoutNamespace;
 final class BetterStandardPrinter extends Standard
 {
     /**
-     * @var string
-     * @see https://regex101.com/r/DrsMY4/1
+     * @readonly
      */
-    private const QUOTED_SLASH_REGEX = "#'|\\\\(?=[\\\\']|\$)#";
+    private ExprAnalyzer $exprAnalyzer;
     /**
      * Remove extra spaces before new Nop_ nodes
      * @see https://regex101.com/r/iSvroO/1
@@ -50,19 +56,14 @@ final class BetterStandardPrinter extends Standard
      */
     private const EXTRA_SPACE_BEFORE_NOP_REGEX = '#^[ \\t]+$#m';
     /**
-     * @see https://regex101.com/r/qZiqGo/13
+     * @see https://regex101.com/r/UluSYL/1
      * @var string
      */
-    private const REPLACE_COLON_WITH_SPACE_REGEX = '#(^.*function .*\\(.*\\)) : #';
-    public function __construct()
+    private const SPACED_NEW_START_REGEX = '#^new\\s+#';
+    public function __construct(ExprAnalyzer $exprAnalyzer)
     {
-        parent::__construct(['shortArraySyntax' => \true]);
-        // print return type double colon right after the bracket "function(): string"
-        $this->initializeInsertionMap();
-        $this->insertionMap['Stmt_ClassMethod->returnType'] = [')', \false, ': ', null];
-        $this->insertionMap['Stmt_Function->returnType'] = [')', \false, ': ', null];
-        $this->insertionMap['Expr_Closure->returnType'] = [')', \false, ': ', null];
-        $this->insertionMap['Expr_ArrowFunction->returnType'] = [')', \false, ': ', null];
+        $this->exprAnalyzer = $exprAnalyzer;
+        parent::__construct();
     }
     /**
      * @param Node[] $stmts
@@ -106,15 +107,38 @@ final class BetterStandardPrinter extends Standard
      */
     public function pFileWithoutNamespace(FileWithoutNamespace $fileWithoutNamespace) : string
     {
-        $content = $this->pStmts($fileWithoutNamespace->stmts, \false);
-        return \ltrim($content);
+        return $this->pStmts($fileWithoutNamespace->stmts);
     }
-    protected function p(Node $node, $parentFormatPreserved = \false) : string
+    /**
+     * @api magic method in parent
+     */
+    public function pInterpolatedStringPart(InterpolatedStringPart $interpolatedStringPart) : string
     {
+        return $interpolatedStringPart->value;
+    }
+    protected function p(Node $node, int $precedence = self::MAX_PRECEDENCE, int $lhsPrecedence = self::MAX_PRECEDENCE, bool $parentFormatPreserved = \false) : string
+    {
+        // handle already AlwaysRememberedExpr
+        // @see https://github.com/rectorphp/rector/issues/8815#issuecomment-2503453191
         while ($node instanceof AlwaysRememberedExpr) {
             $node = $node->getExpr();
         }
-        $content = parent::p($node, $parentFormatPreserved);
+        // handle overlapped origNode is Match_
+        // and its subnodes still have AlwaysRememberedExpr
+        $originalNode = $node->getAttribute(AttributeKey::ORIGINAL_NODE);
+        if ($originalNode instanceof Match_) {
+            $subNodeNames = $node->getSubNodeNames();
+            foreach ($subNodeNames as $subNodeName) {
+                while ($originalNode->{$subNodeName} instanceof AlwaysRememberedExpr) {
+                    $originalNode->{$subNodeName} = $originalNode->{$subNodeName}->getExpr();
+                }
+            }
+        }
+        $this->wrapBinaryOp($node);
+        $content = parent::p($node, $precedence, $lhsPrecedence, $parentFormatPreserved);
+        if ($node instanceof New_ && $node->class instanceof AnonymousClassNode && !StringUtils::isMatch($content, self::SPACED_NEW_START_REGEX)) {
+            $content = 'new ' . $content;
+        }
         return $node->getAttribute(AttributeKey::WRAPPED_IN_PARENTHESES) === \true ? '(' . $content . ')' : $content;
     }
     protected function pAttributeGroup(AttributeGroup $attributeGroup) : string
@@ -126,16 +150,16 @@ final class BetterStandardPrinter extends Standard
         }
         return $ret;
     }
-    protected function pExpr_ArrowFunction(ArrowFunction $arrowFunction) : string
+    protected function pExpr_ArrowFunction(ArrowFunction $arrowFunction, int $precedence, int $lhsPrecedence) : string
     {
         if (!$arrowFunction->hasAttribute(AttributeKey::COMMENT_CLOSURE_RETURN_MIRRORED)) {
-            return parent::pExpr_ArrowFunction($arrowFunction);
+            return parent::pExpr_ArrowFunction($arrowFunction, $precedence, $lhsPrecedence);
         }
         $expr = $arrowFunction->expr;
         /** @var Comment[] $comments */
         $comments = $expr->getAttribute(AttributeKey::COMMENTS) ?? [];
         if ($comments === []) {
-            return parent::pExpr_ArrowFunction($arrowFunction);
+            return parent::pExpr_ArrowFunction($arrowFunction, $precedence, $lhsPrecedence);
         }
         $indent = $this->resolveIndentSpaces();
         $text = "\n" . $indent;
@@ -143,7 +167,7 @@ final class BetterStandardPrinter extends Standard
             $commentText = $key > 0 ? $indent . $comment->getText() : $comment->getText();
             $text .= $commentText . "\n";
         }
-        return $this->pAttrGroups($arrowFunction->attrGroups, \true) . ($arrowFunction->static ? 'static ' : '') . 'fn' . ($arrowFunction->byRef ? '&' : '') . '(' . $this->pCommaSeparated($arrowFunction->params) . ')' . ($arrowFunction->returnType instanceof Node ? ': ' . $this->p($arrowFunction->returnType) : '') . ' =>' . $text . $indent . $this->p($arrowFunction->expr);
+        return $this->pPrefixOp(ArrowFunction::class, $this->pAttrGroups($arrowFunction->attrGroups, \true) . $this->pStatic($arrowFunction->static) . 'fn' . ($arrowFunction->byRef ? '&' : '') . '(' . $this->pMaybeMultiline($arrowFunction->params, $this->phpVersion->supportsTrailingCommaInParamList()) . ')' . ($arrowFunction->returnType instanceof Node ? ': ' . $this->p($arrowFunction->returnType) : '') . ' =>' . $text . $indent, $arrowFunction->expr, $precedence, $lhsPrecedence);
     }
     /**
      * This allows to use both spaces and tabs vs. original space-only
@@ -182,13 +206,12 @@ final class BetterStandardPrinter extends Standard
     /**
      * @param mixed[] $nodes
      * @param mixed[] $origNodes
-     * @param int|null $fixup
      */
-    protected function pArray(array $nodes, array $origNodes, int &$pos, int $indentAdjustment, string $parentNodeType, string $subNodeName, $fixup) : ?string
+    protected function pArray(array $nodes, array $origNodes, int &$pos, int $indentAdjustment, string $parentNodeClass, string $subNodeName, ?int $fixup) : ?string
     {
         // reindex positions for printer
         $nodes = \array_values($nodes);
-        $content = parent::pArray($nodes, $origNodes, $pos, $indentAdjustment, $parentNodeType, $subNodeName, $fixup);
+        $content = parent::pArray($nodes, $origNodes, $pos, $indentAdjustment, $parentNodeClass, $subNodeName, $fixup);
         if ($content === null) {
             return $content;
         }
@@ -198,47 +221,20 @@ final class BetterStandardPrinter extends Standard
         return Strings::replace($content, self::EXTRA_SPACE_BEFORE_NOP_REGEX);
     }
     /**
-     * Do not preslash all slashes (parent behavior), but only those:
-     *
-     * - followed by "\"
-     * - by "'"
-     * - or the end of the string
-     *
-     * Prevents `Vendor\Class` => `Vendor\\Class`.
-     */
-    protected function pSingleQuotedString(string $string) : string
-    {
-        return "'" . Strings::replace($string, self::QUOTED_SLASH_REGEX, '\\\\$0') . "'";
-    }
-    /**
      * Emulates 1_000 in PHP 7.3- version
      */
-    protected function pScalar_DNumber(DNumber $dNumber) : string
+    protected function pScalar_Float(Float_ $float) : string
     {
-        if ($this->shouldPrintNewRawValue($dNumber)) {
-            return (string) $dNumber->getAttribute(AttributeKey::RAW_VALUE);
+        if ($this->shouldPrintNewRawValue($float)) {
+            return (string) $float->getAttribute(AttributeKey::RAW_VALUE);
         }
-        return parent::pScalar_DNumber($dNumber);
-    }
-    /**
-     * Add space:
-     * "use("
-     * ↓
-     * "use ("
-     */
-    protected function pExpr_Closure(Closure $closure) : string
-    {
-        $closureContent = parent::pExpr_Closure($closure);
-        if ($closure->uses === []) {
-            return $closureContent;
-        }
-        return \str_replace(' use(', ' use (', (string) $closureContent);
+        return parent::pScalar_Float($float);
     }
     /**
      * Do not add "()" on Expressions
      * @see https://github.com/rectorphp/rector/pull/401#discussion_r181487199
      */
-    protected function pExpr_Yield(Yield_ $yield) : string
+    protected function pExpr_Yield(Yield_ $yield, int $precedence, int $lhsPrecedence) : string
     {
         if (!$yield->value instanceof Expr) {
             return 'yield';
@@ -248,14 +244,10 @@ final class BetterStandardPrinter extends Standard
         return \sprintf('%syield %s%s%s', $shouldAddBrackets ? '(' : '', $yield->key instanceof Expr ? $this->p($yield->key) . ' => ' : '', $this->p($yield->value), $shouldAddBrackets ? ')' : '');
     }
     /**
-     * Print arrays in short [] by default,
-     * to prevent manual explicit array shortening.
+     * Print new lined array items when newlined_array_print is set to true
      */
     protected function pExpr_Array(Array_ $array) : string
     {
-        if (!$array->hasAttribute(AttributeKey::KIND)) {
-            $array->setAttribute(AttributeKey::KIND, Array_::KIND_SHORT);
-        }
         if ($array->getAttribute(AttributeKey::NEWLINED_ARRAY_PRINT) === \true) {
             $printedArray = '[';
             $printedArray .= $this->pCommaSeparatedMultiline($array->items, \true);
@@ -268,6 +260,10 @@ final class BetterStandardPrinter extends Standard
      */
     protected function pScalar_String(String_ $string) : string
     {
+        if ($string->getAttribute(AttributeKey::DOC_INDENTATION) === '__REMOVED__') {
+            $content = parent::pScalar_String($string);
+            return $this->cleanStartIndentationOnHeredocNowDoc($content);
+        }
         $isRegularPattern = (bool) $string->getAttribute(AttributeKey::IS_REGULAR_PATTERN, \false);
         if (!$isRegularPattern) {
             return parent::pScalar_String($string);
@@ -282,20 +278,6 @@ final class BetterStandardPrinter extends Standard
         return parent::pScalar_String($string);
     }
     /**
-     * "...$params) : ReturnType"
-     * ↓
-     * "...$params): ReturnType"
-     */
-    protected function pStmt_ClassMethod(ClassMethod $classMethod) : string
-    {
-        $content = parent::pStmt_ClassMethod($classMethod);
-        if (!$classMethod->returnType instanceof Node) {
-            return $content;
-        }
-        // this approach is chosen, to keep changes in parent pStmt_ClassMethod() updated
-        return Strings::replace($content, self::REPLACE_COLON_WITH_SPACE_REGEX, '$1: ');
-    }
-    /**
      * It remove all spaces extra to parent
      */
     protected function pStmt_Declare(Declare_ $declare) : string
@@ -303,82 +285,96 @@ final class BetterStandardPrinter extends Standard
         $declareString = parent::pStmt_Declare($declare);
         return Strings::replace($declareString, '#\\s+#');
     }
-    protected function pExpr_Ternary(Ternary $ternary) : string
+    protected function pExpr_Ternary(Ternary $ternary, int $precedence, int $lhsPrecedence) : string
     {
         $kind = $ternary->getAttribute(AttributeKey::KIND);
-        if ($kind === 'wrapped_with_brackets') {
-            $pExprTernary = parent::pExpr_Ternary($ternary);
+        if ($kind === AttributeKey::WRAPPED_IN_PARENTHESES) {
+            $pExprTernary = parent::pExpr_Ternary($ternary, $precedence, $lhsPrecedence);
             return '(' . $pExprTernary . ')';
         }
-        return parent::pExpr_Ternary($ternary);
+        return parent::pExpr_Ternary($ternary, $precedence, $lhsPrecedence);
     }
-    protected function pScalar_EncapsedStringPart(EncapsedStringPart $encapsedStringPart) : string
+    protected function pScalar_InterpolatedString(InterpolatedString $interpolatedString) : string
     {
-        // parent throws exception, but we need to compare string
-        return '`' . $encapsedStringPart->value . '`';
-    }
-    protected function pCommaSeparated(array $nodes) : string
-    {
-        $result = parent::pCommaSeparated($nodes);
-        $last = \end($nodes);
-        if ($last instanceof Node) {
-            $trailingComma = $last->getAttribute(AttributeKey::FUNC_ARGS_TRAILING_COMMA);
-            if ($trailingComma === \false) {
-                $result = \rtrim($result, ',');
-            }
+        $content = parent::pScalar_InterpolatedString($interpolatedString);
+        if ($interpolatedString->getAttribute(AttributeKey::DOC_INDENTATION) === '__REMOVED__') {
+            return $this->cleanStartIndentationOnHeredocNowDoc($content);
         }
-        return $result;
-    }
-    /**
-     * Override parent pModifiers to set position of final and abstract modifier early, so instead of
-     *
-     *      public final const MY_CONSTANT = "Hello world!";
-     *
-     * it should be
-     *
-     *      final public const MY_CONSTANT = "Hello world!";
-     *
-     * @see https://github.com/rectorphp/rector/issues/6963
-     * @see https://github.com/nikic/PHP-Parser/pull/826
-     */
-    protected function pModifiers(int $modifiers) : string
-    {
-        return (($modifiers & Class_::MODIFIER_FINAL) !== 0 ? 'final ' : '') . (($modifiers & Class_::MODIFIER_ABSTRACT) !== 0 ? 'abstract ' : '') . (($modifiers & Class_::MODIFIER_PUBLIC) !== 0 ? 'public ' : '') . (($modifiers & Class_::MODIFIER_PROTECTED) !== 0 ? 'protected ' : '') . (($modifiers & Class_::MODIFIER_PRIVATE) !== 0 ? 'private ' : '') . (($modifiers & Class_::MODIFIER_STATIC) !== 0 ? 'static ' : '') . (($modifiers & Class_::MODIFIER_READONLY) !== 0 ? 'readonly ' : '');
+        return $content;
     }
     /**
      * Invoke re-print even if only raw value was changed.
      * That allows PHPStan to use int strict types, while changing the value with literal "_"
-     * @return int|string
      */
-    protected function pScalar_LNumber(LNumber $lNumber)
+    protected function pScalar_Int(Int_ $int) : string
     {
-        if ($this->shouldPrintNewRawValue($lNumber)) {
-            return (string) $lNumber->getAttribute(AttributeKey::RAW_VALUE);
+        if ($this->shouldPrintNewRawValue($int)) {
+            return (string) $int->getAttribute(AttributeKey::RAW_VALUE);
         }
-        return parent::pScalar_LNumber($lNumber);
+        return parent::pScalar_Int($int);
     }
     protected function pExpr_MethodCall(MethodCall $methodCall) : string
     {
+        if (!$methodCall->var instanceof CallLike) {
+            return parent::pExpr_MethodCall($methodCall);
+        }
         if (SimpleParameterProvider::provideBoolParameter(Option::NEW_LINE_ON_FLUENT_CALL) === \false) {
             return parent::pExpr_MethodCall($methodCall);
         }
-        if ($methodCall->var instanceof CallLike) {
-            foreach ($methodCall->args as $arg) {
-                if (!$arg instanceof Arg) {
-                    continue;
-                }
-                $arg->value->setAttribute(AttributeKey::ORIGINAL_NODE, null);
+        foreach ($methodCall->args as $arg) {
+            if (!$arg instanceof Arg) {
+                continue;
             }
-            return $this->pDereferenceLhs($methodCall->var) . "\n" . $this->resolveIndentSpaces() . '->' . $this->pObjectProperty($methodCall->name) . '(' . $this->pMaybeMultiline($methodCall->args) . ')';
+            $arg->value->setAttribute(AttributeKey::ORIGINAL_NODE, null);
         }
-        return parent::pExpr_MethodCall($methodCall);
+        return $this->pDereferenceLhs($methodCall->var) . "\n" . $this->resolveIndentSpaces() . '->' . $this->pObjectProperty($methodCall->name) . '(' . $this->pMaybeMultiline($methodCall->args) . ')';
+    }
+    protected function pInfixOp(string $class, Node $leftNode, string $operatorString, Node $rightNode, int $precedence, int $lhsPrecedence) : string
+    {
+        $this->wrapAssign($leftNode, $rightNode);
+        return parent::pInfixOp($class, $leftNode, $operatorString, $rightNode, $precedence, $lhsPrecedence);
+    }
+    protected function pExpr_Instanceof(Instanceof_ $instanceof, int $precedence, int $lhsPrecedence) : string
+    {
+        $this->wrapAssign($instanceof->expr, $instanceof->class);
+        return parent::pExpr_Instanceof($instanceof, $precedence, $lhsPrecedence);
+    }
+    private function wrapBinaryOp(Node $node) : void
+    {
+        if ($this->exprAnalyzer->isExprWithExprPropertyWrappable($node)) {
+            $node->expr->setAttribute(AttributeKey::ORIGINAL_NODE, null);
+        }
+        if (!$node instanceof BinaryOp) {
+            return;
+        }
+        if ($node->getAttribute(AttributeKey::ORIGINAL_NODE) instanceof Node) {
+            return;
+        }
+        if ($node->left instanceof BinaryOp && $node->left->getAttribute(AttributeKey::ORIGINAL_NODE) instanceof Node) {
+            $node->left->setAttribute(AttributeKey::ORIGINAL_NODE, null);
+        }
+        if ($node->right instanceof BinaryOp && $node->right->getAttribute(AttributeKey::ORIGINAL_NODE) instanceof Node) {
+            $node->right->setAttribute(AttributeKey::ORIGINAL_NODE, null);
+        }
     }
     /**
-     * Keep attributes on newlines
+     * ensure left side is assign and right side is just created
+     *
+     * @see https://github.com/rectorphp/rector-src/pull/6668
+     * @see https://github.com/rectorphp/rector/issues/8980
+     * @see https://github.com/rectorphp/rector-src/pull/6653
      */
-    protected function pParam(Param $param) : string
+    private function wrapAssign(Node $leftNode, Node $rightNode) : void
     {
-        return $this->pAttrGroups($param->attrGroups) . $this->pModifiers($param->flags) . ($param->type instanceof Node ? $this->p($param->type) . ' ' : '') . ($param->byRef ? '&' : '') . ($param->variadic ? '...' : '') . $this->p($param->var) . ($param->default instanceof Expr ? ' = ' . $this->p($param->default) : '');
+        if ($leftNode instanceof Assign && $leftNode->getStartTokenPos() > 0 && $rightNode->getStartTokenPos() < 0) {
+            $leftNode->setAttribute(AttributeKey::WRAPPED_IN_PARENTHESES, \true);
+        }
+    }
+    private function cleanStartIndentationOnHeredocNowDoc(string $content) : string
+    {
+        $lines = NewLineSplitter::split($content);
+        $trimmedLines = \array_map('ltrim', $lines);
+        return \implode("\n", $trimmedLines);
     }
     private function resolveIndentSpaces() : string
     {
@@ -393,7 +389,7 @@ final class BetterStandardPrinter extends Standard
         return SimpleParameterProvider::provideStringParameter(Option::INDENT_CHAR, ' ');
     }
     /**
-     * @param \PhpParser\Node\Scalar\LNumber|\PhpParser\Node\Scalar\DNumber $lNumber
+     * @param \PhpParser\Node\Scalar\Int_|\PhpParser\Node\Scalar\Float_ $lNumber
      */
     private function shouldPrintNewRawValue($lNumber) : bool
     {
@@ -416,12 +412,18 @@ final class BetterStandardPrinter extends Standard
      */
     private function containsNop(array $nodes) : bool
     {
+        $hasNop = \false;
         foreach ($nodes as $node) {
+            // early false when visited Node is InlineHTML
+            if ($node instanceof InlineHTML) {
+                return \false;
+            }
+            // use flag to avoid next is InlineHTML that returns early
             if ($node instanceof Nop) {
-                return \true;
+                $hasNop = \true;
             }
         }
-        return \false;
+        return $hasNop;
     }
     private function wrapValueWith(String_ $string, string $wrap) : string
     {

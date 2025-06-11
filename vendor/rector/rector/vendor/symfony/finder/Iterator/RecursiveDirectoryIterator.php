@@ -8,10 +8,10 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202411\Symfony\Component\Finder\Iterator;
+namespace RectorPrefix202506\Symfony\Component\Finder\Iterator;
 
-use RectorPrefix202411\Symfony\Component\Finder\Exception\AccessDeniedException;
-use RectorPrefix202411\Symfony\Component\Finder\SplFileInfo;
+use RectorPrefix202506\Symfony\Component\Finder\Exception\AccessDeniedException;
+use RectorPrefix202506\Symfony\Component\Finder\SplFileInfo;
 /**
  * Extends the \RecursiveDirectoryIterator to support relative paths.
  *
@@ -21,27 +21,12 @@ use RectorPrefix202411\Symfony\Component\Finder\SplFileInfo;
  */
 class RecursiveDirectoryIterator extends \RecursiveDirectoryIterator
 {
-    /**
-     * @var bool
-     */
-    private $ignoreUnreadableDirs;
-    /**
-     * @var bool
-     */
-    private $ignoreFirstRewind = \true;
+    private bool $ignoreUnreadableDirs;
+    private bool $ignoreFirstRewind = \true;
     // these 3 properties take part of the performance optimization to avoid redoing the same work in all iterations
-    /**
-     * @var string
-     */
-    private $rootPath;
-    /**
-     * @var string
-     */
-    private $subPath;
-    /**
-     * @var string
-     */
-    private $directorySeparator = '/';
+    private string $rootPath;
+    private string $subPath;
+    private string $directorySeparator = '/';
     /**
      * @throws \RuntimeException
      */

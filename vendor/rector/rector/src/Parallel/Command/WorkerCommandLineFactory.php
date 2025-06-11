@@ -6,10 +6,10 @@ namespace Rector\Parallel\Command;
 use Rector\ChangesReporting\Output\JsonOutputFormatter;
 use Rector\Configuration\Option;
 use Rector\FileSystem\FilePathHelper;
-use RectorPrefix202411\Symfony\Component\Console\Command\Command;
-use RectorPrefix202411\Symfony\Component\Console\Input\InputInterface;
-use RectorPrefix202411\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
-use RectorPrefix202411\Symplify\EasyParallel\Reflection\CommandFromReflectionFactory;
+use RectorPrefix202506\Symfony\Component\Console\Command\Command;
+use RectorPrefix202506\Symfony\Component\Console\Input\InputInterface;
+use RectorPrefix202506\Symplify\EasyParallel\Exception\ParallelShouldNotHappenException;
+use RectorPrefix202506\Symplify\EasyParallel\Reflection\CommandFromReflectionFactory;
 /**
  * @see \Rector\Tests\Parallel\Command\WorkerCommandLineFactoryTest
  * @todo possibly extract to symplify/easy-parallel
@@ -18,14 +18,12 @@ final class WorkerCommandLineFactory
 {
     /**
      * @readonly
-     * @var \Symplify\EasyParallel\Reflection\CommandFromReflectionFactory
      */
-    private $commandFromReflectionFactory;
+    private CommandFromReflectionFactory $commandFromReflectionFactory;
     /**
      * @readonly
-     * @var \Rector\FileSystem\FilePathHelper
      */
-    private $filePathHelper;
+    private FilePathHelper $filePathHelper;
     /**
      * @var string
      */
@@ -41,6 +39,10 @@ final class WorkerCommandLineFactory
     public function create(string $mainScript, string $mainCommandClass, string $workerCommandName, InputInterface $input, string $identifier, int $port) : string
     {
         $commandArguments = \array_slice($_SERVER['argv'], 1);
+        // add implicit "process" command name if missing
+        if ($commandArguments !== [] && ($commandArguments[0] !== 'process' && $commandArguments[0] !== 'p') && !\defined('PHPUNIT_COMPOSER_INSTALL')) {
+            $commandArguments = \array_merge(['process'], $commandArguments);
+        }
         $args = \array_merge([\PHP_BINARY, $mainScript], $commandArguments);
         $workerCommandArray = [];
         $mainCommand = $this->commandFromReflectionFactory->create($mainCommandClass);
@@ -98,6 +100,10 @@ final class WorkerCommandLineFactory
              */
             $config = (string) $input->getOption(Option::CONFIG);
             $workerCommandArray[] = \escapeshellarg($this->filePathHelper->relativePath($config));
+        }
+        if ($input->getOption(Option::ONLY) !== null) {
+            $workerCommandArray[] = self::OPTION_DASHES . Option::ONLY;
+            $workerCommandArray[] = \escapeshellarg((string) $input->getOption(Option::ONLY));
         }
         return \implode(' ', $workerCommandArray);
     }

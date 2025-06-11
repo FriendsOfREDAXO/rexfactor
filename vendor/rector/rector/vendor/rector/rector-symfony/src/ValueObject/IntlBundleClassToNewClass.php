@@ -4,24 +4,22 @@ declare (strict_types=1);
 namespace Rector\Symfony\ValueObject;
 
 use Rector\Validation\RectorAssert;
-use RectorPrefix202411\Webmozart\Assert\Assert;
+use RectorPrefix202506\Webmozart\Assert\Assert;
 final class IntlBundleClassToNewClass
 {
     /**
      * @readonly
-     * @var string
      */
-    private $oldClass;
+    private string $oldClass;
     /**
      * @readonly
-     * @var string
      */
-    private $newClass;
+    private string $newClass;
     /**
      * @var array<string, string>
      * @readonly
      */
-    private $oldToNewMethods;
+    private array $oldToNewMethods;
     /**
      * @param array<string, string> $oldToNewMethods
      */
