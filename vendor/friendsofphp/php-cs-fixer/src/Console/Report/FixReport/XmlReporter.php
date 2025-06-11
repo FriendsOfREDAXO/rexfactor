@@ -14,10 +14,13 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Console\Report\FixReport;
 
+use PhpCsFixer\Console\Application;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 
 /**
  * @author Boris Gorbylev <ekho@ekho.name>
+ *
+ * @readonly
  *
  * @internal
  */
@@ -38,6 +41,8 @@ final class XmlReporter implements ReporterInterface
         // new nodes should be added to this or existing children
         $root = $dom->createElement('report');
         $dom->appendChild($root);
+
+        $root->appendChild($this->createAboutElement($dom, Application::getAbout()));
 
         $filesXML = $dom->createElement('files');
         $root->appendChild($filesXML);
@@ -99,7 +104,7 @@ final class XmlReporter implements ReporterInterface
 
     private function createTimeElement(float $time, \DOMDocument $dom): \DOMElement
     {
-        $time = round($time / 1000, 3);
+        $time = round($time / 1_000, 3);
 
         $timeXML = $dom->createElement('time');
         $timeXML->setAttribute('unit', 's');
@@ -112,12 +117,20 @@ final class XmlReporter implements ReporterInterface
 
     private function createMemoryElement(float $memory, \DOMDocument $dom): \DOMElement
     {
-        $memory = round($memory / 1024 / 1024, 3);
+        $memory = round($memory / 1_024 / 1_024, 3);
 
         $memoryXML = $dom->createElement('memory');
         $memoryXML->setAttribute('value', (string) $memory);
         $memoryXML->setAttribute('unit', 'MB');
 
         return $memoryXML;
+    }
+
+    private function createAboutElement(\DOMDocument $dom, string $about): \DOMElement
+    {
+        $xml = $dom->createElement('about');
+        $xml->setAttribute('value', $about);
+
+        return $xml;
     }
 }

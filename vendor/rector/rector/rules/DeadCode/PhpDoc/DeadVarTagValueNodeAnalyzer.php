@@ -9,6 +9,7 @@ use PHPStan\Type\IntersectionType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\Type\UnionType;
+use Rector\DeadCode\PhpDoc\Guard\TemplateTypeRemovalGuard;
 use Rector\NodeTypeResolver\TypeComparator\TypeComparator;
 use Rector\StaticTypeMapper\StaticTypeMapper;
 final class DeadVarTagValueNodeAnalyzer
@@ -23,10 +24,16 @@ final class DeadVarTagValueNodeAnalyzer
      * @var \Rector\StaticTypeMapper\StaticTypeMapper
      */
     private $staticTypeMapper;
-    public function __construct(TypeComparator $typeComparator, StaticTypeMapper $staticTypeMapper)
+    /**
+     * @readonly
+     * @var \Rector\DeadCode\PhpDoc\Guard\TemplateTypeRemovalGuard
+     */
+    private $templateTypeRemovalGuard;
+    public function __construct(TypeComparator $typeComparator, StaticTypeMapper $staticTypeMapper, TemplateTypeRemovalGuard $templateTypeRemovalGuard)
     {
         $this->typeComparator = $typeComparator;
         $this->staticTypeMapper = $staticTypeMapper;
+        $this->templateTypeRemovalGuard = $templateTypeRemovalGuard;
     }
     public function isDead(VarTagValueNode $varTagValueNode, Property $property) : bool
     {
@@ -39,6 +46,9 @@ final class DeadVarTagValueNodeAnalyzer
         // is strict type superior to doc type? keep strict type only
         $propertyType = $this->staticTypeMapper->mapPhpParserNodePHPStanType($property->type);
         $docType = $this->staticTypeMapper->mapPHPStanPhpDocTypeNodeToPHPStanType($varTagValueNode->type, $property);
+        if (!$this->templateTypeRemovalGuard->isLegal($docType)) {
+            return \false;
+        }
         if ($propertyType instanceof UnionType && !$docType instanceof UnionType) {
             return !$docType instanceof IntersectionType;
         }

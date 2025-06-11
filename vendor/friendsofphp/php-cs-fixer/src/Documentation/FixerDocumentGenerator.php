@@ -18,6 +18,7 @@ use PhpCsFixer\Console\Command\HelpCommand;
 use PhpCsFixer\Differ\FullDiffer;
 use PhpCsFixer\Fixer\ConfigurableFixerInterface;
 use PhpCsFixer\Fixer\DeprecatedFixerInterface;
+use PhpCsFixer\Fixer\ExperimentalFixerInterface;
 use PhpCsFixer\Fixer\FixerInterface;
 use PhpCsFixer\FixerConfiguration\AliasedFixerOption;
 use PhpCsFixer\FixerConfiguration\AllowedValueSubset;
@@ -33,6 +34,8 @@ use PhpCsFixer\Tokenizer\Tokens;
 use PhpCsFixer\Utils;
 
 /**
+ * @readonly
+ *
  * @internal
  */
 final class FixerDocumentGenerator
@@ -82,11 +85,24 @@ final class FixerDocumentGenerator
             $alternatives = $fixer->getSuccessorsNames();
 
             if (0 !== \count($alternatives)) {
-                $deprecationDescription .= RstUtils::toRst(sprintf(
+                $deprecationDescription .= RstUtils::toRst(\sprintf(
                     "\n\nYou should use %s instead.",
                     Utils::naturalLanguageJoinWithBackticks($alternatives)
                 ), 0);
             }
+        }
+
+        $experimentalDescription = '';
+
+        if ($fixer instanceof ExperimentalFixerInterface) {
+            $experimentalDescriptionRaw = RstUtils::toRst('Rule is not covered with backward compatibility promise, use it at your own risk. Rule\'s behaviour may be changed at any point, including rule\'s name; its options\' names, availability and allowed values; its default configuration. Rule may be even removed without prior notice. Feel free to provide feedback and help with determining final state of the rule.', 0);
+            $experimentalDescription = <<<RST
+
+                This rule is experimental
+                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                {$experimentalDescriptionRaw}
+                RST;
         }
 
         $riskyDescription = '';
@@ -111,12 +127,16 @@ final class FixerDocumentGenerator
             }
 
             $warningsHeaderLine = str_repeat('-', \strlen($warningsHeader));
-            $doc .= "\n\n".implode("\n", array_filter([
-                $warningsHeader,
-                $warningsHeaderLine,
-                $deprecationDescription,
-                $riskyDescription,
-            ]));
+            $doc .= "\n\n".implode("\n", array_filter(
+                [
+                    $warningsHeader,
+                    $warningsHeaderLine,
+                    $deprecationDescription,
+                    $experimentalDescription,
+                    $riskyDescription,
+                ],
+                static fn (string $text): bool => '' !== $text
+            ));
         }
 
         if ($fixer instanceof ConfigurableFixerInterface) {
@@ -149,7 +169,7 @@ final class FixerDocumentGenerator
                 if (null === $allowed) {
                     $allowedKind = 'Allowed types';
                     $allowed = array_map(
-                        static fn ($value): string => '``'.$value.'``',
+                        static fn (string $value): string => '``'.Utils::convertArrayTypeToList($value).'``',
                         $option->getAllowedTypes(),
                     );
                 } else {
@@ -184,7 +204,7 @@ final class FixerDocumentGenerator
                 RST;
 
             foreach ($samples as $index => $sample) {
-                $title = sprintf('Example #%d', $index + 1);
+                $title = \sprintf('Example #%d', $index + 1);
                 $titleLine = str_repeat('~', \strlen($title));
                 $doc .= "\n\n{$title}\n{$titleLine}";
 
@@ -192,7 +212,7 @@ final class FixerDocumentGenerator
                     if (null === $sample->getConfiguration()) {
                         $doc .= "\n\n*Default* configuration.";
                     } else {
-                        $doc .= sprintf(
+                        $doc .= \sprintf(
                             "\n\nWith configuration: ``%s``.",
                             Utils::toString($sample->getConfiguration())
                         );
@@ -203,15 +223,7 @@ final class FixerDocumentGenerator
             }
         }
 
-        $ruleSetConfigs = [];
-
-        foreach (RuleSets::getSetDefinitionNames() as $set) {
-            $ruleSet = new RuleSet([$set => true]);
-
-            if ($ruleSet->hasRule($name)) {
-                $ruleSetConfigs[$set] = $ruleSet->getRuleConfiguration($name);
-            }
-        }
+        $ruleSetConfigs = self::getSetsOfRule($name);
 
         if ([] !== $ruleSetConfigs) {
             $plural = 1 !== \count($ruleSetConfigs) ? 's' : '';
@@ -243,21 +255,50 @@ final class FixerDocumentGenerator
         $fileName = $reflectionObject->getFileName();
         $fileName = str_replace('\\', '/', $fileName);
         $fileName = substr($fileName, strrpos($fileName, '/src/Fixer/') + 1);
-        $fileName = "`{$className} <./../{$fileName}>`_";
+        $fileName = "`{$className} <./../../../{$fileName}>`_";
+
+        $testFileName = Preg::replace('~.*\K/src/(?=Fixer/)~', '/tests/', $fileName);
+        $testFileName = Preg::replace('~PhpCsFixer\\\\\\\\\K(?=Fixer\\\\\\\)~', 'Tests\\\\\\\\', $testFileName);
+        $testFileName = Preg::replace('~(?= <|\.php>)~', 'Test', $testFileName);
 
         $doc .= <<<RST
 
-            Source class
-            ------------
+            References
+            ----------
 
-            {$fileName}
+            - Fixer class: {$fileName}
+            - Test class: {$testFileName}
+
+            The test class defines officially supported behaviour. Each test case is a part of our backward compatibility promise.
             RST;
+
+        $doc = str_replace("\t", '<TAB>', $doc);
 
         return "{$doc}\n";
     }
 
     /**
-     * @param FixerInterface[] $fixers
+     * @internal
+     *
+     * @return array<string, null|array<string, mixed>>
+     */
+    public static function getSetsOfRule(string $ruleName): array
+    {
+        $ruleSetConfigs = [];
+
+        foreach (RuleSets::getSetDefinitionNames() as $set) {
+            $ruleSet = new RuleSet([$set => true]);
+
+            if ($ruleSet->hasRule($ruleName)) {
+                $ruleSetConfigs[$set] = $ruleSet->getRuleConfiguration($ruleName);
+            }
+        }
+
+        return $ruleSetConfigs;
+    }
+
+    /**
+     * @param list<FixerInterface> $fixers
      */
     public function generateFixersDocumentationIndex(array $fixers): string
     {
@@ -267,7 +308,7 @@ final class FixerDocumentGenerator
             'Phpdoc' => 'PHPDoc',
         ];
 
-        usort($fixers, static fn (FixerInterface $a, FixerInterface $b): int => strcmp(\get_class($a), \get_class($b)));
+        usort($fixers, static fn (FixerInterface $a, FixerInterface $b): int => \get_class($a) <=> \get_class($b));
 
         $documentation = <<<'RST'
             =======================
@@ -278,7 +319,7 @@ final class FixerDocumentGenerator
         $currentGroup = null;
 
         foreach ($fixers as $fixer) {
-            $namespace = Preg::replace('/^.*\\\\(.+)\\\\.+Fixer$/', '$1', \get_class($fixer));
+            $namespace = Preg::replace('/^.*\\\(.+)\\\.+Fixer$/', '$1', \get_class($fixer));
             $group = $overrideGroups[$namespace] ?? Preg::replace('/(?<=[[:lower:]])(?=[[:upper:]])/', ' ', $namespace);
 
             if ($group !== $currentGroup) {
@@ -294,6 +335,10 @@ final class FixerDocumentGenerator
 
             if ($fixer instanceof DeprecatedFixerInterface) {
                 $attributes[] = 'deprecated';
+            }
+
+            if ($fixer instanceof ExperimentalFixerInterface) {
+                $attributes[] = 'experimental';
             }
 
             if ($fixer->isRisky()) {
@@ -337,7 +382,7 @@ final class FixerDocumentGenerator
                    the sample is not suitable for current version of PHP (%s).
                 RST;
 
-            return sprintf($error, PHP_VERSION);
+            return \sprintf($error, PHP_VERSION);
         }
 
         $old = $sample->getCode();

@@ -14,11 +14,14 @@ declare(strict_types=1);
 
 namespace PhpCsFixer\Console\Report\FixReport;
 
+use PhpCsFixer\Console\Application;
 use PhpCsFixer\Preg;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 
 /**
  * @author Boris Gorbylev <ekho@ekho.name>
+ *
+ * @readonly
  *
  * @internal
  */
@@ -42,6 +45,13 @@ final class JunitReporter implements ReporterInterface
         $testsuite = $testsuites->appendChild($dom->createElement('testsuite'));
         $testsuite->setAttribute('name', 'PHP CS Fixer');
 
+        $properties = $dom->createElement('properties');
+        $property = $dom->createElement('property');
+        $property->setAttribute('name', 'about');
+        $property->setAttribute('value', Application::getAbout());
+        $properties->appendChild($property);
+        $testsuite->appendChild($properties);
+
         if (\count($reportSummary->getChanged()) > 0) {
             $this->createFailedTestCases($dom, $testsuite, $reportSummary);
         } else {
@@ -51,9 +61,9 @@ final class JunitReporter implements ReporterInterface
         if ($reportSummary->getTime() > 0) {
             $testsuite->setAttribute(
                 'time',
-                sprintf(
+                \sprintf(
                     '%.3f',
-                    $reportSummary->getTime() / 1000
+                    $reportSummary->getTime() / 1_000
                 )
             );
         }

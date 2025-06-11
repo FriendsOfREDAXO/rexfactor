@@ -3,8 +3,9 @@
 declare (strict_types=1);
 namespace Rector\Configuration;
 
-use RectorPrefix202410\Nette\Utils\FileSystem;
+use RectorPrefix202411\Nette\Utils\FileSystem;
 use Rector\Bridge\SetProviderCollector;
+use Rector\Bridge\SetRectorsResolver;
 use Rector\Caching\Contract\ValueObject\Storage\CacheStorageInterface;
 use Rector\Config\Level\CodeQualityLevel;
 use Rector\Config\Level\DeadCodeLevel;
@@ -28,8 +29,8 @@ use Rector\Symfony\Set\JMSSetList;
 use Rector\Symfony\Set\SensiolabsSetList;
 use Rector\Symfony\Set\SymfonySetList;
 use Rector\ValueObject\PhpVersion;
-use RectorPrefix202410\Symfony\Component\Finder\Finder;
-use RectorPrefix202410\Webmozart\Assert\Assert;
+use RectorPrefix202411\Symfony\Component\Finder\Finder;
+use RectorPrefix202411\Webmozart\Assert\Assert;
 /**
  * @api
  */
@@ -178,10 +179,18 @@ final class RectorConfigBuilder
      */
     private $groupLoadedSets = [];
     /**
+     * @var string|null
+     */
+    private $editorUrl;
+    /**
      * @api soon to be used
      * @var bool|null
      */
     private $isWithPhpSetsUsed;
+    /**
+     * @var bool|null
+     */
+    private $isWithPhpLevelUsed;
     public function __invoke(RectorConfig $rectorConfig) : void
     {
         // @experimental 2024-06
@@ -193,6 +202,9 @@ final class RectorConfigBuilder
         // merge sets together
         $this->sets = \array_merge($this->sets, $this->groupLoadedSets);
         $uniqueSets = \array_unique($this->sets);
+        if ($this->isWithPhpLevelUsed && $this->isWithPhpSetsUsed) {
+            throw new InvalidConfigurationException(\sprintf('Your config uses "withPhp*()" and "withPhpLevel()" methods at the same time.%sPick one of them to avoid rule conflicts.', \PHP_EOL));
+        }
         if (\in_array(SetList::TYPE_DECLARATION, $uniqueSets, \true) && $this->isTypeCoverageLevelUsed === \true) {
             throw new InvalidConfigurationException(\sprintf('Your config already enables type declarations set.%sRemove "->withTypeCoverageLevel()" as it only duplicates it, or remove type declaration set.', \PHP_EOL));
         }
@@ -287,6 +299,9 @@ final class RectorConfigBuilder
         }
         if ($this->reportingRealPath !== null) {
             $rectorConfig->reportingRealPath($this->reportingRealPath);
+        }
+        if ($this->editorUrl !== null) {
+            $rectorConfig->editorUrl($this->editorUrl);
         }
     }
     /**
@@ -757,6 +772,33 @@ final class RectorConfigBuilder
         return $this;
     }
     /**
+     * @experimental Since 1.2.5 Raise your PHP level from, one level at a time
+     */
+    public function withPhpLevel(int $level) : self
+    {
+        Assert::natural($level);
+        $this->isWithPhpLevelUsed = \true;
+        $phpVersion = ComposerJsonPhpVersionResolver::resolveFromCwdOrFail();
+        $setRectorsResolver = new SetRectorsResolver();
+        $setFilePaths = \Rector\Configuration\PhpLevelSetResolver::resolveFromPhpVersion($phpVersion);
+        $rectorRulesWithConfiguration = $setRectorsResolver->resolveFromFilePathsIncludingConfiguration($setFilePaths);
+        foreach ($rectorRulesWithConfiguration as $position => $rectorRuleWithConfiguration) {
+            // add rules untill level is reached
+            if ($position > $level) {
+                continue;
+            }
+            if (\is_string($rectorRuleWithConfiguration)) {
+                $this->rules[] = $rectorRuleWithConfiguration;
+            } elseif (\is_array($rectorRuleWithConfiguration)) {
+                foreach ($rectorRuleWithConfiguration as $rectorRule => $rectorRuleConfiguration) {
+                    /** @var class-string<ConfigurableRectorInterface> $rectorRule */
+                    $this->withConfiguredRule($rectorRule, $rectorRuleConfiguration);
+                }
+            }
+        }
+        return $this;
+    }
+    /**
      * @experimental Raise your code quality from the safest rules
      * to more affecting ones, one level at a time
      */
@@ -813,6 +855,11 @@ final class RectorConfigBuilder
     public function withRealPathReporting(bool $absolutePath = \true) : self
     {
         $this->reportingRealPath = $absolutePath;
+        return $this;
+    }
+    public function withEditorUrl(string $editorUrl) : self
+    {
+        $this->editorUrl = $editorUrl;
         return $this;
     }
 }

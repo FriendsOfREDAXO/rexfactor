@@ -1,11 +1,13 @@
 <?php
 
 declare (strict_types=1);
-namespace RectorPrefix202410;
+namespace RectorPrefix202411;
 
 use Rector\Config\RectorConfig;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\ConstructClassMethodToSetUpTestCaseRector;
+use Rector\PHPUnit\CodeQuality\Rector\Class_\NarrowUnusedSetUpDefinedPropertyRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\PreferPHPUnitThisCallRector;
+use Rector\PHPUnit\CodeQuality\Rector\Class_\SingleMockPropertyTypeRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\TestWithToDataProviderRector;
 use Rector\PHPUnit\CodeQuality\Rector\Class_\YieldDataProviderRector;
 use Rector\PHPUnit\CodeQuality\Rector\ClassMethod\DataProviderArrayItemsNewLinedRector;
@@ -27,7 +29,9 @@ use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertRegExpRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertSameBoolNullToSpecificMethodRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertSameTrueFalseToAssertTrueFalseRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\AssertTrueFalseToSpecificMethodRector;
+use Rector\PHPUnit\CodeQuality\Rector\MethodCall\FlipAssertRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\NarrowIdenticalWithConsecutiveRector;
+use Rector\PHPUnit\CodeQuality\Rector\MethodCall\NarrowSingleWillReturnCallbackRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\RemoveExpectAnyFromMockRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\SingleWithConsecutiveToWithRector;
 use Rector\PHPUnit\CodeQuality\Rector\MethodCall\UseSpecificWillMethodRector;
@@ -44,9 +48,12 @@ return static function (RectorConfig $rectorConfig) : void {
         TestWithToDataProviderRector::class,
         AssertEqualsOrAssertSameFloatParameterToSpecificMethodsTypeRector::class,
         DataProviderArrayItemsNewLinedRector::class,
+        FlipAssertRector::class,
         // narrow with consecutive
         NarrowIdenticalWithConsecutiveRector::class,
+        NarrowSingleWillReturnCallbackRector::class,
         SingleWithConsecutiveToWithRector::class,
+        NarrowUnusedSetUpDefinedPropertyRector::class,
         // specific asserts
         AssertCompareOnCountableWithMethodToAssertCountRector::class,
         AssertCompareToSpecificMethodRector::class,
@@ -74,5 +81,6 @@ return static function (RectorConfig $rectorConfig) : void {
          * @see https://davegebler.com/post/php/better-php-unit-testing-avoiding-mocks
          */
         RemoveExpectAnyFromMockRector::class,
+        SingleMockPropertyTypeRector::class,
     ]);
 };

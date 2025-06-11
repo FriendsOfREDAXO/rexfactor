@@ -24,10 +24,7 @@ use PhpCsFixer\Tokenizer\Tokens;
  */
 abstract class AbstractFunctionReferenceFixer extends AbstractFixer
 {
-    /**
-     * @var null|FunctionsAnalyzer
-     */
-    private $functionsAnalyzer;
+    private ?FunctionsAnalyzer $functionsAnalyzer = null;
 
     public function isCandidate(Tokens $tokens): bool
     {
@@ -43,7 +40,7 @@ abstract class AbstractFunctionReferenceFixer extends AbstractFixer
      * Looks up Tokens sequence for suitable candidates and delivers boundaries information,
      * which can be supplied by other methods in this abstract class.
      *
-     * @return null|int[] returns $functionName, $openParenthesis, $closeParenthesis packed into array
+     * @return ?array{int, int, int} returns $functionName, $openParenthesis, $closeParenthesis packed into array
      */
     protected function find(string $functionNameToSearch, Tokens $tokens, int $start = 0, ?int $end = null): ?array
     {

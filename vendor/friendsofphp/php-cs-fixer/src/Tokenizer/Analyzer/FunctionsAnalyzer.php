@@ -40,9 +40,9 @@ final class FunctionsAnalyzer
             return false;
         }
 
-        $nextIndex = $tokens->getNextMeaningfulToken($index);
+        $openParenthesisIndex = $tokens->getNextMeaningfulToken($index);
 
-        if (!$tokens[$nextIndex]->equals('(')) {
+        if (!$tokens[$openParenthesisIndex]->equals('(')) {
             return false;
         }
 
@@ -68,12 +68,22 @@ final class FunctionsAnalyzer
             return false;
         }
 
-        if ($tokens[$tokens->getNextMeaningfulToken($nextIndex)]->isGivenKind(CT::T_FIRST_CLASS_CALLABLE)) {
+        if ($tokens[$tokens->getNextMeaningfulToken($openParenthesisIndex)]->isGivenKind(CT::T_FIRST_CLASS_CALLABLE)) {
             return false;
         }
 
         if ($previousIsNamespaceSeparator) {
             return true;
+        }
+
+        $functionName = strtolower($tokens[$index]->getContent());
+
+        if ('set' === $functionName) {
+            $closeParenthesisIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $openParenthesisIndex);
+            $afterCloseParenthesisIndex = $tokens->getNextMeaningfulToken($closeParenthesisIndex);
+            if ($tokens[$afterCloseParenthesisIndex]->equalsAny(['{', [T_DOUBLE_ARROW]])) {
+                return false;
+            }
         }
 
         if ($tokens->isChanged() || $tokens->getCodeHash() !== $this->functionsAnalysis['tokens']) {
@@ -96,8 +106,6 @@ final class FunctionsAnalyzer
             }
         }
 
-        $call = strtolower($tokens[$index]->getContent());
-
         // check if the call is to a function declared in the same namespace as the call is done,
         // if the call is already in the global namespace than declared functions are in the same
         // global namespace and don't need checking
@@ -109,7 +117,7 @@ final class FunctionsAnalyzer
                     continue;
                 }
 
-                if (strtolower($tokens[$functionNameIndex]->getContent()) === $call) {
+                if (strtolower($tokens[$functionNameIndex]->getContent()) === $functionName) {
                     return false;
                 }
             }
@@ -121,7 +129,7 @@ final class FunctionsAnalyzer
                 continue;
             }
 
-            if ($call !== strtolower($functionUse->getShortName())) {
+            if ($functionName !== strtolower($functionUse->getShortName())) {
                 continue;
             }
 
@@ -184,7 +192,7 @@ final class FunctionsAnalyzer
     public function isTheSameClassCall(Tokens $tokens, int $index): bool
     {
         if (!$tokens->offsetExists($index)) {
-            return false;
+            throw new \InvalidArgumentException(\sprintf('Token index %d does not exist.', $index));
         }
 
         $operatorIndex = $tokens->getPrevMeaningfulToken($index);
@@ -203,7 +211,11 @@ final class FunctionsAnalyzer
             return false;
         }
 
-        return $tokens[$referenceIndex]->equalsAny([[T_VARIABLE, '$this'], [T_STRING, 'self'], [T_STATIC, 'static']], false);
+        if (!$tokens[$referenceIndex]->equalsAny([[T_VARIABLE, '$this'], [T_STRING, 'self'], [T_STATIC, 'static']], false)) {
+            return false;
+        }
+
+        return $tokens[$tokens->getNextMeaningfulToken($index)]->equals('(');
     }
 
     private function buildFunctionsAnalysis(Tokens $tokens): void

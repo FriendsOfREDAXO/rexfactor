@@ -19,6 +19,8 @@ use PhpCsFixer\RuleSet\RuleSetDescriptionInterface;
 /**
  * @author Dariusz Rumiński <dariusz.ruminski@gmail.com>
  *
+ * @readonly
+ *
  * @internal
  */
 final class JsonReporter implements ReporterInterface
@@ -32,7 +34,7 @@ final class JsonReporter implements ReporterInterface
     {
         $sets = $reportSummary->getSets();
 
-        usort($sets, static fn (RuleSetDescriptionInterface $a, RuleSetDescriptionInterface $b): int => strcmp($a->getName(), $b->getName()));
+        usort($sets, static fn (RuleSetDescriptionInterface $a, RuleSetDescriptionInterface $b): int => $a->getName() <=> $b->getName());
 
         $json = ['sets' => []];
 

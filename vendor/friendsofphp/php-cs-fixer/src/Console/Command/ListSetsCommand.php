@@ -79,7 +79,7 @@ final class ListSetsCommand extends Command
             $formats = $factory->getFormats();
             sort($formats);
 
-            throw new InvalidConfigurationException(sprintf('The format "%s" is not defined, supported are %s.', $format, Utils::naturalLanguageJoin($formats)));
+            throw new InvalidConfigurationException(\sprintf('The format "%s" is not defined, supported are %s.', $format, Utils::naturalLanguageJoin($formats)));
         }
 
         return $reporter;

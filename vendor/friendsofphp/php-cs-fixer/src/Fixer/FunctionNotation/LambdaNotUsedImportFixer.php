@@ -26,20 +26,11 @@ use PhpCsFixer\Tokenizer\TokensAnalyzer;
 
 final class LambdaNotUsedImportFixer extends AbstractFixer
 {
-    /**
-     * @var ArgumentsAnalyzer
-     */
-    private $argumentsAnalyzer;
+    private ArgumentsAnalyzer $argumentsAnalyzer;
 
-    /**
-     * @var FunctionsAnalyzer
-     */
-    private $functionAnalyzer;
+    private FunctionsAnalyzer $functionAnalyzer;
 
-    /**
-     * @var TokensAnalyzer
-     */
-    private $tokensAnalyzer;
+    private TokensAnalyzer $tokensAnalyzer;
 
     public function getDefinition(): FixerDefinitionInterface
     {
@@ -108,6 +99,8 @@ final class LambdaNotUsedImportFixer extends AbstractFixer
     }
 
     /**
+     * @param array<string, int> $imports
+     *
      * @return array<string, int>
      */
     private function findNotUsedLambdaImports(Tokens $tokens, array $imports, int $lambdaUseCloseBraceIndex): array
@@ -234,6 +227,12 @@ final class LambdaNotUsedImportFixer extends AbstractFixer
         return $imports;
     }
 
+    /**
+     * @param array<string, int> $imports
+     * @param array<int, int>    $arguments
+     *
+     * @return array<string, int>
+     */
     private function countImportsUsedAsArgument(Tokens $tokens, array $imports, array $arguments): array
     {
         foreach ($arguments as $start => $end) {
@@ -277,6 +276,11 @@ final class LambdaNotUsedImportFixer extends AbstractFixer
         return $lambdaUseIndex;
     }
 
+    /**
+     * @param array<int, int> $arguments
+     *
+     * @return array<string, int>
+     */
     private function filterArguments(Tokens $tokens, array $arguments): array
     {
         $imports = [];

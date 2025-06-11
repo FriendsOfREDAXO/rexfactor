@@ -8,16 +8,16 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace RectorPrefix202410\Symfony\Component\Process;
+namespace RectorPrefix202411\Symfony\Component\Process;
 
-use RectorPrefix202410\Symfony\Component\Process\Exception\InvalidArgumentException;
-use RectorPrefix202410\Symfony\Component\Process\Exception\LogicException;
-use RectorPrefix202410\Symfony\Component\Process\Exception\ProcessFailedException;
-use RectorPrefix202410\Symfony\Component\Process\Exception\ProcessSignaledException;
-use RectorPrefix202410\Symfony\Component\Process\Exception\ProcessTimedOutException;
-use RectorPrefix202410\Symfony\Component\Process\Exception\RuntimeException;
-use RectorPrefix202410\Symfony\Component\Process\Pipes\UnixPipes;
-use RectorPrefix202410\Symfony\Component\Process\Pipes\WindowsPipes;
+use RectorPrefix202411\Symfony\Component\Process\Exception\InvalidArgumentException;
+use RectorPrefix202411\Symfony\Component\Process\Exception\LogicException;
+use RectorPrefix202411\Symfony\Component\Process\Exception\ProcessFailedException;
+use RectorPrefix202411\Symfony\Component\Process\Exception\ProcessSignaledException;
+use RectorPrefix202411\Symfony\Component\Process\Exception\ProcessTimedOutException;
+use RectorPrefix202411\Symfony\Component\Process\Exception\RuntimeException;
+use RectorPrefix202411\Symfony\Component\Process\Pipes\UnixPipes;
+use RectorPrefix202411\Symfony\Component\Process\Pipes\WindowsPipes;
 /**
  * Process is a thin wrapper around proc_* functions to easily
  * start independent PHP processes.
@@ -1394,7 +1394,12 @@ class Process implements \IteratorAggregate
             $env[$var] = $value;
             return $varCache[$m[0]] = '!' . $var . '!';
         }, $cmd);
-        $cmd = 'cmd /V:ON /E:ON /D /C (' . \str_replace("\n", ' ', $cmd) . ')';
+        static $comSpec;
+        if (!$comSpec && ($comSpec = (new ExecutableFinder())->find('cmd.exe'))) {
+            // Escape according to CommandLineToArgvW rules
+            $comSpec = '"' . \preg_replace('{(\\\\*+)"}', '$1$1\\"', $comSpec) . '"';
+        }
+        $cmd = ($comSpec ?? 'cmd') . ' /V:ON /E:ON /D /C (' . \str_replace("\n", ' ', $cmd) . ')';
         foreach ($this->processPipes->getFiles() as $offset => $filename) {
             $cmd .= ' ' . $offset . '>"' . $filename . '"';
         }
@@ -1436,7 +1441,7 @@ class Process implements \IteratorAggregate
         if (\strpos($argument, "\x00") !== \false) {
             $argument = \str_replace("\x00", '?', $argument);
         }
-        if (!\preg_match('/[\\/()%!^"<>&|\\s]/', $argument)) {
+        if (!\preg_match('/[()%!^"<>&|\\s]/', $argument)) {
             return $argument;
         }
         $argument = \preg_replace('/(\\\\+)$/', '$1$1', $argument);

@@ -25,7 +25,7 @@ final class PhpUnitTestCaseIndicator
     public function isPhpUnitClass(Tokens $tokens, int $index): bool
     {
         if (!$tokens[$index]->isGivenKind(T_CLASS)) {
-            throw new \LogicException(sprintf('No "T_CLASS" at given index %d, got "%s".', $index, $tokens[$index]->getName()));
+            throw new \LogicException(\sprintf('No "T_CLASS" at given index %d, got "%s".', $index, $tokens[$index]->getName()));
         }
 
         $index = $tokens->getNextMeaningfulToken($index);
@@ -65,7 +65,7 @@ final class PhpUnitTestCaseIndicator
      * Returns an indices of PHPUnit classes in reverse appearance order.
      * Order is important - it's reverted, so if we inject tokens into collection,
      * we do it for bottom of file first, and then to the top of the file, so we
-     * mitigate risk of not visiting whole collcetion (final indices).
+     * mitigate risk of not visiting whole collections (final indices).
      *
      * @return iterable<array{0: int, 1: int}> array of [int start, int end] indices from later to earlier classes
      */
